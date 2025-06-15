@@ -18,7 +18,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
         .from('reviews')
         .select(`
           *,
-          profiles!reviews_student_id_fkey(full_name, email)
+          student_profile:profiles!reviews_student_id_fkey(full_name, email)
         `)
         .eq('trainer_id', trainerId)
         .order('created_at', { ascending: false });
@@ -154,7 +154,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {review.profiles?.full_name || 'Anonymous'}
+                          {review.student_profile?.full_name || 'Anonymous'}
                         </p>
                         <p className="text-sm text-gray-500">
                           {format(new Date(review.created_at), 'MMM dd, yyyy')}
