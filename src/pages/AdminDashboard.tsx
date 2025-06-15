@@ -43,35 +43,46 @@ const AdminDashboard = () => {
       console.log('✅ Session found for user:', session.user.email);
       setUser(session.user);
 
-      // Check if user is admin
+      // Check if user is admin using the new security definer function
       console.log('🔍 Checking admin role for user ID:', session.user.id);
       
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, email, full_name')
-        .eq('id', session.user.id)
-        .single();
+      try {
+        // First try to get the user's profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, email, full_name')
+          .eq('id', session.user.id)
+          .single();
 
-      if (profileError) {
-        console.error('❌ Profile error:', profileError);
-        
-        // If profile doesn't exist, create one
-        if (profileError.code === 'PGRST116') {
-          console.log('🔧 Creating missing profile...');
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || session.user.email,
-              role: 'user'
-            });
+        if (profileError) {
+          console.error('❌ Profile error:', profileError);
+          
+          // If profile doesn't exist, create one
+          if (profileError.code === 'PGRST116') {
+            console.log('🔧 Creating missing profile...');
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: session.user.id,
+                email: session.user.email,
+                full_name: session.user.user_metadata?.full_name || session.user.email,
+                role: 'user'
+              });
+              
+            if (insertError) {
+              console.error('❌ Error creating profile:', insertError);
+              toast({
+                title: "Error",
+                description: "Failed to create user profile. Please contact support.",
+                variant: "destructive"
+              });
+              navigate('/');
+              return;
+            }
             
-          if (insertError) {
-            console.error('❌ Error creating profile:', insertError);
             toast({
-              title: "Error",
-              description: "Failed to create user profile. Please contact support.",
+              title: "Profile Created",
+              description: "Your profile has been created. Please contact an admin to grant you admin access.",
               variant: "destructive"
             });
             navigate('/');
@@ -79,43 +90,46 @@ const AdminDashboard = () => {
           }
           
           toast({
-            title: "Profile Created",
-            description: "Your profile has been created. Please contact an admin to grant you admin access.",
+            title: "Error",
+            description: "Failed to check user permissions.",
             variant: "destructive"
           });
           navigate('/');
           return;
         }
+
+        console.log('👤 Profile found:', { 
+          email: profile.email, 
+          role: profile.role, 
+          full_name: profile.full_name 
+        });
+
+        if (profile?.role !== 'admin') {
+          console.log('❌ User is not admin, current role:', profile?.role);
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access the admin dashboard.",
+            variant: "destructive"
+          });
+          navigate('/');
+          return;
+        }
+
+        console.log('✅ User is admin, granting access');
+        setIsAdmin(true);
         
+      } catch (error) {
+        console.error('❌ Unexpected error during role check:', error);
         toast({
           title: "Error",
-          description: "Failed to check user permissions.",
+          description: "An unexpected error occurred while checking permissions.",
           variant: "destructive"
         });
         navigate('/');
         return;
+      } finally {
+        setIsLoading(false);
       }
-
-      console.log('👤 Profile found:', { 
-        email: profile.email, 
-        role: profile.role, 
-        full_name: profile.full_name 
-      });
-
-      if (profile?.role !== 'admin') {
-        console.log('❌ User is not admin, current role:', profile?.role);
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access the admin dashboard.",
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
-
-      console.log('✅ User is admin, granting access');
-      setIsAdmin(true);
-      setIsLoading(false);
     };
 
     checkAuth();
