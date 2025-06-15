@@ -24,30 +24,39 @@ const AdminDashboard = () => {
   // Check authentication and admin role
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('🔍 Checking authentication...');
-      
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('❌ Session error:', sessionError);
-        navigate('/auth');
-        return;
-      }
-
-      if (!session) {
-        console.log('❌ No session found, redirecting to auth');
-        navigate('/auth');
-        return;
-      }
-
-      console.log('✅ Session found for user:', session.user.email);
-      setUser(session.user);
-
-      // Check if user is admin using the new security definer function
-      console.log('🔍 Checking admin role for user ID:', session.user.id);
+      console.log('🔍 Starting authentication check...');
       
       try {
-        // First try to get the user's profile
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError);
+          toast({
+            title: "Authentication Error",
+            description: "Failed to get session. Please sign in again.",
+            variant: "destructive"
+          });
+          navigate('/auth');
+          return;
+        }
+
+        if (!session) {
+          console.log('❌ No session found, redirecting to auth');
+          toast({
+            title: "Access Denied",
+            description: "Please sign in to access the admin dashboard.",
+            variant: "destructive"
+          });
+          navigate('/auth');
+          return;
+        }
+
+        console.log('✅ Session found for user:', session.user.email);
+        setUser(session.user);
+
+        // Check admin role using a direct query with RLS bypassed by selecting only own profile
+        console.log('🔍 Checking admin role for user ID:', session.user.id);
+        
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role, email, full_name')
@@ -82,7 +91,7 @@ const AdminDashboard = () => {
             
             toast({
               title: "Profile Created",
-              description: "Your profile has been created. Please contact an admin to grant you admin access.",
+              description: "Your profile has been created with 'user' role. Please contact an admin to grant you admin access.",
               variant: "destructive"
             });
             navigate('/');
@@ -91,7 +100,7 @@ const AdminDashboard = () => {
           
           toast({
             title: "Error",
-            description: "Failed to check user permissions.",
+            description: "Failed to check user permissions. Please try signing in again.",
             variant: "destructive"
           });
           navigate('/');
@@ -119,10 +128,10 @@ const AdminDashboard = () => {
         setIsAdmin(true);
         
       } catch (error) {
-        console.error('❌ Unexpected error during role check:', error);
+        console.error('❌ Unexpected error during authentication check:', error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred while checking permissions.",
+          description: "An unexpected error occurred. Please try again.",
           variant: "destructive"
         });
         navigate('/');
@@ -135,10 +144,12 @@ const AdminDashboard = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  // Fetch dashboard stats
+  // Fetch dashboard stats - only fetch when user is confirmed admin
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
+      console.log('📊 Fetching admin dashboard stats...');
+      
       const [usersResult, trainersResult, bookingsResult, reviewsResult] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact' }),
         supabase.from('trainers').select('*', { count: 'exact' }),
@@ -151,15 +162,18 @@ const AdminDashboard = () => {
         ? reviewsResult.data.reduce((sum, review) => sum + review.rating, 0) / reviewsResult.data.length 
         : 0;
 
-      return {
+      const statsData = {
         totalUsers: usersResult.count || 0,
         totalTrainers: trainersResult.count || 0,
         totalBookings: bookingsResult.count || 0,
         totalRevenue,
         avgRating: Math.round(avgRating * 10) / 10
       };
+
+      console.log('📊 Stats fetched successfully:', statsData);
+      return statsData;
     },
-    enabled: isAdmin
+    enabled: isAdmin && !isLoading
   });
 
   if (isLoading) {
