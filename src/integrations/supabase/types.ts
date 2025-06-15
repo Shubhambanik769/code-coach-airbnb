@@ -184,8 +184,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
+      get_user_role: {
+        Args: { user_id: string }
         Returns: string
       }
     }

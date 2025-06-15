@@ -54,7 +54,7 @@ const AdminDashboard = () => {
         console.log('✅ Session found for user:', session.user.email);
         setUser(session.user);
 
-        // Check admin role using a direct query with RLS bypassed by selecting only own profile
+        // Check admin role using RLS - this should now work properly
         console.log('🔍 Checking admin role for user ID:', session.user.id);
         
         const { data: profile, error: profileError } = await supabase
