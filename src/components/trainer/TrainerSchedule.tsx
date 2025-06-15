@@ -23,7 +23,7 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
         .from('bookings')
         .select(`
           *,
-          student_profile:profiles(full_name, email)
+          profiles!student_id(full_name, email)
         `)
         .eq('trainer_id', trainerId)
         .gte('start_time', currentWeek.toISOString())
@@ -139,7 +139,7 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
                           <div className="flex items-center gap-1">
                             <User className="h-3 w-3" />
                             <span className="truncate">
-                              {booking.student_profile?.full_name || 'Student'}
+                              {booking.profiles?.full_name || 'Student'}
                             </span>
                           </div>
                           <div className="text-xs text-gray-500 mt-1 capitalize">

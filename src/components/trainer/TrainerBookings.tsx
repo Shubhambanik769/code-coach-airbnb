@@ -28,7 +28,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         .from('bookings')
         .select(`
           *,
-          student_profile:profiles(full_name, email)
+          profiles!student_id(full_name, email)
         `)
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
@@ -78,8 +78,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking =>
-    booking.student_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.student_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    booking.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -149,8 +149,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-400" />
                         <div>
-                          <p className="font-medium">{booking.student_profile?.full_name || 'N/A'}</p>
-                          <p className="text-sm text-gray-500">{booking.student_profile?.email}</p>
+                          <p className="font-medium">{booking.profiles?.full_name || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{booking.profiles?.email}</p>
                         </div>
                       </div>
                     </TableCell>
