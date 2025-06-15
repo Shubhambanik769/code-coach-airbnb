@@ -14,18 +14,35 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
   const { data: reviews, isLoading } = useQuery({
     queryKey: ['trainer-reviews', trainerId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get the reviews
+      const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
-        .select(`
-          *,
-          student_profile:profiles!inner(full_name, email)
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
-        .eq('student_profile.id', 'student_id')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (reviewsError) throw reviewsError;
+
+      // Then get the student profiles for each review
+      if (reviewsData && reviewsData.length > 0) {
+        const studentIds = reviewsData.map(review => review.student_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', studentIds);
+
+        if (profilesError) throw profilesError;
+
+        // Combine the data
+        const reviewsWithProfiles = reviewsData.map(review => ({
+          ...review,
+          student_profile: profilesData?.find(profile => profile.id === review.student_id)
+        }));
+
+        return reviewsWithProfiles;
+      }
+
+      return reviewsData || [];
     },
     enabled: !!trainerId
   });

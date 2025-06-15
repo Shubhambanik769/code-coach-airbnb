@@ -19,20 +19,37 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
     queryFn: async () => {
       const weekEnd = addDays(currentWeek, 6);
       
-      const { data, error } = await supabase
+      // First get the bookings for the week
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select(`
-          *,
-          student_profile:profiles!inner(full_name, email)
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
-        .eq('student_profile.id', 'student_id')
         .gte('start_time', currentWeek.toISOString())
         .lte('start_time', weekEnd.toISOString())
         .order('start_time');
 
-      if (error) throw error;
-      return data;
+      if (bookingsError) throw bookingsError;
+
+      // Then get the student profiles for each booking
+      if (bookingsData && bookingsData.length > 0) {
+        const studentIds = bookingsData.map(booking => booking.student_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', studentIds);
+
+        if (profilesError) throw profilesError;
+
+        // Combine the data
+        const bookingsWithProfiles = bookingsData.map(booking => ({
+          ...booking,
+          student_profile: profilesData?.find(profile => profile.id === booking.student_id)
+        }));
+
+        return bookingsWithProfiles;
+      }
+
+      return bookingsData || [];
     },
     enabled: !!trainerId
   });

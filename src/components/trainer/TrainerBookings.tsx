@@ -24,23 +24,40 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
-      let query = supabase
+      // First get the bookings
+      let bookingsQuery = supabase
         .from('bookings')
-        .select(`
-          *,
-          student_profile:profiles!inner(full_name, email)
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
-        .eq('student_profile.id', 'student_id')
         .order('start_time', { ascending: false });
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        bookingsQuery = bookingsQuery.eq('status', statusFilter);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
+      const { data: bookingsData, error: bookingsError } = await bookingsQuery;
+      if (bookingsError) throw bookingsError;
+
+      // Then get the student profiles for each booking
+      if (bookingsData && bookingsData.length > 0) {
+        const studentIds = bookingsData.map(booking => booking.student_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', studentIds);
+
+        if (profilesError) throw profilesError;
+
+        // Combine the data
+        const bookingsWithProfiles = bookingsData.map(booking => ({
+          ...booking,
+          student_profile: profilesData?.find(profile => profile.id === booking.student_id)
+        }));
+
+        return bookingsWithProfiles;
+      }
+
+      return bookingsData || [];
     },
     enabled: !!trainerId
   });
