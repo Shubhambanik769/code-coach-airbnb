@@ -21,11 +21,11 @@ const BookingManagement = () => {
         .from('bookings')
         .select(`
           *,
-          trainers!bookings_trainer_id_fkey(
+          trainers (
             title,
-            profiles!trainers_user_id_fkey(full_name)
+            profiles!trainers_user_id_fkey (full_name)
           ),
-          profiles!bookings_student_id_fkey(full_name, email)
+          profiles!bookings_student_id_fkey (full_name, email)
         `)
         .order('created_at', { ascending: false });
 
