@@ -28,7 +28,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         .from('bookings')
         .select(`
           *,
-          profiles!bookings_student_id_fkey(full_name, email)
+          student_profile:profiles(full_name, email)
         `)
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
@@ -78,8 +78,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking =>
-    booking.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    booking.student_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.student_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -149,8 +149,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-400" />
                         <div>
-                          <p className="font-medium">{booking.profiles?.full_name || 'N/A'}</p>
-                          <p className="text-sm text-gray-500">{booking.profiles?.email}</p>
+                          <p className="font-medium">{booking.student_profile?.full_name || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{booking.student_profile?.email}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -221,16 +221,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       </CardContent>
     </Card>
   );
-
-  function getStatusColor(status: string) {
-    switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  }
 };
 
 export default TrainerBookings;
