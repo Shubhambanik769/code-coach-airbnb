@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +17,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
         .from('reviews')
         .select(`
           *,
-          student_profile:profiles!reviews_student_id_fkey(full_name, email)
+          profiles!reviews_student_id_fkey(full_name, email)
         `)
         .eq('trainer_id', trainerId)
         .order('created_at', { ascending: false });
@@ -29,7 +28,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
     enabled: !!trainerId
   });
 
-  const calculateStats = () => {
+  function calculateStats() {
     if (!reviews || reviews.length === 0) {
       return {
         averageRating: 0,
@@ -47,11 +46,11 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
     }, { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
 
     return { averageRating, totalReviews, ratingDistribution };
-  };
+  }
 
   const stats = calculateStats();
 
-  const renderStars = (rating: number) => {
+  function renderStars(rating: number) {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
@@ -60,7 +59,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
         }`}
       />
     ));
-  };
+  }
 
   if (isLoading) {
     return (
@@ -154,7 +153,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {review.student_profile?.full_name || 'Anonymous'}
+                          {review.profiles?.full_name || 'Anonymous'}
                         </p>
                         <p className="text-sm text-gray-500">
                           {format(new Date(review.created_at), 'MMM dd, yyyy')}
