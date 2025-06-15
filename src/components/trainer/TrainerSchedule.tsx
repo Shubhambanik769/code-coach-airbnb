@@ -23,7 +23,7 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
         .from('bookings')
         .select(`
           *,
-          student_profile:profiles(full_name, email)
+          student_profile:profiles!bookings_student_id_fkey(full_name, email)
         `)
         .eq('trainer_id', trainerId)
         .gte('start_time', currentWeek.toISOString())

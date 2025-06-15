@@ -18,7 +18,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
         .from('reviews')
         .select(`
           *,
-          student_profile:profiles(full_name, email)
+          student_profile:profiles!reviews_student_id_fkey(full_name, email)
         `)
         .eq('trainer_id', trainerId)
         .order('created_at', { ascending: false });
