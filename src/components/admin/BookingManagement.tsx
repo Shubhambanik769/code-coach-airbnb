@@ -23,9 +23,8 @@ const BookingManagement = () => {
           *,
           trainers (
             title,
-            profiles!trainers_user_id_fkey (full_name)
-          ),
-          profiles!bookings_student_id_fkey (full_name, email)
+            user_id
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -33,9 +32,30 @@ const BookingManagement = () => {
         query = query.eq('status', statusFilter);
       }
 
-      const { data, error } = await query;
+      const { data: bookingsData, error } = await query;
       if (error) throw error;
-      return data;
+
+      // Fetch student and trainer profiles separately
+      const studentIds = [...new Set(bookingsData?.map(b => b.student_id) || [])];
+      const trainerUserIds = [...new Set(bookingsData?.map(b => b.trainers?.user_id).filter(Boolean) || [])];
+
+      const [studentsResult, trainersResult] = await Promise.all([
+        studentIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', studentIds) : { data: [] },
+        trainerUserIds.length > 0 ? supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', trainerUserIds) : { data: [] }
+      ]);
+
+      // Map the data together
+      return bookingsData?.map(booking => ({
+        ...booking,
+        student_profile: studentsResult.data?.find(p => p.id === booking.student_id),
+        trainer_profile: trainersResult.data?.find(p => p.id === booking.trainers?.user_id)
+      })) || [];
     }
   });
 
@@ -148,10 +168,10 @@ const BookingManagement = () => {
                   bookings?.map((booking) => (
                     <TableRow key={booking.id}>
                       <TableCell className="font-medium">
-                        {booking.profiles?.full_name || 'N/A'}
+                        {booking.student_profile?.full_name || 'N/A'}
                       </TableCell>
                       <TableCell>
-                        {booking.trainers?.profiles?.full_name || 'N/A'}
+                        {booking.trainer_profile?.full_name || 'N/A'}
                       </TableCell>
                       <TableCell>
                         {new Date(booking.start_time).toLocaleString()}

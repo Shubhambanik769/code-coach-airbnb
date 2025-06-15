@@ -24,8 +24,7 @@ const TrainerManagement = () => {
       let query = supabase
         .from('trainers')
         .select(`
-          *,
-          profiles!trainers_user_id_fkey(full_name, email)
+          *
         `)
         .order('created_at', { ascending: false });
 
@@ -37,9 +36,22 @@ const TrainerManagement = () => {
         query = query.eq('status', statusFilter);
       }
 
-      const { data, error } = await query;
+      const { data: trainersData, error } = await query;
       if (error) throw error;
-      return data;
+
+      // Fetch trainer profiles separately
+      const userIds = [...new Set(trainersData?.map(t => t.user_id) || [])];
+      
+      const { data: profilesData } = userIds.length > 0 ? await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds) : { data: [] };
+
+      // Map the data together
+      return trainersData?.map(trainer => ({
+        ...trainer,
+        profile: profilesData?.find(p => p.id === trainer.user_id)
+      })) || [];
     }
   });
 
@@ -140,7 +152,7 @@ const TrainerManagement = () => {
                 trainers?.map((trainer) => (
                   <TableRow key={trainer.id}>
                     <TableCell className="font-medium">
-                      {trainer.profiles?.full_name || 'N/A'}
+                      {trainer.profile?.full_name || 'N/A'}
                     </TableCell>
                     <TableCell>{trainer.title}</TableCell>
                     <TableCell>{trainer.specialization || 'N/A'}</TableCell>
