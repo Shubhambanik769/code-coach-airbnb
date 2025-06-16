@@ -62,17 +62,19 @@ const TrainerFeedbackManagement = () => {
       if (error) throw error;
 
       // Get profiles for student info
-      const studentIds = new Set();
+      const studentIds: string[] = [];
       data?.forEach(trainer => {
         trainer.bookings?.forEach((booking: any) => {
-          studentIds.add(booking.student_id);
+          if (booking.student_id && typeof booking.student_id === 'string') {
+            studentIds.push(booking.student_id);
+          }
         });
       });
 
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, email')
-        .in('id', Array.from(studentIds));
+        .in('id', studentIds);
 
       return data?.map(trainer => ({
         ...trainer,
