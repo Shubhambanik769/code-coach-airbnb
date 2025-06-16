@@ -30,9 +30,11 @@ const Header = () => {
     if (userRole === 'trainer') {
       navigate('/trainer');
     } else if (user) {
-      navigate('/apply-trainer');
+      // Check if user has existing application, if so go to status page
+      navigate('/trainer-status');
     } else {
-      navigate('/auth');
+      // For non-logged-in users, go directly to application page
+      navigate('/apply-trainer');
     }
   };
 

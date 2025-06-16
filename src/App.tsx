@@ -11,6 +11,7 @@ import UserDashboard from '@/pages/UserDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 import TrainerDashboard from '@/pages/TrainerDashboard';
 import TrainerApplicationForm from '@/components/trainer/TrainerApplicationForm';
+import TrainerOnboardingStatus from '@/components/trainer/TrainerOnboardingStatus';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -47,6 +48,9 @@ function App() {
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   
+                  {/* Public trainer application route */}
+                  <Route path="/apply-trainer" element={<TrainerApplicationForm />} />
+                  
                   {/* Protected Routes */}
                   <Route 
                     path="/dashboard" 
@@ -76,10 +80,10 @@ function App() {
                   />
 
                   <Route 
-                    path="/apply-trainer" 
+                    path="/trainer-status" 
                     element={
                       <ProtectedRoute>
-                        <TrainerApplicationForm />
+                        <TrainerOnboardingStatus />
                       </ProtectedRoute>
                     } 
                   />
