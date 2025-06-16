@@ -9,38 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_configs: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
+          booking_type: string | null
           created_at: string | null
+          duration_hours: number
           end_time: string
           id: string
+          meeting_link: string | null
+          notes: string | null
+          organization_name: string | null
+          payment_status: string | null
+          special_requirements: string | null
           start_time: string
           status: string | null
           student_id: string
           total_amount: number
           trainer_id: string
+          training_topic: string
           updated_at: string | null
         }
         Insert: {
+          booking_type?: string | null
           created_at?: string | null
+          duration_hours: number
           end_time: string
           id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          organization_name?: string | null
+          payment_status?: string | null
+          special_requirements?: string | null
           start_time: string
           status?: string | null
           student_id: string
           total_amount: number
           trainer_id: string
+          training_topic: string
           updated_at?: string | null
         }
         Update: {
+          booking_type?: string | null
           created_at?: string | null
+          duration_hours?: number
           end_time?: string
           id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          organization_name?: string | null
+          payment_status?: string | null
+          special_requirements?: string | null
           start_time?: string
           status?: string | null
           student_id?: string
           total_amount?: number
           trainer_id?: string
+          training_topic?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -57,28 +108,31 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
-          email: string | null
+          email: string
           full_name: string | null
           id: string
-          role: string | null
+          phone: string | null
+          role: string
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
-          email?: string | null
+          email: string
           full_name?: string | null
           id: string
-          role?: string | null
+          phone?: string | null
+          role?: string
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string | null
-          email?: string | null
+          email?: string
           full_name?: string | null
           id?: string
-          role?: string | null
+          phone?: string | null
+          role?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -87,29 +141,41 @@ export type Database = {
         Row: {
           booking_id: string
           comment: string | null
+          communication_rating: number | null
           created_at: string | null
           id: string
+          punctuality_rating: number | null
           rating: number
+          skills_rating: number | null
           student_id: string
           trainer_id: string
+          would_recommend: boolean | null
         }
         Insert: {
           booking_id: string
           comment?: string | null
+          communication_rating?: number | null
           created_at?: string | null
           id?: string
+          punctuality_rating?: number | null
           rating: number
+          skills_rating?: number | null
           student_id: string
           trainer_id: string
+          would_recommend?: boolean | null
         }
         Update: {
           booking_id?: string
           comment?: string | null
+          communication_rating?: number | null
           created_at?: string | null
           id?: string
+          punctuality_rating?: number | null
           rating?: number
+          skills_rating?: number | null
           student_id?: string
           trainer_id?: string
+          would_recommend?: boolean | null
         }
         Relationships: [
           {
@@ -132,14 +198,18 @@ export type Database = {
         Row: {
           availability: Json | null
           bio: string | null
+          certification_documents: string[] | null
           created_at: string | null
+          demo_video_url: string | null
           experience_years: number | null
           hourly_rate: number | null
           id: string
+          location: string | null
           rating: number | null
           skills: string[] | null
           specialization: string | null
           status: string | null
+          timezone: string | null
           title: string
           total_reviews: number | null
           updated_at: string | null
@@ -148,14 +218,18 @@ export type Database = {
         Insert: {
           availability?: Json | null
           bio?: string | null
+          certification_documents?: string[] | null
           created_at?: string | null
+          demo_video_url?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
+          location?: string | null
           rating?: number | null
           skills?: string[] | null
           specialization?: string | null
           status?: string | null
+          timezone?: string | null
           title: string
           total_reviews?: number | null
           updated_at?: string | null
@@ -164,14 +238,18 @@ export type Database = {
         Update: {
           availability?: Json | null
           bio?: string | null
+          certification_documents?: string[] | null
           created_at?: string | null
+          demo_video_url?: string | null
           experience_years?: number | null
           hourly_rate?: number | null
           id?: string
+          location?: string | null
           rating?: number | null
           skills?: string[] | null
           specialization?: string | null
           status?: string | null
+          timezone?: string | null
           title?: string
           total_reviews?: number | null
           updated_at?: string | null

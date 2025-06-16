@@ -1,54 +1,28 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, Menu, User, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  const { user, userRole, signOut, loading } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check authentication status
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-        
-        // Get user role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        setUserRole(profile?.role);
-      }
-    };
-
-    checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session) {
-          setUser(session.user);
-        } else {
-          setUser(null);
-          setUserRole(null);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const getDashboardRoute = () => {
+    switch (userRole) {
+      case 'admin':
+        return '/admin';
+      case 'trainer':
+        return '/trainer';
+      default:
+        return '/dashboard';
+    }
+  };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/');
   };
 
@@ -58,11 +32,11 @@ const Header = () => {
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs sm:text-sm">TT</span>
+                <span className="text-white font-bold text-xs sm:text-sm">TC</span>
               </div>
-              <span className="text-lg sm:text-xl font-bold text-gradient">TechTrainer</span>
+              <span className="text-lg sm:text-xl font-bold text-gradient">TrainerConnect</span>
             </div>
           </div>
 
@@ -72,15 +46,6 @@ const Header = () => {
             <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Become a Trainer</a>
             <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">For Companies</a>
             <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Help</a>
-            {userRole === 'admin' && (
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/admin')}
-                className="text-sm xl:text-base"
-              >
-                Admin
-              </Button>
-            )}
           </nav>
 
           {/* Right Section */}
@@ -90,7 +55,9 @@ const Header = () => {
               <span>EN</span>
             </Button>
             
-            {!user ? (
+            {loading ? (
+              <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full"></div>
+            ) : !user ? (
               <>
                 <Button variant="ghost" size="sm" className="hidden md:inline-flex text-xs sm:text-sm">
                   Become a trainer
@@ -106,6 +73,14 @@ const Header = () => {
               </>
             ) : (
               <div className="flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate(getDashboardRoute())}
+                  className="hidden md:inline-flex text-xs sm:text-sm"
+                >
+                  Dashboard
+                </Button>
                 <span className="text-sm text-gray-700 hidden md:inline">
                   {user.email}
                 </span>
@@ -142,13 +117,13 @@ const Header = () => {
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Become a Trainer</a>
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">For Companies</a>
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Help</a>
-              {userRole === 'admin' && (
+              {user && (
                 <Button 
                   variant="ghost" 
-                  onClick={() => navigate('/admin')}
+                  onClick={() => navigate(getDashboardRoute())}
                   className="text-left justify-start py-2 text-base"
                 >
-                  Admin Dashboard
+                  Dashboard
                 </Button>
               )}
             </nav>

@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Auth = () => {
@@ -14,41 +14,46 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const { signIn, signUp, user, userRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/');
+    // Redirect authenticated users to appropriate dashboard
+    if (user && userRole) {
+      switch (userRole) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'trainer':
+          navigate('/trainer');
+          break;
+        default:
+          navigate('/dashboard');
+          break;
       }
-    };
-    checkUser();
-  }, [navigate]);
+    }
+  }, [user, userRole, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: fullName
-          }
-        }
+    if (!fullName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your full name",
+        variant: "destructive"
       });
+      return;
+    }
 
+    setLoading(true);
+    try {
+      const { error } = await signUp(email, password, fullName);
       if (error) throw error;
 
       toast({
         title: "Success!",
-        description: "Please check your email to confirm your account."
+        description: "Account created successfully. Please check your email to confirm your account."
       });
     } catch (error: any) {
       toast({
@@ -66,14 +71,10 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
+      const { error } = await signIn(email, password);
       if (error) throw error;
-
-      navigate('/');
+      
+      // Navigation will be handled by useEffect after auth state change
     } catch (error: any) {
       toast({
         title: "Error",
@@ -88,19 +89,20 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Header */}
         <div className="text-center">
           <div className="flex justify-center">
             <div className="w-12 h-12 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">TT</span>
+              <span className="text-white font-bold text-lg">TC</span>
             </div>
           </div>
-          <h2 className="mt-4 text-3xl font-bold text-gray-900">TrainerWorld</h2>
-          <p className="mt-2 text-sm text-gray-600">Sign in to your account or create a new one</p>
+          <h2 className="mt-4 text-3xl font-bold text-gray-900">TrainerConnect</h2>
+          <p className="mt-2 text-sm text-gray-600">Connect with professional trainers</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Authentication</CardTitle>
+            <CardTitle>Welcome</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
@@ -119,6 +121,7 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      placeholder="Enter your email"
                     />
                   </div>
                   <div>
@@ -129,6 +132,7 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      placeholder="Enter your password"
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
@@ -147,26 +151,30 @@ const Auth = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
+                      placeholder="Enter your full name"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="signup-email">Email</Label>
                     <Input
-                      id="email"
+                      id="signup-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      placeholder="Enter your email"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="signup-password">Password</Label>
                     <Input
-                      id="password"
+                      id="signup-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      placeholder="Create a password"
+                      minLength={6}
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
