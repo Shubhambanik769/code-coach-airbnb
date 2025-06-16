@@ -179,7 +179,7 @@ const TrainerManagement = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {trainer.tags?.map((tag: string, index: number) => (
+                        {(trainer.tags as string[])?.map((tag: string, index: number) => (
                           <Badge key={index} variant="outline" className="text-xs">
                             {tag}
                           </Badge>
@@ -212,7 +212,7 @@ const TrainerManagement = () => {
                         )}
                         <TrainerTagManagement 
                           trainerId={trainer.id} 
-                          currentTags={trainer.tags || []} 
+                          currentTags={(trainer.tags as string[]) || []} 
                         />
                         <Button variant="outline" size="sm">
                           <Eye className="h-4 w-4" />

@@ -1,404 +1,224 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import Header from '@/components/Header';
+import { Search, Filter } from 'lucide-react';
 import TrainerCard from '@/components/TrainerCard';
 
 const SearchResults = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [specialization, setSpecialization] = useState('all');
-  const [experienceLevel, setExperienceLevel] = useState('all');
-  const [priceRange, setPriceRange] = useState('all');
-  const [location, setLocation] = useState('all');
   const [sortBy, setSortBy] = useState('rating');
+  const [filterBy, setFilterBy] = useState('all');
 
-  const { data: trainers = [], isLoading, error } = useQuery({
-    queryKey: ['trainers', searchTerm, specialization, experienceLevel, priceRange, location, sortBy],
+  // Get search params from URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get('q') || '';
+    setSearchTerm(query);
+  }, [location.search]);
+
+  const { data: trainers, isLoading } = useQuery({
+    queryKey: ['search-trainers', searchTerm, sortBy, filterBy],
     queryFn: async () => {
-      console.log('Fetching trainers with filters:', {
-        searchTerm,
-        specialization,
-        experienceLevel,
-        priceRange,
-        location,
-        sortBy
+      let query = supabase
+        .from('trainers')
+        .select('*')
+        .eq('status', 'approved');
+
+      // Apply search filter
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,skills.cs.{${searchTerm}}`);
+      }
+
+      // Apply category filter
+      if (filterBy !== 'all') {
+        query = query.ilike('specialization', `%${filterBy}%`);
+      }
+
+      const { data: trainersData, error } = await query;
+      if (error) throw error;
+
+      // Get trainer profiles and comprehensive feedback data
+      const userIds = [...new Set(trainersData?.map(t => t.user_id) || [])];
+      const trainerIds = [...new Set(trainersData?.map(t => t.id) || [])];
+      
+      const [profilesResult, reviewsResult, feedbackResult] = await Promise.all([
+        supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds),
+        supabase.from('reviews').select('trainer_id, rating, would_recommend').in('trainer_id', trainerIds),
+        supabase.from('feedback_responses')
+          .select(`
+            rating,
+            would_recommend,
+            feedback_links!inner(
+              booking_id,
+              bookings!inner(trainer_id)
+            )
+          `)
+          .in('feedback_links.bookings.trainer_id', trainerIds)
+      ]);
+
+      // Process trainers with comprehensive data
+      const processedTrainers = trainersData?.map(trainer => {
+        const profile = profilesResult.data?.find(p => p.id === trainer.user_id);
+        const trainerReviews = reviewsResult.data?.filter(r => r.trainer_id === trainer.id) || [];
+        const trainerFeedback = feedbackResult.data?.filter(
+          fr => fr.feedback_links?.bookings?.trainer_id === trainer.id
+        ) || [];
+
+        // Combine all ratings
+        const allRatings = [
+          ...trainerReviews.map(r => r.rating),
+          ...trainerFeedback.map(f => f.rating)
+        ];
+
+        // Calculate comprehensive stats
+        const avgRating = allRatings.length > 0 
+          ? allRatings.reduce((sum, rating) => sum + rating, 0) / allRatings.length 
+          : 0;
+
+        const totalReviews = allRatings.length;
+
+        return {
+          ...trainer,
+          profiles: profile,
+          rating: Number(avgRating.toFixed(1)),
+          total_reviews: totalReviews
+        };
+      }) || [];
+
+      // Apply sorting
+      return processedTrainers.sort((a, b) => {
+        switch (sortBy) {
+          case 'rating':
+            return (b.rating || 0) - (a.rating || 0);
+          case 'price_low':
+            return (a.hourly_rate || 0) - (b.hourly_rate || 0);
+          case 'price_high':
+            return (b.hourly_rate || 0) - (a.hourly_rate || 0);
+          case 'experience':
+            return (b.experience_years || 0) - (a.experience_years || 0);
+          default:
+            return 0;
+        }
       });
-
-      try {
-        // First, get basic trainer data with comprehensive reviews/ratings
-        let query = supabase
-          .from('trainers')
-          .select('*')
-          .eq('status', 'approved');
-
-        // Apply search term filter
-        if (searchTerm) {
-          query = query.or(`name.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%`);
-        }
-
-        // Apply specialization filter
-        if (specialization && specialization !== 'all') {
-          query = query.ilike('specialization', `%${specialization}%`);
-        }
-
-        // Apply experience level filter
-        if (experienceLevel && experienceLevel !== 'all') {
-          const minExp = experienceLevel === 'junior' ? 0 : experienceLevel === 'mid' ? 3 : 7;
-          const maxExp = experienceLevel === 'junior' ? 2 : experienceLevel === 'mid' ? 6 : 50;
-          query = query.gte('experience_years', minExp).lte('experience_years', maxExp);
-        }
-
-        // Apply price range filter
-        if (priceRange && priceRange !== 'all') {
-          const [min, max] = priceRange.split('-').map(Number);
-          if (max) {
-            query = query.gte('hourly_rate', min).lte('hourly_rate', max);
-          } else {
-            query = query.gte('hourly_rate', min);
-          }
-        }
-
-        // Apply location filter
-        if (location && location !== 'all') {
-          query = query.ilike('location', `%${location}%`);
-        }
-
-        // Apply sorting
-        const ascending = sortBy === 'price_low' || sortBy === 'experience_low';
-        let sortColumn = 'rating';
-        
-        if (sortBy.includes('price')) {
-          sortColumn = 'hourly_rate';
-        } else if (sortBy.includes('experience')) {
-          sortColumn = 'experience_years';
-        }
-        
-        query = query.order(sortColumn, { ascending, nullsFirst: false });
-
-        const { data: trainersData, error: trainersError } = await query;
-        
-        if (trainersError) {
-          console.error('Trainers query error:', trainersError);
-          throw trainersError;
-        }
-
-        console.log('Raw trainers data:', trainersData);
-
-        // Get profile data and calculate comprehensive ratings for each trainer
-        if (trainersData && trainersData.length > 0) {
-          const userIds = trainersData.map(trainer => trainer.user_id).filter(Boolean);
-          const trainerIds = trainersData.map(trainer => trainer.id);
-          
-          // Get profiles, reviews, and feedback data
-          const [profilesResult, reviewsResult, feedbackResult] = await Promise.all([
-            supabase
-              .from('profiles')
-              .select('id, full_name, avatar_url')
-              .in('id', userIds),
-            
-            supabase
-              .from('reviews')
-              .select('trainer_id, rating, would_recommend')
-              .in('trainer_id', trainerIds),
-            
-            supabase
-              .from('feedback_responses')
-              .select(`
-                rating,
-                would_recommend,
-                feedback_links!inner (
-                  booking_id,
-                  bookings!inner (trainer_id)
-                )
-              `)
-              .in('feedback_links.bookings.trainer_id', trainerIds)
-          ]);
-
-          const profilesData = profilesResult.data || [];
-          const reviewsData = reviewsResult.data || [];
-          const feedbackData = feedbackResult.data || [];
-
-          // Combine trainer data with profile data and comprehensive ratings
-          const trainersWithProfiles = trainersData.map(trainer => {
-            const profile = profilesData.find(p => p.id === trainer.user_id);
-            
-            // Get all feedback for this trainer
-            const trainerReviews = reviewsData.filter(r => r.trainer_id === trainer.id);
-            const trainerFeedback = feedbackData.filter(f => 
-              f.feedback_links?.bookings?.trainer_id === trainer.id
-            );
-            
-            // Combine all feedback
-            const allFeedback = [
-              ...trainerReviews,
-              ...trainerFeedback
-            ];
-            
-            // Calculate comprehensive stats
-            let updatedRating = trainer.rating || 0;
-            let totalReviews = trainer.total_reviews || 0;
-            
-            if (allFeedback.length > 0) {
-              totalReviews = allFeedback.length;
-              updatedRating = allFeedback.reduce((sum, item) => sum + item.rating, 0) / totalReviews;
-            }
-
-            return {
-              ...trainer,
-              rating: updatedRating,
-              total_reviews: totalReviews,
-              profiles: profile
-            };
-          });
-
-          console.log('Combined trainers with profiles and ratings:', trainersWithProfiles);
-          return trainersWithProfiles;
-        }
-        
-        return trainersData || [];
-      } catch (err) {
-        console.error('Search query failed:', err);
-        throw err;
-      }
-    },
-    retry: (failureCount, error: any) => {
-      // Don't retry on certain types of errors
-      if (error?.code === 'PGRST116' || error?.message?.includes('syntax')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    retryDelay: 1000
+    }
   });
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSpecialization('all');
-    setExperienceLevel('all');
-    setPriceRange('all');
-    setLocation('all');
-    setSortBy('rating');
+  const handleTrainerSelect = (trainerId: string) => {
+    navigate(`/trainer/${trainerId}`);
   };
 
-  const activeFiltersCount = [
-    searchTerm, 
-    specialization !== 'all' ? specialization : '', 
-    experienceLevel !== 'all' ? experienceLevel : '', 
-    priceRange !== 'all' ? priceRange : '', 
-    location !== 'all' ? location : ''
-  ].filter(Boolean).length;
-
-  // Handle error state with more specific error information
-  if (error) {
-    console.error('Search error details:', error);
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Card className="mb-8">
-            <CardContent className="p-6 text-center">
-              <h2 className="text-xl font-semibold text-red-600 mb-2">Search Error</h2>
-              <p className="text-gray-600 mb-4">
-                {(error as any)?.message || 'There was an issue loading trainers. Please try again.'}
-              </p>
-              <div className="space-y-2">
-                <Button onClick={() => window.location.reload()} variant="outline">
-                  Refresh Page
-                </Button>
-                <Button onClick={clearFilters} variant="secondary">
-                  Clear Filters
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const handleSearch = (newSearchTerm: string) => {
+    setSearchTerm(newSearchTerm);
+    navigate(`/search?q=${encodeURIComponent(newSearchTerm)}`);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Find Your Perfect Trainer</h1>
-          <p className="text-gray-600">Browse through our expert trainers and find the perfect match for your learning goals</p>
-        </div>
-
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          {searchTerm ? `Search Results for "${searchTerm}"` : 'All Trainers'}
+        </h1>
+        
         {/* Search and Filters */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <Input
-                type="text"
-                placeholder="Search by name, title, specialization..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-lg py-3"
-              />
-            </div>
-
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
-              <Select value={specialization} onValueChange={setSpecialization}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Specialization" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Specializations</SelectItem>
-                  <SelectItem value="weight loss">Weight Loss</SelectItem>
-                  <SelectItem value="strength training">Strength Training</SelectItem>
-                  <SelectItem value="yoga">Yoga</SelectItem>
-                  <SelectItem value="cardio">Cardio</SelectItem>
-                  <SelectItem value="nutrition">Nutrition</SelectItem>
-                  <SelectItem value="sports">Sports Training</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={experienceLevel} onValueChange={setExperienceLevel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Experience Level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="junior">Junior (0-2 years)</SelectItem>
-                  <SelectItem value="mid">Mid-level (3-6 years)</SelectItem>
-                  <SelectItem value="senior">Senior (7+ years)</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={priceRange} onValueChange={setPriceRange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Price Range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Prices</SelectItem>
-                  <SelectItem value="0-50">$0 - $50/hr</SelectItem>
-                  <SelectItem value="50-100">$50 - $100/hr</SelectItem>
-                  <SelectItem value="100-150">$100 - $150/hr</SelectItem>
-                  <SelectItem value="150">$150+/hr</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={location} onValueChange={setLocation}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  <SelectItem value="remote">Remote</SelectItem>
-                  <SelectItem value="new york">New York</SelectItem>
-                  <SelectItem value="los angeles">Los Angeles</SelectItem>
-                  <SelectItem value="chicago">Chicago</SelectItem>
-                  <SelectItem value="miami">Miami</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort By" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
-                  <SelectItem value="price_low">Price: Low to High</SelectItem>
-                  <SelectItem value="price_high">Price: High to Low</SelectItem>
-                  <SelectItem value="experience_high">Most Experienced</SelectItem>
-                  <SelectItem value="experience_low">Least Experienced</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex gap-2">
-                {activeFiltersCount > 0 && (
-                  <Button variant="outline" onClick={clearFilters} className="flex-1">
-                    <SlidersHorizontal className="h-4 w-4 mr-2" />
-                    Clear ({activeFiltersCount})
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Active Filters Display */}
-            {activeFiltersCount > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <span className="text-sm text-gray-600">Active filters:</span>
-                {searchTerm && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setSearchTerm('')}>
-                    Search: {searchTerm} ×
-                  </Badge>
-                )}
-                {specialization !== 'all' && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setSpecialization('all')}>
-                    {specialization} ×
-                  </Badge>
-                )}
-                {experienceLevel !== 'all' && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setExperienceLevel('all')}>
-                    {experienceLevel} experience ×
-                  </Badge>
-                )}
-                {priceRange !== 'all' && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setPriceRange('all')}>
-                    ${priceRange}/hr ×
-                  </Badge>
-                )}
-                {location !== 'all' && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setLocation('all')}>
-                    {location} ×
-                  </Badge>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Results */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {isLoading ? 'Loading...' : `${trainers.length} trainers found`}
-          </h2>
-        </div>
-
-        {/* Trainers Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-white rounded-lg h-80 shadow-lg"></div>
-              </div>
-            ))}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search trainers by name, specialization, or skills..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        ) : trainers.length > 0 ? (
+          
+          <div className="flex gap-2">
+            <Select value={filterBy} onValueChange={setFilterBy}>
+              <SelectTrigger className="w-40">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="fitness">Fitness</SelectItem>
+                <SelectItem value="yoga">Yoga</SelectItem>
+                <SelectItem value="nutrition">Nutrition</SelectItem>
+                <SelectItem value="strength">Strength Training</SelectItem>
+                <SelectItem value="cardio">Cardio</SelectItem>
+                <SelectItem value="weight loss">Weight Loss</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="price_low">Price: Low to High</SelectItem>
+                <SelectItem value="price_high">Price: High to Low</SelectItem>
+                <SelectItem value="experience">Most Experienced</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Results */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : trainers && trainers.length > 0 ? (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-gray-600">
+              Found {trainers.length} trainer{trainers.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trainers.map((trainer) => (
-              <TrainerCard key={trainer.id} trainer={trainer} />
+              <TrainerCard
+                key={trainer.id}
+                trainer={trainer}
+                onSelect={handleTrainerSelect}
+              />
             ))}
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No trainers found</h3>
-              <p className="text-gray-600 mb-4">
-                Try adjusting your search criteria or removing some filters to see more results.
-              </p>
-              <Button onClick={clearFilters} variant="outline">
-                Clear All Filters
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+        </>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>No Trainers Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 text-center py-8">
+              {searchTerm 
+                ? `No trainers found matching "${searchTerm}". Try adjusting your search terms.`
+                : 'No trainers available at the moment.'
+              }
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

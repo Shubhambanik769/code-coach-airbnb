@@ -320,13 +320,13 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
         </div>
 
         {/* Display Tags (Read-only for trainers) */}
-        {trainerData?.trainer?.tags && trainerData.trainer.tags.length > 0 && (
+        {trainerData?.trainer?.tags && (trainerData.trainer.tags as string[]).length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Admin Tags
             </label>
             <div className="flex flex-wrap gap-2">
-              {trainerData.trainer.tags.map((tag: string, index: number) => (
+              {(trainerData.trainer.tags as string[]).map((tag: string, index: number) => (
                 <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
                   {tag}
                 </Badge>

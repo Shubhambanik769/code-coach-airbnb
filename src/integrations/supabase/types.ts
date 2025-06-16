@@ -503,6 +503,7 @@ export type Database = {
           skills: string[] | null
           specialization: string | null
           status: string | null
+          tags: string[] | null
           timezone: string | null
           title: string
           total_reviews: number | null
@@ -524,6 +525,7 @@ export type Database = {
           skills?: string[] | null
           specialization?: string | null
           status?: string | null
+          tags?: string[] | null
           timezone?: string | null
           title: string
           total_reviews?: number | null
@@ -545,6 +547,7 @@ export type Database = {
           skills?: string[] | null
           specialization?: string | null
           status?: string | null
+          tags?: string[] | null
           timezone?: string | null
           title?: string
           total_reviews?: number | null
