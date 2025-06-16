@@ -133,24 +133,64 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     try {
       console.log('Creating feedback link for booking:', bookingId);
       
-      // Generate a unique token
-      const token = btoa(Math.random().toString()).substring(0, 32);
+      // Check if feedback link already exists for this booking
+      const { data: existingLink, error: checkError } = await supabase
+        .from('feedback_links')
+        .select('id, token')
+        .eq('booking_id', bookingId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing feedback link:', checkError);
+        return;
+      }
+
+      if (existingLink) {
+        console.log('Feedback link already exists for this booking');
+        toast({
+          title: "Info",
+          description: "Feedback link already exists for this booking"
+        });
+        return;
+      }
+
+      // Generate a unique token using crypto API for better randomness
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const token = btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '').substring(0, 32);
       
       const { error } = await supabase
         .from('feedback_links')
         .insert({
           booking_id: bookingId,
           token: token,
-          is_active: true
+          is_active: true,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
         });
 
       if (error) {
         console.error('Error creating feedback link:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create feedback link",
+          variant: "destructive"
+        });
       } else {
         console.log('Feedback link created successfully');
+        toast({
+          title: "Success",
+          description: "Feedback link created successfully"
+        });
+        refetch();
       }
     } catch (error) {
       console.error('Error in createFeedbackLink:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create feedback link",
+        variant: "destructive"
+      });
     }
   };
 
@@ -159,7 +199,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     navigator.clipboard.writeText(feedbackUrl);
     toast({
       title: "Link Copied!",
-      description: "Feedback link has been copied to clipboard"
+      description: "Feedback link has been copied to clipboard. Multiple team members can use this link to submit feedback."
     });
   };
 

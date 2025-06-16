@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +28,19 @@ const FeedbackForm = () => {
     would_recommend: true
   });
 
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  // Check if user has already submitted feedback for this token
+  useEffect(() => {
+    if (token) {
+      const submittedKey = `feedback_submitted_${token}`;
+      const hasAlreadySubmitted = localStorage.getItem(submittedKey);
+      if (hasAlreadySubmitted) {
+        setHasSubmitted(true);
+      }
+    }
+  }, [token]);
+
   // Fetch feedback link details
   const { data: feedbackLink, isLoading, error } = useQuery({
     queryKey: ['feedback-link', token],
@@ -51,7 +64,6 @@ const FeedbackForm = () => {
         `)
         .eq('token', token)
         .eq('is_active', true)
-        .gt('expires_at', new Date().toISOString())
         .single();
 
       if (error) throw error;
@@ -64,6 +76,22 @@ const FeedbackForm = () => {
     mutationFn: async (feedbackData: typeof formData) => {
       if (!feedbackLink?.id) throw new Error('Invalid feedback link');
       
+      // Check for duplicate submission by email
+      const { data: existingFeedback, error: checkError } = await supabase
+        .from('feedback_responses')
+        .select('id')
+        .eq('feedback_link_id', feedbackLink.id)
+        .eq('respondent_email', feedbackData.respondent_email)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingFeedback) {
+        throw new Error('You have already submitted feedback for this session.');
+      }
+
       const { error } = await supabase
         .from('feedback_responses')
         .insert({
@@ -74,16 +102,23 @@ const FeedbackForm = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Mark as submitted in localStorage to prevent duplicate submissions
+      if (token) {
+        const submittedKey = `feedback_submitted_${token}`;
+        localStorage.setItem(submittedKey, 'true');
+        setHasSubmitted(true);
+      }
+      
       toast({
         title: "Thank you!",
         description: "Your feedback has been submitted successfully."
       });
       navigate('/feedback-success');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to submit feedback. Please try again.",
+        description: error.message || "Failed to submit feedback. Please try again.",
         variant: "destructive"
       });
       console.error('Feedback submission error:', error);
@@ -121,13 +156,14 @@ const FeedbackForm = () => {
             type="button"
             onClick={() => handleStarClick(field, star)}
             className="focus:outline-none"
+            disabled={hasSubmitted}
           >
             <Star
               className={`h-6 w-6 ${
                 star <= value
                   ? 'text-yellow-400 fill-current'
                   : 'text-gray-300'
-              } hover:text-yellow-400 transition-colors`}
+              } hover:text-yellow-400 transition-colors ${hasSubmitted ? 'cursor-not-allowed opacity-50' : ''}`}
             />
           </button>
         ))}
@@ -155,6 +191,25 @@ const FeedbackForm = () => {
             <h2 className="text-xl font-semibold mb-2">Link Not Found</h2>
             <p className="text-gray-600 mb-4">
               This feedback link is invalid, expired, or has been deactivated.
+            </p>
+            <Button onClick={() => navigate('/')} variant="outline">
+              Go to Homepage
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (hasSubmitted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center p-6">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Already Submitted</h2>
+            <p className="text-gray-600 mb-4">
+              You have already submitted feedback for this session. Thank you for your response!
             </p>
             <Button onClick={() => navigate('/')} variant="outline">
               Go to Homepage
@@ -250,7 +305,7 @@ const FeedbackForm = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={submitFeedbackMutation.isPending}
+                disabled={submitFeedbackMutation.isPending || hasSubmitted}
               >
                 {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
               </Button>
