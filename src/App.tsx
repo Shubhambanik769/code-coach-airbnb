@@ -9,6 +9,7 @@ import Auth from '@/pages/Auth';
 import UserDashboard from '@/pages/UserDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 import TrainerDashboard from '@/pages/TrainerDashboard';
+import TrainerApplicationForm from '@/components/trainer/TrainerApplicationForm';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -48,6 +49,15 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="trainer">
                     <TrainerDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+
+              <Route 
+                path="/apply-trainer" 
+                element={
+                  <ProtectedRoute>
+                    <TrainerApplicationForm />
                   </ProtectedRoute>
                 } 
               />

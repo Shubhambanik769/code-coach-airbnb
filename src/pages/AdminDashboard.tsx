@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, UserCheck, Calendar, Star, DollarSign } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import TrainerManagement from '@/components/admin/TrainerManagement';
 
 const AdminDashboard = () => {
   const { user, signOut } = useAuth();
@@ -184,14 +185,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="trainers">
-            <Card>
-              <CardHeader>
-                <CardTitle>Trainer Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Trainer approval and management features coming soon...</p>
-              </CardContent>
-            </Card>
+            <TrainerManagement />
           </TabsContent>
 
           <TabsContent value="bookings">

@@ -26,6 +26,14 @@ const Header = () => {
     navigate('/');
   };
 
+  const handleBecomeTrainer = () => {
+    if (userRole === 'trainer') {
+      navigate('/trainer');
+    } else {
+      navigate('/apply-trainer');
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
@@ -73,6 +81,16 @@ const Header = () => {
               </>
             ) : (
               <div className="flex items-center space-x-2">
+                {userRole !== 'trainer' && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleBecomeTrainer}
+                    className="hidden md:inline-flex text-xs sm:text-sm"
+                  >
+                    Become a Trainer
+                  </Button>
+                )}
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -118,13 +136,24 @@ const Header = () => {
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">For Companies</a>
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Help</a>
               {user && (
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate(getDashboardRoute())}
-                  className="text-left justify-start py-2 text-base"
-                >
-                  Dashboard
-                </Button>
+                <>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => navigate(getDashboardRoute())}
+                    className="text-left justify-start py-2 text-base"
+                  >
+                    Dashboard
+                  </Button>
+                  {userRole !== 'trainer' && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={handleBecomeTrainer}
+                      className="text-left justify-start py-2 text-base"
+                    >
+                      Become a Trainer
+                    </Button>
+                  )}
+                </>
               )}
             </nav>
           </div>
