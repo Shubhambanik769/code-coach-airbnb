@@ -85,7 +85,7 @@ const SearchResults = () => {
           sortColumn = 'experience_years';
         }
         
-        query = query.order(sortColumn, { ascending, nullsLast: true });
+        query = query.order(sortColumn, { ascending, nullsFirst: false });
 
         const { data, error } = await query;
         
@@ -102,7 +102,7 @@ const SearchResults = () => {
         throw err;
       }
     },
-    retry: (failureCount, error) => {
+    retry: (failureCount, error: any) => {
       // Don't retry on certain types of errors
       if (error?.code === 'PGRST116' || error?.message?.includes('syntax')) {
         return false;
@@ -134,7 +134,7 @@ const SearchResults = () => {
             <CardContent className="p-6 text-center">
               <h2 className="text-xl font-semibold text-red-600 mb-2">Search Error</h2>
               <p className="text-gray-600 mb-4">
-                {error?.message || 'There was an issue loading trainers. Please try again.'}
+                {(error as any)?.message || 'There was an issue loading trainers. Please try again.'}
               </p>
               <div className="space-y-2">
                 <Button onClick={() => window.location.reload()} variant="outline">
