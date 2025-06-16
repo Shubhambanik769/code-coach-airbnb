@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,9 +10,11 @@ import TrainerPricing from '@/components/trainer/TrainerPricing';
 import TrainerBookingManagement from '@/components/trainer/TrainerBookingManagement';
 import TrainerSchedule from '@/components/trainer/TrainerSchedule';
 import TrainerEarnings from '@/components/trainer/TrainerEarnings';
-import { Calendar, DollarSign, BookOpen, BarChart3, Clock, Settings } from 'lucide-react';
+import { Calendar, DollarSign, BookOpen, BarChart3, Clock, Settings, User, MessageSquare, TrendingUp, Star } from 'lucide-react';
+import ChatList from '@/components/chat/ChatList';
 
 const TrainerDashboard = () => {
+  const [activeTab, setActiveTab] = useState('overview');
   const { user, signOut } = useAuth();
 
   const { data: trainerProfile, isLoading } = useQuery({
@@ -35,6 +36,33 @@ const TrainerDashboard = () => {
     },
     enabled: !!user
   });
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return <TrainerProfile trainerId={trainerProfile?.id || ''} />;
+      case 'bookings':
+        return <TrainerBookings trainerId={trainerProfile?.id || ''} />;
+      case 'booking-management':
+        return <TrainerBookingManagement trainerId={trainerProfile?.id || ''} />;
+      case 'calendar':
+        return <TrainerCalendar trainerId={trainerProfile?.id || ''} />;
+      case 'pricing':
+        return <TrainerPricing trainerId={trainerProfile?.id || ''} />;
+      case 'messages':
+        return <ChatList userRole="trainer" />;
+      case 'earnings':
+        return <TrainerEarnings trainerId={trainerProfile?.id || ''} />;
+      case 'reviews':
+        return <TrainerReviews trainerId={trainerProfile?.id || ''} />;
+      case 'schedule':
+        return <TrainerSchedule trainerId={trainerProfile?.id || ''} />;
+      case 'settings':
+        return <TrainerSettings trainerId={trainerProfile?.id || ''} />;
+      default:
+        return <TrainerProfile trainerId={trainerProfile?.id || ''} />;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -72,62 +100,46 @@ const TrainerDashboard = () => {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger value="pricing" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Pricing
-            </TabsTrigger>
-            <TabsTrigger value="bookings" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Bookings
-            </TabsTrigger>
-            <TabsTrigger value="schedule" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Schedule
-            </TabsTrigger>
-            <TabsTrigger value="earnings" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Earnings
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex gap-8">
+          {/* Sidebar */}
+          <div className="w-64 space-y-2">
+            {[
+              { id: 'overview', label: 'Profile Overview', icon: User },
+              { id: 'bookings', label: 'My Bookings', icon: Calendar },
+              { id: 'booking-management', label: 'Booking Management', icon: Settings },
+              { id: 'calendar', label: 'Calendar', icon: Calendar },
+              { id: 'pricing', label: 'Pricing', icon: DollarSign },
+              { id: 'messages', label: 'Messages', icon: MessageSquare },
+              { id: 'earnings', label: 'Earnings', icon: TrendingUp },
+              { id: 'reviews', label: 'Reviews', icon: Star },
+              { id: 'schedule', label: 'Schedule', icon: Clock },
+              { id: 'settings', label: 'Settings', icon: Settings },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
+                    activeTab === item.id
+                      ? 'bg-techblue-100 text-techblue-700 border border-techblue-200'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
 
-          <TabsContent value="calendar">
-            <TrainerCalendar trainerId={trainerProfile.id} />
-          </TabsContent>
-
-          <TabsContent value="pricing">
-            <TrainerPricing trainerId={trainerProfile.id} />
-          </TabsContent>
-
-          <TabsContent value="bookings">
-            <TrainerBookingManagement trainerId={trainerProfile.id} />
-          </TabsContent>
-
-          <TabsContent value="schedule">
-            <TrainerSchedule trainerId={trainerProfile.id} />
-          </TabsContent>
-
-          <TabsContent value="earnings">
-            <TrainerEarnings trainerId={trainerProfile.id} />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <div className="text-center py-8">
-              <p className="text-gray-600">Settings panel coming soon...</p>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+          {/* Main Content */}
+          <div className="flex-1">
+            {renderContent()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

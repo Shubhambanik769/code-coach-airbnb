@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Clock, User, DollarSign } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
+import ChatWindow from '@/components/chat/ChatWindow';
 
 interface TrainerBookingManagementProps {
   trainerId: string;
@@ -25,6 +25,11 @@ type BookingWithProfile = Tables<'bookings'> & {
 
 const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedChat, setSelectedChat] = useState<{
+    bookingId: string;
+    studentId: string;
+    studentName: string;
+  } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -115,6 +120,19 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
 
   const totalEarnings = bookings?.filter(b => b.status === 'delivered' || b.status === 'completed')
     .reduce((sum, booking) => sum + (booking.total_amount || 0), 0) || 0;
+
+  if (selectedChat) {
+    return (
+      <div className="space-y-6">
+        <ChatWindow
+          bookingId={selectedChat.bookingId}
+          receiverId={selectedChat.studentId}
+          receiverName={selectedChat.studentName}
+          onClose={() => setSelectedChat(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -250,19 +268,34 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {canUpdateStatus(booking.status || '') && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateBookingStatusMutation.mutate({
-                              bookingId: booking.id,
-                              status: getNextStatus(booking.status || '')
-                            })}
-                            disabled={updateBookingStatusMutation.isPending}
-                          >
-                            Mark as {getNextStatus(booking.status || '')}
-                          </Button>
-                        )}
+                        <div className="flex gap-2">
+                          {canUpdateStatus(booking.status || '') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateBookingStatusMutation.mutate({
+                                bookingId: booking.id,
+                                status: getNextStatus(booking.status || '')
+                              })}
+                              disabled={updateBookingStatusMutation.isPending}
+                            >
+                              Mark as {getNextStatus(booking.status || '')}
+                            </Button>
+                          )}
+                          {['confirmed', 'assigned', 'delivering', 'delivered', 'completed'].includes(booking.status || '') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedChat({
+                                bookingId: booking.id,
+                                studentId: booking.student_id,
+                                studentName: booking.student_profile?.full_name || booking.student_profile?.email || 'Student'
+                              })}
+                            >
+                              Chat
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
