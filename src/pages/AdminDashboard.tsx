@@ -1,97 +1,128 @@
 
 import { useState } from 'react';
-import { BarChart3, Users, GraduationCap, Calendar, MessageSquare, Settings, UserCheck, Shield, Globe, TrendingUp } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdminHeader from '@/components/admin/AdminHeader';
 import Analytics from '@/components/admin/Analytics';
 import UserManagement from '@/components/admin/UserManagement';
 import TrainerManagement from '@/components/admin/TrainerManagement';
 import BookingManagement from '@/components/admin/BookingManagement';
-import SystemSettings from '@/components/admin/SystemSettings';
-import ChatAudit from '@/components/admin/ChatAudit';
-import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
-import EnhancedTrainerManagement from '@/components/admin/EnhancedTrainerManagement';
-import EnhancedBookingOverview from '@/components/admin/EnhancedBookingOverview';
-import GlobalSettings from '@/components/admin/GlobalSettings';
-import TopTrainersAnalytics from '@/components/admin/TopTrainersAnalytics';
-import AdminHeader from '@/components/admin/AdminHeader';
+import TrainerFeedbackManagement from '@/components/admin/TrainerFeedbackManagement';
+import { Users, Calendar, Star, TrendingUp, MessageSquare, Award } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('analytics');
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'analytics':
-        return <Analytics />;
-      case 'top-trainers':
-        return <TopTrainersAnalytics />;
-      case 'users':
-        return <UserManagement />;
-      case 'enhanced-users':
-        return <EnhancedUserManagement />;
-      case 'trainers':
-        return <TrainerManagement />;
-      case 'enhanced-trainers':
-        return <EnhancedTrainerManagement />;
-      case 'bookings':
-        return <BookingManagement />;
-      case 'enhanced-bookings':
-        return <EnhancedBookingOverview />;
-      case 'chat-audit':
-        return <ChatAudit />;
-      case 'global-settings':
-        return <GlobalSettings />;
-      case 'settings':
-        return <SystemSettings />;
-      default:
-        return <Analytics />;
+  // Fetch dashboard stats
+  const { data: stats } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      const [usersResult, trainersResult, bookingsResult, feedbackResult] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact' }),
+        supabase.from('trainers').select('id', { count: 'exact' }),
+        supabase.from('bookings').select('id', { count: 'exact' }),
+        supabase.from('feedback_responses').select('id', { count: 'exact' })
+      ]);
+
+      return {
+        totalUsers: usersResult.count || 0,
+        totalTrainers: trainersResult.count || 0,
+        totalBookings: bookingsResult.count || 0,
+        totalFeedback: feedbackResult.count || 0
+      };
     }
-  };
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader user={user} />
-
+      <AdminHeader />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <div className="w-full lg:w-64 space-y-2">
-            {[
-              { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
-              { id: 'top-trainers', label: 'Top Trainers', icon: TrendingUp },
-              { id: 'enhanced-bookings', label: 'Bookings Overview', icon: Calendar },
-              { id: 'enhanced-users', label: 'User Management', icon: UserCheck },
-              { id: 'enhanced-trainers', label: 'Trainer Control', icon: GraduationCap },
-              { id: 'global-settings', label: 'Global Settings', icon: Globe },
-              { id: 'chat-audit', label: 'Chat Audit', icon: MessageSquare },
-              { id: 'users', label: 'Basic Users', icon: Users },
-              { id: 'trainers', label: 'Basic Trainers', icon: GraduationCap },
-              { id: 'bookings', label: 'Basic Bookings', icon: Calendar },
-              { id: 'settings', label: 'System Settings', icon: Settings },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
-                    activeTab === item.id
-                      ? 'bg-techblue-100 text-techblue-700 border border-techblue-200'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="hidden lg:block">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {renderContent()}
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600">Manage your platform effectively</p>
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid grid-cols-6 w-full">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="trainers">Trainers</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Trainers</CardTitle>
+                  <Award className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalTrainers || 0}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalBookings || 0}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Feedback</CardTitle>
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalFeedback || 0}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Analytics />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="trainers">
+            <TrainerManagement />
+          </TabsContent>
+
+          <TabsContent value="bookings">
+            <BookingManagement />
+          </TabsContent>
+
+          <TabsContent value="feedback">
+            <TrainerFeedbackManagement />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <Analytics />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
