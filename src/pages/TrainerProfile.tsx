@@ -355,7 +355,11 @@ const TrainerProfilePage = () => {
         {/* Right Column - Booking */}
         <div className="lg:col-span-1">
           <div className="sticky top-8">
-            <BookingCalendar trainerId={id!} />
+            <BookingCalendar 
+              trainerId={id!} 
+              trainerName={trainer.profile?.full_name || trainer.name}
+              hourlyRate={trainer.hourly_rate || 0}
+            />
           </div>
         </div>
       </div>
