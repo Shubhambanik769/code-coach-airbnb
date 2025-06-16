@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,7 +88,7 @@ const ChatList = ({ userRole }: ChatListProps) => {
         .select('id, full_name, email')
         .in('id', studentIds);
 
-      // Get trainer profiles
+      // Get trainer profiles - first get trainer data to map trainer_id to user_id
       const trainerIds = [...new Set(bookings.map(b => b.trainer_id))];
       const { data: trainerData } = await supabase
         .from('trainers')
@@ -131,8 +130,8 @@ const ChatList = ({ userRole }: ChatListProps) => {
       // Combine all data
       return bookings.map(booking => {
         const studentProfile = studentProfiles?.find(p => p.id === booking.student_id);
-        const trainerData = trainerData?.find(t => t.id === booking.trainer_id);
-        const trainerProfile = trainerProfiles?.find(p => p.id === trainerData?.user_id);
+        const trainerDataItem = trainerData?.find(t => t.id === booking.trainer_id);
+        const trainerProfile = trainerProfiles?.find(p => p.id === trainerDataItem?.user_id);
         const stats = messageStats.find(s => s.booking_id === booking.id);
 
         return {
@@ -155,7 +154,7 @@ const ChatList = ({ userRole }: ChatListProps) => {
       };
     } else {
       // For users, get the trainer's user_id
-      const trainerData = bookingsWithChat?.find(b => b.id === booking.id);
+      const trainerDataItem = bookingsWithChat?.find(b => b.id === booking.id);
       return {
         id: booking.trainer_id, // This will need to be the trainer's user_id for messaging
         name: booking.trainer_profile?.full_name || booking.trainer_profile?.email || 'Trainer'

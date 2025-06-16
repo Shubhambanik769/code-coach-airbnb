@@ -34,17 +34,28 @@ const ChatWindow = ({ bookingId, receiverId, receiverName, onClose }: ChatWindow
   const { data: messages, isLoading } = useQuery({
     queryKey: ['messages', bookingId],
     queryFn: async (): Promise<Message[]> => {
-      const { data, error } = await supabase
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender_profile:sender_id(full_name, email)
-        `)
+        .select('*')
         .eq('booking_id', bookingId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+      if (messagesError) throw messagesError;
+
+      if (!messagesData || messagesData.length === 0) return [];
+
+      // Get sender profiles
+      const senderIds = [...new Set(messagesData.map(m => m.sender_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', senderIds);
+
+      // Combine messages with sender profiles
+      return messagesData.map(message => ({
+        ...message,
+        sender_profile: profilesData?.find(p => p.id === message.sender_id) || null
+      }));
     },
     enabled: !!bookingId
   });
