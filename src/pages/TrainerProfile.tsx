@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,17 +50,22 @@ const TrainerProfile = () => {
   const { data: trainer, isLoading } = useQuery({
     queryKey: ['trainer-profile', trainerId],
     queryFn: async () => {
+      console.log('Fetching trainer with ID:', trainerId);
+      
       const { data, error } = await supabase
         .from('trainers')
         .select(`
           *,
-          profiles!fk_trainers_user_id (
+          profiles (
             full_name,
             avatar_url
           )
         `)
         .eq('id', trainerId)
         .single();
+      
+      console.log('Trainer data:', data);
+      console.log('Trainer error:', error);
       
       if (error) throw error;
       return data;
@@ -76,7 +80,7 @@ const TrainerProfile = () => {
         .from('reviews')
         .select(`
           *,
-          profiles!fk_reviews_student_id (
+          profiles (
             full_name
           )
         `)
@@ -135,6 +139,10 @@ const TrainerProfile = () => {
     ? (reviews.filter(r => r.would_recommend).length / reviews.length) * 100 
     : 0;
 
+  // Debug log to check trainer data structure
+  console.log('Trainer object in render:', trainer);
+  console.log('Trainer profiles:', trainer.profiles);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -158,13 +166,15 @@ const TrainerProfile = () => {
                 <Avatar className="w-24 h-24 border-4 border-white">
                   <AvatarImage src={trainer.profiles?.avatar_url} />
                   <AvatarFallback className="bg-white text-techblue-600 text-2xl font-bold">
-                    {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'T'}
+                    {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || trainer.title?.charAt(0) || 'T'}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-3xl font-bold">{trainer.profiles?.full_name || 'Professional Trainer'}</h1>
+                    <h1 className="text-3xl font-bold">
+                      {trainer.profiles?.full_name || trainer.title || 'Professional Trainer'}
+                    </h1>
                     <Badge className="bg-green-500 text-white">
                       {trainer.rating >= 4.8 ? 'Top Rated' : trainer.rating >= 4.5 ? 'Expert' : 'Pro'}
                     </Badge>
@@ -234,7 +244,7 @@ const TrainerProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  About {trainer.profiles?.full_name?.split(' ')[0]}
+                  About {trainer.profiles?.full_name?.split(' ')[0] || trainer.title?.split(' ')[0] || 'Trainer'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -382,7 +392,7 @@ const TrainerProfile = () => {
           <TabsContent value="booking">
             <BookingCalendar 
               trainerId={trainer.id}
-              trainerName={trainer.profiles?.full_name || 'Trainer'}
+              trainerName={trainer.profiles?.full_name || trainer.title || 'Trainer'}
               hourlyRate={trainer.hourly_rate || 0}
             />
           </TabsContent>

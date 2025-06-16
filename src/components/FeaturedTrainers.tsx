@@ -13,11 +13,13 @@ const FeaturedTrainers = () => {
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ['featured-trainers'],
     queryFn: async () => {
+      console.log('Fetching featured trainers...');
+      
       const { data, error } = await supabase
         .from('trainers')
         .select(`
           *,
-          profiles!fk_trainers_user_id (
+          profiles (
             full_name,
             avatar_url
           )
@@ -26,6 +28,9 @@ const FeaturedTrainers = () => {
         .gte('rating', 4.5)
         .order('rating', { ascending: false })
         .limit(3);
+      
+      console.log('Featured trainers data:', data);
+      console.log('Featured trainers error:', error);
       
       if (error) throw error;
       return data;
@@ -91,7 +96,7 @@ const FeaturedTrainers = () => {
                       <div className="relative">
                         <img
                           src={trainer.profiles?.avatar_url || `https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face`}
-                          alt={trainer.profiles?.full_name || 'Trainer'}
+                          alt={trainer.profiles?.full_name || trainer.title || 'Trainer'}
                           className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                         <div className="absolute -top-1 -right-1">
@@ -103,7 +108,7 @@ const FeaturedTrainers = () => {
                       
                       <div className="flex-1">
                         <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-techblue-600 transition-colors">
-                          {trainer.profiles?.full_name || 'Professional Trainer'}
+                          {trainer.profiles?.full_name || trainer.title || 'Professional Trainer'}
                         </h3>
                         <p className="text-xs sm:text-sm text-gray-600 mb-1">{trainer.title}</p>
                         <p className="text-xs sm:text-sm font-semibold text-techblue-600">{trainer.specialization}</p>

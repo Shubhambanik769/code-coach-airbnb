@@ -40,14 +40,14 @@ const TrainerCard = ({ trainer }: TrainerCardProps) => {
           <Avatar className="w-16 h-16">
             <AvatarImage src={trainer.profiles?.avatar_url} />
             <AvatarFallback className="bg-techblue-100 text-techblue-600 font-semibold">
-              {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'T'}
+              {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || trainer.title?.charAt(0) || 'T'}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-900 truncate">
-                {trainer.profiles?.full_name || 'Professional Trainer'}
+                {trainer.profiles?.full_name || trainer.title || 'Professional Trainer'}
               </h3>
               <div className="flex items-center space-x-1">
                 <Star className="w-4 h-4 text-yellow-400 fill-current" />
