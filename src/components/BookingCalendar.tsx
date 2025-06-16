@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: availability = [], isLoading } = useQuery({
     queryKey: ['trainer-availability', trainerId, selectedDate],
@@ -52,14 +54,20 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
 
   const createBookingMutation = useMutation({
     mutationFn: async (bookingInfo: any) => {
+      if (!user) {
+        throw new Error('User must be authenticated to book a session');
+      }
+
       const startTime = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedSlot.start_time}`);
       const endTime = new Date(startTime.getTime() + bookingInfo.duration * 60 * 60 * 1000);
+      
+      console.log('Creating booking with user ID:', user.id);
       
       const { error } = await supabase
         .from('bookings')
         .insert({
           trainer_id: trainerId,
-          student_id: 'user-id-placeholder', // This would come from auth context
+          student_id: user.id,
           training_topic: bookingInfo.trainingTopic,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
@@ -70,7 +78,20 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
           status: 'pending'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Booking creation error:', error);
+        throw error;
+      }
+
+      // Mark the time slot as booked
+      const { error: slotError } = await supabase
+        .from('trainer_availability')
+        .update({ is_booked: true })
+        .eq('id', selectedSlot.id);
+
+      if (slotError) {
+        console.error('Error updating slot:', slotError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainer-availability'] });
@@ -87,7 +108,8 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
         description: "Your booking request has been sent to the trainer."
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Booking mutation error:', error);
       toast({
         title: "Error",
         description: "Failed to create booking. Please try again.",
@@ -97,6 +119,15 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
   });
 
   const handleBooking = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to book a session.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!selectedSlot || !bookingData.trainingTopic) {
       toast({
         title: "Error",
@@ -109,6 +140,29 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
   };
 
   const availableDates = [...Array(30)].map((_, i) => addDays(new Date(), i));
+
+  // Show sign-in prompt if user is not authenticated
+  if (!user) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5" />
+            Book a Session with {trainerName}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <p className="text-gray-600 mb-4">Please sign in to book a session with this trainer.</p>
+          <Button 
+            onClick={() => window.location.href = '/auth'}
+            className="bg-techblue-600 hover:bg-techblue-700"
+          >
+            Sign In to Book
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
