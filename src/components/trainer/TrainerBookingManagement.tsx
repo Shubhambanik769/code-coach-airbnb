@@ -9,10 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Clock, User, DollarSign } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
 
 interface TrainerBookingManagementProps {
   trainerId: string;
 }
+
+type BookingWithProfile = Tables<'bookings'> & {
+  student_profile?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+  };
+};
 
 const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
@@ -21,7 +30,7 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
-    queryFn: async () => {
+    queryFn: async (): Promise<BookingWithProfile[]> => {
       let query = supabase
         .from('bookings')
         .select('*')
@@ -236,22 +245,22 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
                       <TableCell>{booking.duration_hours}h</TableCell>
                       <TableCell>₹{booking.total_amount}</TableCell>
                       <TableCell>
-                        <Badge className={getStatusBadgeColor(booking.status)}>
+                        <Badge className={getStatusBadgeColor(booking.status || 'pending')}>
                           {booking.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {canUpdateStatus(booking.status) && (
+                        {canUpdateStatus(booking.status || '') && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => updateBookingStatusMutation.mutate({
                               bookingId: booking.id,
-                              status: getNextStatus(booking.status)
+                              status: getNextStatus(booking.status || '')
                             })}
                             disabled={updateBookingStatusMutation.isPending}
                           >
-                            Mark as {getNextStatus(booking.status)}
+                            Mark as {getNextStatus(booking.status || '')}
                           </Button>
                         )}
                       </TableCell>
