@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -166,6 +167,7 @@ const TrainerProfile = () => {
       punctuality_rating: r.punctuality_rating,
       would_recommend: r.would_recommend,
       reviewer_name: r.profiles?.full_name || 'Anonymous',
+      organization: undefined, // Reviews don't have organization info
       source: 'booking'
     })),
     ...feedbackResponses.map(fr => ({
