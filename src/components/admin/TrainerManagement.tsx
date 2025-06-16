@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Search, CheckCircle, XCircle, Eye, Star } from 'lucide-react';
+import TrainerTagManagement from './TrainerTagManagement';
 
 const TrainerManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,9 +24,7 @@ const TrainerManagement = () => {
     queryFn: async () => {
       let query = supabase
         .from('trainers')
-        .select(`
-          *
-        `)
+        .select(`*`)
         .order('created_at', { ascending: false });
 
       if (searchTerm) {
@@ -44,7 +43,7 @@ const TrainerManagement = () => {
       
       const { data: profilesData } = userIds.length > 0 ? await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, avatar_url')
         .in('id', userIds) : { data: [] };
 
       // Map the data together
@@ -132,19 +131,20 @@ const TrainerManagement = () => {
                 <TableHead>Rating</TableHead>
                 <TableHead>Rate</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     Loading trainers...
                   </TableCell>
                 </TableRow>
               ) : trainers?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     No trainers found
                   </TableCell>
                 </TableRow>
@@ -152,7 +152,16 @@ const TrainerManagement = () => {
                 trainers?.map((trainer) => (
                   <TableRow key={trainer.id}>
                     <TableCell className="font-medium">
-                      {trainer.profile?.full_name || 'N/A'}
+                      <div className="flex items-center gap-2">
+                        {trainer.profile?.avatar_url && (
+                          <img
+                            src={trainer.profile.avatar_url}
+                            alt={trainer.profile?.full_name || 'Trainer'}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )}
+                        {trainer.profile?.full_name || 'N/A'}
+                      </div>
                     </TableCell>
                     <TableCell>{trainer.title}</TableCell>
                     <TableCell>{trainer.specialization || 'N/A'}</TableCell>
@@ -167,6 +176,15 @@ const TrainerManagement = () => {
                       <Badge className={getStatusBadgeColor(trainer.status)}>
                         {trainer.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {trainer.tags?.map((tag: string, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        )) || <span className="text-gray-400 text-sm">No tags</span>}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -192,6 +210,10 @@ const TrainerManagement = () => {
                             </Button>
                           </>
                         )}
+                        <TrainerTagManagement 
+                          trainerId={trainer.id} 
+                          currentTags={trainer.tags || []} 
+                        />
                         <Button variant="outline" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>

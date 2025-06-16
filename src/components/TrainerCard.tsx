@@ -2,7 +2,9 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Star, MapPin, Clock, TrendingUp } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Star, MapPin, Clock, TrendingUp, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface TrainerCardProps {
   trainer: {
@@ -17,11 +19,18 @@ interface TrainerCardProps {
     bio?: string;
     skills?: string[];
     experience_years?: number;
+    tags?: string[];
+    profiles?: {
+      avatar_url?: string;
+      full_name?: string;
+    };
   };
   onSelect?: (trainerId: string) => void;
 }
 
 const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
+  const navigate = useNavigate();
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -40,6 +49,12 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const getBadgeText = () => {
+    // First check if trainer has admin tags
+    if (trainer.tags && trainer.tags.length > 0) {
+      return trainer.tags[0]; // Show the first tag
+    }
+    
+    // Fallback to rating-based badges
     const rating = trainer.rating || 0;
     if (rating >= 4.8) return 'Top Rated';
     if (rating >= 4.5) return 'Expert';
@@ -48,6 +63,12 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const getBadgeColor = () => {
+    // If trainer has admin tags, use blue
+    if (trainer.tags && trainer.tags.length > 0) {
+      return 'bg-blue-500 text-white';
+    }
+    
+    // Fallback to rating-based colors
     const rating = trainer.rating || 0;
     if (rating >= 4.8) return 'bg-green-500 text-white';
     if (rating >= 4.5) return 'bg-blue-500 text-white';
@@ -55,66 +76,86 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
     return 'bg-gray-500 text-white';
   };
 
+  const handleViewProfile = () => {
+    if (onSelect) {
+      onSelect(trainer.id);
+    } else {
+      navigate(`/trainer/${trainer.id}`);
+    }
+  };
+
   return (
     <Card className="hover:shadow-lg transition-shadow cursor-pointer">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {trainer.name}
-              </h3>
-              <Badge className={getBadgeText() === 'New' ? '' : getBadgeColor()}>
-                {getBadgeText()}
-              </Badge>
-            </div>
-            <p className="text-gray-600 text-sm mb-2">{trainer.title}</p>
+          <div className="flex items-start gap-3 flex-1">
+            <Avatar className="w-12 h-12">
+              <AvatarImage 
+                src={trainer.profiles?.avatar_url} 
+                alt={trainer.profiles?.full_name || trainer.name} 
+              />
+              <AvatarFallback>
+                <User className="h-6 w-6" />
+              </AvatarFallback>
+            </Avatar>
             
-            {/* Rating and Reviews */}
-            {trainer.rating && trainer.rating > 0 ? (
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center gap-1">
-                  {renderStars(trainer.rating)}
-                  <span className="text-sm font-medium text-gray-700">
-                    {trainer.rating.toFixed(1)}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-semibold text-gray-900 truncate">
+                  {trainer.profiles?.full_name || trainer.name}
+                </h3>
+                <Badge className={getBadgeText() === 'New' ? '' : getBadgeColor()}>
+                  {getBadgeText()}
+                </Badge>
+              </div>
+              <p className="text-gray-600 text-sm mb-2 truncate">{trainer.title}</p>
+              
+              {/* Rating and Reviews */}
+              {trainer.rating && trainer.rating > 0 ? (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1">
+                    {renderStars(trainer.rating)}
+                    <span className="text-sm font-medium text-gray-700">
+                      {trainer.rating.toFixed(1)}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews'})
                   </span>
                 </div>
-                <span className="text-xs text-gray-500">
-                  ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews'})
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center gap-1">
-                  {renderStars(0)}
-                  <span className="text-sm font-medium text-gray-500">New</span>
+              ) : (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1">
+                    {renderStars(0)}
+                    <span className="text-sm font-medium text-gray-500">New</span>
+                  </div>
+                  <span className="text-xs text-gray-500">(No reviews yet)</span>
                 </div>
-                <span className="text-xs text-gray-500">(No reviews yet)</span>
-              </div>
-            )}
+              )}
 
-            {/* Recommendation Rate */}
-            {trainer.total_reviews && trainer.total_reviews > 0 && (
-              <div className="flex items-center gap-1 mb-2">
-                <TrendingUp className="h-3 w-3 text-green-600" />
-                <span className="text-xs text-green-600 font-medium">
-                  {getRecommendationRate()}% would recommend
-                </span>
-              </div>
-            )}
+              {/* Recommendation Rate */}
+              {trainer.total_reviews && trainer.total_reviews > 0 && (
+                <div className="flex items-center gap-1 mb-2">
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">
+                    {getRecommendationRate()}% would recommend
+                  </span>
+                </div>
+              )}
 
-            {/* Experience */}
-            {trainer.experience_years && (
-              <div className="flex items-center gap-1 mb-2">
-                <Clock className="h-3 w-3 text-gray-500" />
-                <span className="text-xs text-gray-500">
-                  {trainer.experience_years}+ years experience
-                </span>
-              </div>
-            )}
+              {/* Experience */}
+              {trainer.experience_years && (
+                <div className="flex items-center gap-1 mb-2">
+                  <Clock className="h-3 w-3 text-gray-500" />
+                  <span className="text-xs text-gray-500">
+                    {trainer.experience_years}+ years experience
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="text-right">
+          <div className="text-right ml-4">
             <p className="text-lg font-bold text-blue-600">
               ${trainer.hourly_rate || 0}
             </p>
@@ -156,8 +197,19 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
           </div>
         )}
 
+        {/* Additional Tags */}
+        {trainer.tags && trainer.tags.length > 1 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {trainer.tags.slice(1, 4).map((tag, index) => (
+              <Badge key={index} variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+
         <Button
-          onClick={() => onSelect?.(trainer.id)}
+          onClick={handleViewProfile}
           className="w-full bg-blue-600 hover:bg-blue-700"
         >
           View Profile

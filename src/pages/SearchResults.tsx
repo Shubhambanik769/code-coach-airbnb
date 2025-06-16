@@ -32,7 +32,7 @@ const SearchResults = () => {
       });
 
       try {
-        // First, get basic trainer data
+        // First, get basic trainer data with comprehensive reviews/ratings
         let query = supabase
           .from('trainers')
           .select('*')
@@ -91,31 +91,74 @@ const SearchResults = () => {
 
         console.log('Raw trainers data:', trainersData);
 
-        // Now get profile data for each trainer
+        // Get profile data and calculate comprehensive ratings for each trainer
         if (trainersData && trainersData.length > 0) {
           const userIds = trainersData.map(trainer => trainer.user_id).filter(Boolean);
+          const trainerIds = trainersData.map(trainer => trainer.id);
           
-          let profilesData = [];
-          if (userIds.length > 0) {
-            const { data: profiles, error: profilesError } = await supabase
+          // Get profiles, reviews, and feedback data
+          const [profilesResult, reviewsResult, feedbackResult] = await Promise.all([
+            supabase
               .from('profiles')
               .select('id, full_name, avatar_url')
-              .in('id', userIds);
+              .in('id', userIds),
+            
+            supabase
+              .from('reviews')
+              .select('trainer_id, rating, would_recommend')
+              .in('trainer_id', trainerIds),
+            
+            supabase
+              .from('feedback_responses')
+              .select(`
+                rating,
+                would_recommend,
+                feedback_links!inner (
+                  booking_id,
+                  bookings!inner (trainer_id)
+                )
+              `)
+              .in('feedback_links.bookings.trainer_id', trainerIds)
+          ]);
 
-            if (profilesError) {
-              console.warn('Profiles query error (non-fatal):', profilesError);
-            } else {
-              profilesData = profiles || [];
+          const profilesData = profilesResult.data || [];
+          const reviewsData = reviewsResult.data || [];
+          const feedbackData = feedbackResult.data || [];
+
+          // Combine trainer data with profile data and comprehensive ratings
+          const trainersWithProfiles = trainersData.map(trainer => {
+            const profile = profilesData.find(p => p.id === trainer.user_id);
+            
+            // Get all feedback for this trainer
+            const trainerReviews = reviewsData.filter(r => r.trainer_id === trainer.id);
+            const trainerFeedback = feedbackData.filter(f => 
+              f.feedback_links?.bookings?.trainer_id === trainer.id
+            );
+            
+            // Combine all feedback
+            const allFeedback = [
+              ...trainerReviews,
+              ...trainerFeedback
+            ];
+            
+            // Calculate comprehensive stats
+            let updatedRating = trainer.rating || 0;
+            let totalReviews = trainer.total_reviews || 0;
+            
+            if (allFeedback.length > 0) {
+              totalReviews = allFeedback.length;
+              updatedRating = allFeedback.reduce((sum, item) => sum + item.rating, 0) / totalReviews;
             }
-          }
 
-          // Combine trainer data with profile data
-          const trainersWithProfiles = trainersData.map(trainer => ({
-            ...trainer,
-            profiles: profilesData.find(profile => profile.id === trainer.user_id) || null
-          }));
+            return {
+              ...trainer,
+              rating: updatedRating,
+              total_reviews: totalReviews,
+              profiles: profile
+            };
+          });
 
-          console.log('Combined trainers with profiles:', trainersWithProfiles);
+          console.log('Combined trainers with profiles and ratings:', trainersWithProfiles);
           return trainersWithProfiles;
         }
         

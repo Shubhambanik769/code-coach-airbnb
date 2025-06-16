@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { User, Edit3, Save, X, Plus } from 'lucide-react';
+import ProfilePictureUpload from './ProfilePictureUpload';
 
 interface TrainerProfileProps {
   trainerId: string;
@@ -29,23 +30,32 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: trainer, isLoading } = useQuery({
+  const { data: trainerData, isLoading } = useQuery({
     queryKey: ['trainer-profile', trainerId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: trainer, error: trainerError } = await supabase
         .from('trainers')
         .select('*')
         .eq('id', trainerId)
         .single();
       
-      if (error) throw error;
-      return data;
+      if (trainerError) throw trainerError;
+
+      // Get profile data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', trainer.user_id)
+        .single();
+
+      return { trainer, profile };
     },
     enabled: !!trainerId
   });
 
   useEffect(() => {
-    if (trainer) {
+    if (trainerData?.trainer) {
+      const trainer = trainerData.trainer;
       setFormData({
         name: trainer.name || '',
         title: trainer.title || '',
@@ -56,7 +66,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
         skills: trainer.skills || []
       });
     }
-  }, [trainer]);
+  }, [trainerData]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -89,7 +99,8 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
   };
 
   const handleCancel = () => {
-    if (trainer) {
+    if (trainerData?.trainer) {
+      const trainer = trainerData.trainer;
       setFormData({
         name: trainer.name || '',
         title: trainer.title || '',
@@ -162,6 +173,16 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Profile Picture Section */}
+        <div className="flex justify-center">
+          <ProfilePictureUpload 
+            currentAvatarUrl={trainerData?.profile?.avatar_url}
+            onUploadSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['trainer-profile'] });
+            }}
+          />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -174,7 +195,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
                 placeholder="Enter your full name"
               />
             ) : (
-              <p className="text-gray-900">{trainer?.name || 'Not specified'}</p>
+              <p className="text-gray-900">{trainerData?.trainer?.name || 'Not specified'}</p>
             )}
           </div>
 
@@ -189,7 +210,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
                 placeholder="e.g., Certified Personal Trainer"
               />
             ) : (
-              <p className="text-gray-900">{trainer?.title || 'Not specified'}</p>
+              <p className="text-gray-900">{trainerData?.trainer?.title || 'Not specified'}</p>
             )}
           </div>
 
@@ -204,7 +225,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
                 placeholder="e.g., Weight Loss, Strength Training"
               />
             ) : (
-              <p className="text-gray-900">{trainer?.specialization || 'Not specified'}</p>
+              <p className="text-gray-900">{trainerData?.trainer?.specialization || 'Not specified'}</p>
             )}
           </div>
 
@@ -220,7 +241,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
                 min="0"
               />
             ) : (
-              <p className="text-gray-900">{trainer?.experience_years || 0} years</p>
+              <p className="text-gray-900">{trainerData?.trainer?.experience_years || 0} years</p>
             )}
           </div>
 
@@ -237,7 +258,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
                 step="0.01"
               />
             ) : (
-              <p className="text-gray-900">${trainer?.hourly_rate || 0}/hour</p>
+              <p className="text-gray-900">${trainerData?.trainer?.hourly_rate || 0}/hour</p>
             )}
           </div>
         </div>
@@ -254,7 +275,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
               rows={4}
             />
           ) : (
-            <p className="text-gray-900">{trainer?.bio || 'No bio provided'}</p>
+            <p className="text-gray-900">{trainerData?.trainer?.bio || 'No bio provided'}</p>
           )}
         </div>
 
@@ -285,8 +306,8 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {trainer?.skills?.length > 0 ? (
-                trainer.skills.map((skill: string, index: number) => (
+              {trainerData?.trainer?.skills?.length > 0 ? (
+                trainerData.trainer.skills.map((skill: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {skill}
                   </Badge>
@@ -297,6 +318,22 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
             </div>
           )}
         </div>
+
+        {/* Display Tags (Read-only for trainers) */}
+        {trainerData?.trainer?.tags && trainerData.trainer.tags.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Admin Tags
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {trainerData.trainer.tags.map((tag: string, index: number) => (
+                <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
