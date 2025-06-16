@@ -52,7 +52,7 @@ const TrainerProfile = () => {
         .from('trainers')
         .select(`
           *,
-          profiles!user_id (
+          profiles (
             full_name,
             avatar_url
           )
@@ -73,7 +73,7 @@ const TrainerProfile = () => {
         .from('reviews')
         .select(`
           *,
-          profiles!student_id (
+          profiles (
             full_name
           )
         `)
@@ -332,16 +332,14 @@ const TrainerProfile = () => {
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
                               <span className="font-medium text-gray-900">{review.profiles?.full_name || 'Anonymous'}</span>
-                              <div className="flex items-center">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`h-4 w-4 ${
-                                      i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-4 w-4 ${
+                                    i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
                               <span className="text-sm text-gray-500">
                                 {new Date(review.created_at).toLocaleDateString()}
                               </span>
