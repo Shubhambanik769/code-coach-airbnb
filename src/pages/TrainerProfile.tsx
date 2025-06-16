@@ -1,12 +1,15 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Star, MapPin, Clock, Users, DollarSign, Calendar, MessageSquare, Award, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Clock, Users, Award, CheckCircle, Calendar, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
+import BookingCalendar from '@/components/BookingCalendar';
 
 interface TrainerDetail {
   id: string;
@@ -136,7 +139,7 @@ const TrainerProfile = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Button 
           onClick={() => navigate('/search')} 
@@ -147,75 +150,86 @@ const TrainerProfile = () => {
           Back to Search
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Profile Header */}
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="bg-gradient-to-r from-techblue-600 to-techblue-700 text-white p-8">
-                  <div className="flex items-start space-x-6">
-                    <Avatar className="w-24 h-24 border-4 border-white">
-                      <AvatarImage src={trainer.profiles?.avatar_url} />
-                      <AvatarFallback className="bg-white text-techblue-600 text-2xl font-bold">
-                        {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'T'}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl font-bold">{trainer.profiles?.full_name || 'Professional Trainer'}</h1>
-                        <Badge className="bg-green-500 text-white">
-                          {trainer.rating >= 4.8 ? 'Top Rated' : trainer.rating >= 4.5 ? 'Expert' : 'Pro'}
-                        </Badge>
-                      </div>
-                      <p className="text-xl text-blue-100 mb-2">{trainer.title}</p>
-                      <p className="text-lg text-blue-200 mb-4">{trainer.specialization}</p>
-                      
-                      <div className="flex items-center space-x-6 text-blue-100">
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-5 h-5 text-yellow-300 fill-current" />
-                          <span className="font-semibold text-white">{trainer.rating}</span>
-                          <span>({trainer.total_reviews} reviews)</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="w-5 h-5" />
-                          <span>{trainer.location || 'Remote'}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-5 h-5" />
-                          <span>{trainer.timezone || 'Flexible'}</span>
-                        </div>
-                      </div>
+        {/* Profile Header */}
+        <Card className="overflow-hidden mb-8">
+          <CardContent className="p-0">
+            <div className="bg-gradient-to-r from-techblue-600 to-techblue-700 text-white p-8">
+              <div className="flex items-start space-x-6">
+                <Avatar className="w-24 h-24 border-4 border-white">
+                  <AvatarImage src={trainer.profiles?.avatar_url} />
+                  <AvatarFallback className="bg-white text-techblue-600 text-2xl font-bold">
+                    {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || 'T'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-3xl font-bold">{trainer.profiles?.full_name || 'Professional Trainer'}</h1>
+                    <Badge className="bg-green-500 text-white">
+                      {trainer.rating >= 4.8 ? 'Top Rated' : trainer.rating >= 4.5 ? 'Expert' : 'Pro'}
+                    </Badge>
+                  </div>
+                  <p className="text-xl text-blue-100 mb-2">{trainer.title}</p>
+                  <p className="text-lg text-blue-200 mb-4">{trainer.specialization}</p>
+                  
+                  <div className="flex items-center space-x-6 text-blue-100">
+                    <div className="flex items-center space-x-1">
+                      <Star className="w-5 h-5 text-yellow-300 fill-current" />
+                      <span className="font-semibold text-white">{trainer.rating}</span>
+                      <span>({trainer.total_reviews} reviews)</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="w-5 h-5" />
+                      <span>{trainer.location || 'Remote'}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-5 h-5" />
+                      <span>{trainer.timezone || 'Flexible'}</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Quick Stats */}
-                <div className="p-6 bg-white">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-techblue-600">{trainer.experience_years}+</div>
-                      <div className="text-sm text-gray-500">Years Experience</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-techblue-600">{trainer.total_reviews * 2}</div>
-                      <div className="text-sm text-gray-500">Students Taught</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-techblue-600">{Math.round(recommendationRate)}%</div>
-                      <div className="text-sm text-gray-500">Recommend Rate</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-techblue-600">${trainer.hourly_rate}</div>
-                      <div className="text-sm text-gray-500">Per Hour</div>
-                    </div>
-                  </div>
+                
+                <div className="text-right">
+                  <div className="text-3xl font-bold">${trainer.hourly_rate}</div>
+                  <div className="text-blue-200">per hour</div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            {/* About Section */}
+            {/* Quick Stats */}
+            <div className="p-6 bg-white">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-techblue-600">{trainer.experience_years}+</div>
+                  <div className="text-sm text-gray-500">Years Experience</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-techblue-600">{trainer.total_reviews * 2}</div>
+                  <div className="text-sm text-gray-500">Students Taught</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-techblue-600">{Math.round(recommendationRate)}%</div>
+                  <div className="text-sm text-gray-500">Recommend Rate</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-techblue-600">${trainer.hourly_rate}</div>
+                  <div className="text-sm text-gray-500">Per Hour</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Main Content */}
+        <Tabs defaultValue="about" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="about">About</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
+            <TabsTrigger value="booking">Book Session</TabsTrigger>
+            <TabsTrigger value="contact">Contact</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="about" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -255,7 +269,9 @@ const TrainerProfile = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
+          <TabsContent value="reviews" className="space-y-6">
             {/* Detailed Ratings */}
             {reviews.length > 0 && (
               <Card>
@@ -310,7 +326,7 @@ const TrainerProfile = () => {
               </Card>
             )}
 
-            {/* Reviews Section */}
+            {/* Reviews List */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -361,72 +377,52 @@ const TrainerProfile = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Booking Card */}
-            <Card className="sticky top-6">
-              <CardHeader>
-                <CardTitle className="text-center">
-                  <span className="text-3xl font-bold text-techblue-600">${trainer.hourly_rate}</span>
-                  <span className="text-lg text-gray-500">/hour</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button className="w-full bg-techblue-600 hover:bg-techblue-700 h-12 text-lg font-semibold">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  Book Session
-                </Button>
-                
-                <Button variant="outline" className="w-full h-12 text-lg">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Send Message
-                </Button>
-                
-                <div className="pt-4 border-t space-y-3 text-sm text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Instant booking available</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Free cancellation up to 24h</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Money-back guarantee</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="booking">
+            <BookingCalendar 
+              trainerId={trainer.id}
+              trainerName={trainer.profiles?.full_name || 'Trainer'}
+              hourlyRate={trainer.hourly_rate || 0}
+            />
+          </TabsContent>
 
-            {/* Quick Info */}
+          <TabsContent value="contact" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Quick Info</CardTitle>
+                <CardTitle>Contact Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Response time:</span>
-                  <span className="font-medium">Within 2 hours</span>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Response Time</h4>
+                    <p className="text-sm text-gray-600">Usually responds within 2 hours</p>
+                  </div>
+                  <Badge variant="secondary">Fast Response</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Languages:</span>
-                  <span className="font-medium">English</span>
+                
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Languages</h4>
+                    <p className="text-sm text-gray-600">English (Native)</p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Session format:</span>
-                  <span className="font-medium">Video call</span>
+                
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Time Zone</h4>
+                    <p className="text-sm text-gray-600">{trainer.timezone || 'UTC'}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Availability:</span>
-                  <span className="font-medium text-green-600">Available now</span>
-                </div>
+
+                <Button className="w-full bg-techblue-600 hover:bg-techblue-700">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Message
+                </Button>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

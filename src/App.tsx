@@ -12,6 +12,8 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import TrainerDashboard from '@/pages/TrainerDashboard';
 import TrainerApplicationForm from '@/components/trainer/TrainerApplicationForm';
 import TrainerOnboardingStatus from '@/components/trainer/TrainerOnboardingStatus';
+import SearchResults from '@/pages/SearchResults';
+import TrainerProfile from '@/pages/TrainerProfile';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -47,6 +49,8 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/search" element={<SearchResults />} />
+                  <Route path="/trainer/:trainerId" element={<TrainerProfile />} />
                   
                   {/* Public trainer application route */}
                   <Route path="/apply-trainer" element={<TrainerApplicationForm />} />
