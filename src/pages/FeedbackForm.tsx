@@ -109,13 +109,35 @@ const FeedbackForm = () => {
         throw new Error('You have already submitted feedback for this session.');
       }
 
+      // Prepare the submission data, only including rating fields that have values > 0
+      // This prevents check constraint violations for rating fields that expect 1-5 values
+      const submissionData: any = {
+        feedback_link_id: feedbackLink.id,
+        respondent_name: feedbackData.respondent_name,
+        respondent_email: feedbackData.respondent_email,
+        rating: feedbackData.rating,
+        review_comment: feedbackData.review_comment || null,
+        organization_name: feedbackData.organization_name || null,
+        would_recommend: feedbackData.would_recommend
+      };
+
+      // Only include optional rating fields if they have values > 0
+      if (feedbackData.communication_rating > 0) {
+        submissionData.communication_rating = feedbackData.communication_rating;
+      }
+      if (feedbackData.punctuality_rating > 0) {
+        submissionData.punctuality_rating = feedbackData.punctuality_rating;
+      }
+      if (feedbackData.skills_rating > 0) {
+        submissionData.skills_rating = feedbackData.skills_rating;
+      }
+
+      console.log('Final submission data:', submissionData);
+
       // Submit feedback without authentication (public access - now works with RLS)
       const { error } = await supabase
         .from('feedback_responses')
-        .insert({
-          feedback_link_id: feedbackLink.id,
-          ...feedbackData
-        });
+        .insert(submissionData);
 
       if (error) {
         console.error('Error submitting feedback:', error);
