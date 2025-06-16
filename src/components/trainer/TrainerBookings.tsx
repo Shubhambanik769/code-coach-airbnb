@@ -26,6 +26,8 @@ interface BookingWithProfile {
   total_amount: number;
   trainer_id: string;
   updated_at: string | null;
+  training_topic: string;
+  duration_hours: number;
   student_profile?: {
     id: string;
     full_name: string | null;
@@ -41,6 +43,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
+      console.log('Fetching bookings for trainer:', trainerId);
+      
       let bookingsQuery = supabase
         .from('bookings')
         .select('*')
@@ -52,6 +56,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       }
 
       const { data: bookingsData, error: bookingsError } = await bookingsQuery;
+      
+      console.log('Bookings query result:', { bookingsData, bookingsError });
+      
       if (bookingsError) throw bookingsError;
 
       if (bookingsData && bookingsData.length > 0) {
@@ -61,13 +68,16 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           .select('id, full_name, email')
           .in('id', studentIds);
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.warn('Profiles query error:', profilesError);
+        }
 
         const bookingsWithProfiles: BookingWithProfile[] = bookingsData.map(booking => ({
           ...booking,
           student_profile: profilesData?.find(profile => profile.id === booking.student_id)
         }));
 
+        console.log('Final bookings with profiles:', bookingsWithProfiles);
         return bookingsWithProfiles;
       }
 
@@ -78,6 +88,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
     try {
+      console.log('Updating booking status:', { bookingId, status });
+      
       const { error } = await supabase
         .from('bookings')
         .update({ status })
@@ -91,6 +103,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       });
       refetch();
     } catch (error) {
+      console.error('Error updating booking status:', error);
       toast({
         title: "Error",
         description: "Failed to update booking status",
@@ -111,15 +124,19 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
   const filteredBookings = bookings?.filter(booking =>
     booking.student_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.student_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    booking.student_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  console.log('Current bookings:', bookings);
+  console.log('Filtered bookings:', filteredBookings);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          My Bookings
+          My Bookings ({bookings?.length || 0})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -128,7 +145,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search students..."
+              placeholder="Search students or topics..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -154,6 +171,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
+                <TableHead>Training Topic</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Amount</TableHead>
@@ -164,14 +182,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     Loading bookings...
                   </TableCell>
                 </TableRow>
               ) : filteredBookings?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
-                    No bookings found
+                  <TableCell colSpan={7} className="text-center py-8">
+                    {bookings?.length === 0 ? 'No bookings found' : 'No bookings match your search'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -187,6 +205,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <p className="font-medium">{booking.training_topic}</p>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-gray-400" />
                         <div>
@@ -200,7 +221,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / (1000 * 60))} min
+                      {booking.duration_hours}h
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -221,6 +242,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               variant="outline"
                               size="sm"
                               onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                             >
                               Accept
                             </Button>
@@ -228,6 +250,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               variant="outline"
                               size="sm"
                               onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                              className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
                             >
                               Decline
                             </Button>
@@ -238,9 +261,16 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             variant="outline"
                             size="sm"
                             onClick={() => updateBookingStatus(booking.id, 'completed')}
+                            className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                           >
                             Mark Complete
                           </Button>
+                        )}
+                        {booking.status === 'completed' && (
+                          <span className="text-sm text-gray-500">Completed</span>
+                        )}
+                        {booking.status === 'cancelled' && (
+                          <span className="text-sm text-red-500">Cancelled</span>
                         )}
                       </div>
                     </TableCell>

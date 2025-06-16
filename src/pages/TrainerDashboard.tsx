@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User, LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
+import TrainerSchedule from '@/components/trainer/TrainerSchedule';
 import TrainerCalendar from '@/components/trainer/TrainerCalendar';
 import TrainerEarnings from '@/components/trainer/TrainerEarnings';
 import TrainerSettings from '@/components/trainer/TrainerSettings';
@@ -16,7 +18,7 @@ import EnhancedTrainerReviews from '@/components/trainer/EnhancedTrainerReviews'
 import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 
 const TrainerDashboard = () => {
-  const [activeTab, setActiveTab] = useState('analytics');
+  const [activeTab, setActiveTab] = useState('bookings');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -46,7 +48,7 @@ const TrainerDashboard = () => {
         .from('trainers')
         .select('id, status')
         .eq('user_id', user.id)
-        .maybeSingle(); // Use maybeSingle instead of single to handle no results
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching trainer:', error);
@@ -109,6 +111,8 @@ const TrainerDashboard = () => {
         return <TrainerProfile trainerId={trainerId} />;
       case 'bookings':
         return <TrainerBookings trainerId={trainerId} />;
+      case 'schedule':
+        return <TrainerSchedule trainerId={trainerId} />;
       case 'calendar':
         return <TrainerCalendar trainerId={trainerId} />;
       case 'earnings':
@@ -118,7 +122,7 @@ const TrainerDashboard = () => {
       case 'settings':
         return <TrainerSettings trainerId={trainerId} />;
       default:
-        return <TrainerAnalytics />;
+        return <TrainerBookings trainerId={trainerId} />;
     }
   };
 
@@ -152,8 +156,9 @@ const TrainerDashboard = () => {
           {/* Sidebar */}
           <div className="w-full lg:w-64 space-y-2">
             {[
-              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
               { id: 'bookings', label: 'Bookings', icon: Calendar },
+              { id: 'schedule', label: 'Weekly Schedule', icon: Calendar },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
               { id: 'reviews', label: 'Reviews & Ratings', icon: Star },
               { id: 'earnings', label: 'Earnings', icon: DollarSign },
               { id: 'calendar', label: 'Calendar', icon: Calendar },
