@@ -41,13 +41,15 @@ const FeedbackForm = () => {
     }
   }, [token]);
 
-  // Fetch feedback link details - NO AUTHENTICATION REQUIRED
+  // Fetch feedback link details - PUBLIC ACCESS (no authentication required)
   const { data: feedbackLink, isLoading, error } = useQuery({
     queryKey: ['feedback-link', token],
     queryFn: async () => {
       if (!token) throw new Error('No token provided');
       
-      // Create a simple client without authentication requirements
+      console.log('Fetching feedback link for token:', token);
+      
+      // Use the anon key directly for public access
       const { data, error } = await supabase
         .from('feedback_links')
         .select(`
@@ -67,17 +69,31 @@ const FeedbackForm = () => {
         .eq('is_active', true)
         .single();
 
-      if (error) throw error;
+      console.log('Feedback link query result:', { data, error });
+
+      if (error) {
+        console.error('Error fetching feedback link:', error);
+        throw error;
+      }
+      
+      // Check if link has expired
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        throw new Error('This feedback link has expired');
+      }
+
       return data;
-    }
+    },
+    retry: false
   });
 
-  // Submit feedback mutation - NO AUTHENTICATION REQUIRED
+  // Submit feedback mutation - PUBLIC ACCESS (no authentication required)
   const submitFeedbackMutation = useMutation({
     mutationFn: async (feedbackData: typeof formData) => {
       if (!feedbackLink?.id) throw new Error('Invalid feedback link');
       
-      // Check for duplicate submission by email
+      console.log('Submitting feedback:', feedbackData);
+      
+      // Check for duplicate submission by email (public access)
       const { data: existingFeedback, error: checkError } = await supabase
         .from('feedback_responses')
         .select('id')
@@ -86,6 +102,7 @@ const FeedbackForm = () => {
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing feedback:', checkError);
         throw checkError;
       }
 
@@ -93,7 +110,7 @@ const FeedbackForm = () => {
         throw new Error('You have already submitted feedback for this session.');
       }
 
-      // Submit feedback without authentication
+      // Submit feedback without authentication (public access)
       const { error } = await supabase
         .from('feedback_responses')
         .insert({
@@ -101,7 +118,12 @@ const FeedbackForm = () => {
           ...feedbackData
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error submitting feedback:', error);
+        throw error;
+      }
+
+      console.log('Feedback submitted successfully');
     },
     onSuccess: () => {
       // Mark as submitted in localStorage to prevent duplicate submissions
@@ -185,6 +207,7 @@ const FeedbackForm = () => {
   }
 
   if (error || !feedbackLink) {
+    console.error('Feedback link error or not found:', { error, feedbackLink });
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -192,7 +215,7 @@ const FeedbackForm = () => {
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Link Not Found</h2>
             <p className="text-gray-600 mb-4">
-              This feedback link is invalid, expired, or has been deactivated.
+              {error?.message || "This feedback link is invalid, expired, or has been deactivated."}
             </p>
             <Button onClick={() => navigate('/')} variant="outline">
               Go to Homepage
