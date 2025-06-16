@@ -5,25 +5,24 @@ import { User, Calendar, MessageSquare, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import ChatList from '@/components/chat/ChatList';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to sign out",
         variant: "destructive"
       });
-    } else {
-      navigate('/');
     }
   };
 

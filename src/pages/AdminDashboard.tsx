@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { BarChart3, Users, GraduationCap, Calendar, MessageSquare, Settings, UserCheck, Shield, Globe, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import Analytics from '@/components/admin/Analytics';
 import UserManagement from '@/components/admin/UserManagement';
 import TrainerManagement from '@/components/admin/TrainerManagement';
@@ -12,9 +13,11 @@ import EnhancedTrainerManagement from '@/components/admin/EnhancedTrainerManagem
 import EnhancedBookingOverview from '@/components/admin/EnhancedBookingOverview';
 import GlobalSettings from '@/components/admin/GlobalSettings';
 import TopTrainersAnalytics from '@/components/admin/TopTrainersAnalytics';
+import AdminHeader from '@/components/admin/AdminHeader';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
+  const { user } = useAuth();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -47,14 +50,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Admin Dashboard
-          </h1>
-        </div>
-      </header>
+      <AdminHeader user={user} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
