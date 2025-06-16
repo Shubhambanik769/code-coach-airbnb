@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -32,6 +32,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/search" element={<TrainerSearch />} />
             <Route path="/search-results" element={<SearchResults />} />
+            <Route path="/trainer" element={<Navigate to="/search" replace />} />
             <Route path="/trainer/:trainerId" element={<TrainerProfile />} />
             <Route path="/feedback/:token" element={<FeedbackForm />} />
             <Route path="/feedback-success" element={<FeedbackSuccess />} />
