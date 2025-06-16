@@ -1,8 +1,8 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import TrainerOnboardingStatus from '@/components/trainer/TrainerOnboardingStatus';
 import TrainerCalendar from '@/components/trainer/TrainerCalendar';
@@ -10,7 +10,11 @@ import TrainerPricing from '@/components/trainer/TrainerPricing';
 import TrainerBookingManagement from '@/components/trainer/TrainerBookingManagement';
 import TrainerSchedule from '@/components/trainer/TrainerSchedule';
 import TrainerEarnings from '@/components/trainer/TrainerEarnings';
-import { Calendar, DollarSign, BookOpen, BarChart3, Clock, Settings, User, MessageSquare, TrendingUp, Star } from 'lucide-react';
+import TrainerProfile from '@/components/trainer/TrainerProfile';
+import TrainerBookings from '@/components/trainer/TrainerBookings';
+import TrainerReviews from '@/components/trainer/TrainerReviews';
+import TrainerSettings from '@/components/trainer/TrainerSettings';
+import { Calendar, DollarSign, Settings, User, MessageSquare, TrendingUp, Star, Clock } from 'lucide-react';
 import ChatList from '@/components/chat/ChatList';
 
 const TrainerDashboard = () => {

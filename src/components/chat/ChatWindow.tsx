@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,7 +38,7 @@ const ChatWindow = ({ bookingId, receiverId, receiverName, onClose }: ChatWindow
         .from('messages')
         .select(`
           *,
-          sender_profile:profiles!messages_sender_id_fkey(full_name, email)
+          sender_profile:sender_id(full_name, email)
         `)
         .eq('booking_id', bookingId)
         .order('created_at', { ascending: true });

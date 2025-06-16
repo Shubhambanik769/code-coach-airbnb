@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Clock, User } from 'lucide-react';
 import ChatWindow from './ChatWindow';
@@ -23,16 +22,16 @@ interface BookingWithChat {
   student_profile?: {
     full_name: string | null;
     email: string;
-  };
+  } | null;
   trainer_profile?: {
     full_name: string | null;
     email: string;
-  };
+  } | null;
   unread_count?: number;
   last_message?: {
     content: string;
     created_at: string;
-  };
+  } | null;
 }
 
 const ChatList = ({ userRole }: ChatListProps) => {
@@ -57,8 +56,7 @@ const ChatList = ({ userRole }: ChatListProps) => {
           start_time,
           status,
           student_id,
-          trainer_id,
-          student_profile:profiles!bookings_student_id_fkey(full_name, email)
+          trainer_id
         `);
 
       if (userRole === 'trainer') {
@@ -82,61 +80,69 @@ const ChatList = ({ userRole }: ChatListProps) => {
 
       if (error) throw error;
 
-      // Get trainer profiles for each booking
-      const trainerIds = [...new Set(bookings?.map(b => b.trainer_id) || [])];
-      let trainerProfiles: any[] = [];
-      
-      if (trainerIds.length > 0) {
-        const { data: trainers } = await supabase
-          .from('trainers')
-          .select('id, user_id, profiles!trainers_user_id_fkey(full_name, email)')
-          .in('id', trainerIds);
+      if (!bookings || bookings.length === 0) return [];
 
-        trainerProfiles = trainers || [];
-      }
+      // Get student profiles
+      const studentIds = [...new Set(bookings.map(b => b.student_id))];
+      const { data: studentProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', studentIds);
+
+      // Get trainer profiles
+      const trainerIds = [...new Set(bookings.map(b => b.trainer_id))];
+      const { data: trainerData } = await supabase
+        .from('trainers')
+        .select('id, user_id')
+        .in('id', trainerIds);
+
+      const trainerUserIds = trainerData?.map(t => t.user_id) || [];
+      const { data: trainerProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', trainerUserIds);
 
       // Get unread message counts and last messages for each booking
-      const bookingIds = bookings?.map(b => b.id) || [];
-      let messageStats: any[] = [];
+      const bookingIds = bookings.map(b => b.id);
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('booking_id, content, created_at, is_read, receiver_id')
+        .in('booking_id', bookingIds)
+        .order('created_at', { ascending: false });
 
-      if (bookingIds.length > 0) {
-        const { data: messages } = await supabase
-          .from('messages')
-          .select('booking_id, content, created_at, is_read, receiver_id')
-          .in('booking_id', bookingIds)
-          .order('created_at', { ascending: false });
+      // Calculate unread counts and get last messages
+      const messageStats = bookingIds.map(bookingId => {
+        const bookingMessages = messages?.filter(m => m.booking_id === bookingId) || [];
+        const unreadCount = bookingMessages.filter(m => 
+          m.receiver_id === user.id && !m.is_read
+        ).length;
+        const lastMessage = bookingMessages[0];
 
-        // Calculate unread counts and get last messages
-        messageStats = bookingIds.map(bookingId => {
-          const bookingMessages = messages?.filter(m => m.booking_id === bookingId) || [];
-          const unreadCount = bookingMessages.filter(m => 
-            m.receiver_id === user.id && !m.is_read
-          ).length;
-          const lastMessage = bookingMessages[0];
-
-          return {
-            booking_id: bookingId,
-            unread_count: unreadCount,
-            last_message: lastMessage ? {
-              content: lastMessage.content,
-              created_at: lastMessage.created_at
-            } : null
-          };
-        });
-      }
+        return {
+          booking_id: bookingId,
+          unread_count: unreadCount,
+          last_message: lastMessage ? {
+            content: lastMessage.content,
+            created_at: lastMessage.created_at
+          } : null
+        };
+      });
 
       // Combine all data
-      return bookings?.map(booking => {
-        const trainerProfile = trainerProfiles.find(t => t.id === booking.trainer_id);
+      return bookings.map(booking => {
+        const studentProfile = studentProfiles?.find(p => p.id === booking.student_id);
+        const trainerData = trainerData?.find(t => t.id === booking.trainer_id);
+        const trainerProfile = trainerProfiles?.find(p => p.id === trainerData?.user_id);
         const stats = messageStats.find(s => s.booking_id === booking.id);
 
         return {
           ...booking,
-          trainer_profile: trainerProfile?.profiles,
+          student_profile: studentProfile || null,
+          trainer_profile: trainerProfile || null,
           unread_count: stats?.unread_count || 0,
-          last_message: stats?.last_message
+          last_message: stats?.last_message || null
         };
-      }) || [];
+      });
     },
     enabled: !!user
   });
@@ -148,10 +154,10 @@ const ChatList = ({ userRole }: ChatListProps) => {
         name: booking.student_profile?.full_name || booking.student_profile?.email || 'Student'
       };
     } else {
+      // For users, get the trainer's user_id
+      const trainerData = bookingsWithChat?.find(b => b.id === booking.id);
       return {
-        id: booking.trainer_profile ? 
-          trainerProfiles.find(t => t.id === booking.trainer_id)?.user_id || booking.trainer_id 
-          : booking.trainer_id,
+        id: booking.trainer_id, // This will need to be the trainer's user_id for messaging
         name: booking.trainer_profile?.full_name || booking.trainer_profile?.email || 'Trainer'
       };
     }
@@ -217,7 +223,7 @@ const ChatList = ({ userRole }: ChatListProps) => {
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-500" />
                     <span className="font-medium">{partner.name}</span>
-                    {booking.unread_count > 0 && (
+                    {booking.unread_count && booking.unread_count > 0 && (
                       <Badge variant="destructive" className="text-xs">
                         {booking.unread_count}
                       </Badge>

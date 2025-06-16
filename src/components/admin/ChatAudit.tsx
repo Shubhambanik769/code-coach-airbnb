@@ -17,18 +17,18 @@ interface ChatMessage {
   is_read: boolean;
   message_type: string;
   booking_id: string;
-  sender_profile: {
+  sender_profile?: {
     full_name: string | null;
     email: string;
-  };
-  receiver_profile: {
+  } | null;
+  receiver_profile?: {
     full_name: string | null;
     email: string;
-  };
-  booking: {
+  } | null;
+  booking?: {
     training_topic: string;
     status: string;
-  };
+  } | null;
 }
 
 const ChatAudit = () => {
@@ -39,7 +39,7 @@ const ChatAudit = () => {
   const { data: messages, isLoading } = useQuery({
     queryKey: ['admin-chat-audit', searchTerm, statusFilter],
     queryFn: async (): Promise<ChatMessage[]> => {
-      let query = supabase
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select(`
           id,
@@ -48,21 +48,60 @@ const ChatAudit = () => {
           is_read,
           message_type,
           booking_id,
-          sender_profile:profiles!messages_sender_id_fkey(full_name, email),
-          receiver_profile:profiles!messages_receiver_id_fkey(full_name, email),
-          booking:bookings(training_topic, status)
+          sender_id,
+          receiver_id
         `)
         .order('created_at', { ascending: false });
 
+      if (messagesError) throw messagesError;
+
+      if (!messagesData || messagesData.length === 0) return [];
+
+      // Get sender and receiver profiles
+      const userIds = [...new Set([
+        ...messagesData.map(m => m.sender_id),
+        ...messagesData.map(m => m.receiver_id)
+      ])];
+
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      // Get booking data
+      const bookingIds = [...new Set(messagesData.map(m => m.booking_id).filter(Boolean))];
+      const { data: bookingsData } = await supabase
+        .from('bookings')
+        .select('id, training_topic, status')
+        .in('id', bookingIds);
+
+      // Combine data
+      const enrichedMessages: ChatMessage[] = messagesData.map(message => {
+        const senderProfile = profilesData?.find(p => p.id === message.sender_id);
+        const receiverProfile = profilesData?.find(p => p.id === message.receiver_id);
+        const booking = bookingsData?.find(b => b.id === message.booking_id);
+
+        return {
+          ...message,
+          sender_profile: senderProfile || null,
+          receiver_profile: receiverProfile || null,
+          booking: booking || null
+        };
+      });
+
+      // Apply search filter
+      let filteredData = enrichedMessages;
       if (searchTerm) {
-        query = query.or(`content.ilike.%${searchTerm}%,sender_profile.full_name.ilike.%${searchTerm}%,receiver_profile.full_name.ilike.%${searchTerm}%`);
+        filteredData = enrichedMessages.filter(msg => 
+          msg.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          msg.sender_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          msg.receiver_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          msg.sender_profile?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          msg.receiver_profile?.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-
-      let filteredData = data || [];
-      
+      // Apply status filter
       if (statusFilter !== 'all') {
         filteredData = filteredData.filter(msg => msg.booking?.status === statusFilter);
       }
@@ -76,7 +115,7 @@ const ChatAudit = () => {
     queryFn: async (): Promise<ChatMessage[]> => {
       if (!selectedBookingId) return [];
 
-      const { data, error } = await supabase
+      const { data: messagesData, error } = await supabase
         .from('messages')
         .select(`
           id,
@@ -85,15 +124,41 @@ const ChatAudit = () => {
           is_read,
           message_type,
           booking_id,
-          sender_profile:profiles!messages_sender_id_fkey(full_name, email),
-          receiver_profile:profiles!messages_receiver_id_fkey(full_name, email),
-          booking:bookings(training_topic, status)
+          sender_id,
+          receiver_id
         `)
         .eq('booking_id', selectedBookingId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+
+      if (!messagesData || messagesData.length === 0) return [];
+
+      // Get sender and receiver profiles
+      const userIds = [...new Set([
+        ...messagesData.map(m => m.sender_id),
+        ...messagesData.map(m => m.receiver_id)
+      ])];
+
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      // Get booking data
+      const { data: bookingData } = await supabase
+        .from('bookings')
+        .select('id, training_topic, status')
+        .eq('id', selectedBookingId)
+        .single();
+
+      // Combine data
+      return messagesData.map(message => ({
+        ...message,
+        sender_profile: profilesData?.find(p => p.id === message.sender_id) || null,
+        receiver_profile: profilesData?.find(p => p.id === message.receiver_id) || null,
+        booking: bookingData || null
+      }));
     },
     enabled: !!selectedBookingId
   });
@@ -133,11 +198,11 @@ const ChatAudit = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">
-                      {message.sender_profile?.full_name || message.sender_profile?.email}
+                      {message.sender_profile?.full_name || message.sender_profile?.email || 'Unknown'}
                     </span>
                     <span className="text-gray-500">→</span>
                     <span className="font-medium">
-                      {message.receiver_profile?.full_name || message.receiver_profile?.email}
+                      {message.receiver_profile?.full_name || message.receiver_profile?.email || 'Unknown'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -230,10 +295,10 @@ const ChatAudit = () => {
                     <TableCell>
                       <div className="text-sm">
                         <div className="font-medium">
-                          {message.sender_profile?.full_name || message.sender_profile?.email}
+                          {message.sender_profile?.full_name || message.sender_profile?.email || 'Unknown'}
                         </div>
                         <div className="text-gray-500">
-                          → {message.receiver_profile?.full_name || message.receiver_profile?.email}
+                          → {message.receiver_profile?.full_name || message.receiver_profile?.email || 'Unknown'}
                         </div>
                       </div>
                     </TableCell>
