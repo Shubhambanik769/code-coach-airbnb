@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Upload, CheckCircle, FileText } from 'lucide-react';
+import { Upload, CheckCircle, FileText, X } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -82,7 +81,10 @@ const TrainerApplicationForm = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<{[key: string]: boolean}>({});
-  const [showForm, setShowForm] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{[key: string]: Array<{name: string, url: string}>}>({
+    certification: [],
+    identity: []
+  });
 
   // Check if user already has a trainer application
   const { data: existingApplication, isLoading: applicationLoading } = useQuery({
@@ -180,7 +182,35 @@ const TrainerApplicationForm = () => {
   });
 
   const handleFileUpload = async (file: File, type: 'certification' | 'identity') => {
-    if (!user) return null;
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to upload files.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "File size must be less than 10MB.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload only PDF, JPG, JPEG, or PNG files.",
+        variant: "destructive"
+      });
+      return null;
+    }
 
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${type}_${Date.now()}.${fileExt}`;
@@ -188,27 +218,65 @@ const TrainerApplicationForm = () => {
     setUploadingFiles(prev => ({ ...prev, [type]: true }));
 
     try {
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading file:', fileName, 'to bucket: trainer-documents');
+      
+      const { data, error: uploadError } = await supabase.storage
         .from('trainer-documents')
         .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', data);
 
       const { data: { publicUrl } } = supabase.storage
         .from('trainer-documents')
         .getPublicUrl(fileName);
 
       setUploadingFiles(prev => ({ ...prev, [type]: false }));
+      
+      // Update uploaded files tracking
+      setUploadedFiles(prev => ({
+        ...prev,
+        [type]: type === 'certification' 
+          ? [...prev[type], { name: file.name, url: publicUrl }]
+          : [{ name: file.name, url: publicUrl }]
+      }));
+
+      toast({
+        title: "Upload Successful",
+        description: `${file.name} has been uploaded successfully.`
+      });
+
       return publicUrl;
     } catch (error) {
       console.error('Upload error:', error);
       setUploadingFiles(prev => ({ ...prev, [type]: false }));
       toast({
         title: "Upload Error",
-        description: "Failed to upload file. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload file. Please try again.",
         variant: "destructive"
       });
       return null;
+    }
+  };
+
+  const removeFile = (type: 'certification' | 'identity', index?: number) => {
+    if (type === 'certification' && typeof index === 'number') {
+      const newFiles = [...uploadedFiles.certification];
+      newFiles.splice(index, 1);
+      setUploadedFiles(prev => ({ ...prev, certification: newFiles }));
+      
+      // Update form value
+      const currentUrls = form.getValues('certificationDocuments');
+      const newUrls = [...currentUrls];
+      newUrls.splice(index, 1);
+      form.setValue('certificationDocuments', newUrls);
+    } else if (type === 'identity') {
+      setUploadedFiles(prev => ({ ...prev, identity: [] }));
+      form.setValue('identityProof', '');
     }
   };
 
@@ -471,7 +539,7 @@ const TrainerApplicationForm = () => {
                                     {uploadingFiles.certification ? 'Uploading...' : 'Upload Certifications'}
                                   </Button>
                                   <p className="text-sm text-gray-500">
-                                    Upload relevant certifications, degrees, or training certificates
+                                    Upload relevant certifications, degrees, or training certificates (PDF, JPG, PNG - Max 10MB each)
                                   </p>
                                 </div>
                                 <input
@@ -482,18 +550,33 @@ const TrainerApplicationForm = () => {
                                   className="hidden"
                                   onChange={async (e) => {
                                     const files = Array.from(e.target.files || []);
-                                    const uploadPromises = files.map(file => handleFileUpload(file, 'certification'));
-                                    const urls = await Promise.all(uploadPromises);
-                                    const validUrls = urls.filter(url => url !== null) as string[];
-                                    field.onChange([...field.value, ...validUrls]);
+                                    for (const file of files) {
+                                      const url = await handleFileUpload(file, 'certification');
+                                      if (url) {
+                                        field.onChange([...field.value, url]);
+                                      }
+                                    }
+                                    // Reset input
+                                    e.target.value = '';
                                   }}
                                 />
-                                {field.value.length > 0 && (
+                                {uploadedFiles.certification.length > 0 && (
                                   <div className="mt-4 space-y-2">
-                                    {field.value.map((url, index) => (
-                                      <div key={index} className="flex items-center gap-2 text-sm text-green-600">
-                                        <CheckCircle className="h-4 w-4" />
-                                        Certification {index + 1} uploaded
+                                    {uploadedFiles.certification.map((file, index) => (
+                                      <div key={index} className="flex items-center justify-between gap-2 p-2 bg-green-50 rounded">
+                                        <div className="flex items-center gap-2 text-sm text-green-600">
+                                          <CheckCircle className="h-4 w-4" />
+                                          <span className="truncate">{file.name}</span>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeFile('certification', index)}
+                                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
                                       </div>
                                     ))}
                                   </div>
@@ -524,7 +607,7 @@ const TrainerApplicationForm = () => {
                                     {uploadingFiles.identity ? 'Uploading...' : 'Upload ID Proof'}
                                   </Button>
                                   <p className="text-sm text-gray-500">
-                                    Upload government-issued ID (passport, driver's license)
+                                    Upload government-issued ID (passport, driver's license) - PDF, JPG, PNG - Max 10MB
                                   </p>
                                 </div>
                                 <input
@@ -536,14 +619,31 @@ const TrainerApplicationForm = () => {
                                     const file = e.target.files?.[0];
                                     if (file) {
                                       const url = await handleFileUpload(file, 'identity');
-                                      if (url) field.onChange(url);
+                                      if (url) {
+                                        field.onChange(url);
+                                      }
                                     }
+                                    // Reset input
+                                    e.target.value = '';
                                   }}
                                 />
-                                {field.value && (
-                                  <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
-                                    <CheckCircle className="h-4 w-4" />
-                                    Identity proof uploaded
+                                {uploadedFiles.identity.length > 0 && (
+                                  <div className="mt-4">
+                                    <div className="flex items-center justify-between gap-2 p-2 bg-green-50 rounded">
+                                      <div className="flex items-center gap-2 text-sm text-green-600">
+                                        <CheckCircle className="h-4 w-4" />
+                                        <span className="truncate">{uploadedFiles.identity[0].name}</span>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeFile('identity')}
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                   </div>
                                 )}
                               </div>
