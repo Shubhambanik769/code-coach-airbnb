@@ -19,7 +19,7 @@ const SearchResults = () => {
   const [location, setLocation] = useState('');
   const [sortBy, setSortBy] = useState('rating');
 
-  const { data: trainers = [], isLoading } = useQuery({
+  const { data: trainers = [], isLoading, error } = useQuery({
     queryKey: ['trainers', searchTerm, specialization, experienceLevel, priceRange, location, sortBy],
     queryFn: async () => {
       console.log('Fetching trainers with filters:', {
@@ -31,64 +31,76 @@ const SearchResults = () => {
         sortBy
       });
 
-      let query = supabase
-        .from('trainers')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq('status', 'approved');
+      try {
+        let query = supabase
+          .from('trainers')
+          .select(`
+            *,
+            profiles (
+              full_name,
+              avatar_url
+            )
+          `)
+          .eq('status', 'approved');
 
-      // Apply search term filter
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,skills.cs.{${searchTerm}}`);
-      }
-
-      // Apply specialization filter
-      if (specialization) {
-        query = query.ilike('specialization', `%${specialization}%`);
-      }
-
-      // Apply experience level filter
-      if (experienceLevel) {
-        const minExp = experienceLevel === 'junior' ? 0 : experienceLevel === 'mid' ? 3 : 7;
-        const maxExp = experienceLevel === 'junior' ? 2 : experienceLevel === 'mid' ? 6 : 50;
-        query = query.gte('experience_years', minExp).lte('experience_years', maxExp);
-      }
-
-      // Apply price range filter
-      if (priceRange) {
-        const [min, max] = priceRange.split('-').map(Number);
-        if (max) {
-          query = query.gte('hourly_rate', min).lte('hourly_rate', max);
-        } else {
-          query = query.gte('hourly_rate', min);
+        // Apply search term filter
+        if (searchTerm) {
+          // Use a simpler search approach to avoid potential issues
+          query = query.or(`name.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%`);
         }
+
+        // Apply specialization filter
+        if (specialization) {
+          query = query.ilike('specialization', `%${specialization}%`);
+        }
+
+        // Apply experience level filter
+        if (experienceLevel) {
+          const minExp = experienceLevel === 'junior' ? 0 : experienceLevel === 'mid' ? 3 : 7;
+          const maxExp = experienceLevel === 'junior' ? 2 : experienceLevel === 'mid' ? 6 : 50;
+          query = query.gte('experience_years', minExp).lte('experience_years', maxExp);
+        }
+
+        // Apply price range filter
+        if (priceRange) {
+          const [min, max] = priceRange.split('-').map(Number);
+          if (max) {
+            query = query.gte('hourly_rate', min).lte('hourly_rate', max);
+          } else {
+            query = query.gte('hourly_rate', min);
+          }
+        }
+
+        // Apply location filter
+        if (location) {
+          query = query.ilike('location', `%${location}%`);
+        }
+
+        // Apply sorting
+        const ascending = sortBy === 'price_low' || sortBy === 'experience_low';
+        const sortColumn = sortBy.includes('price') ? 'hourly_rate' : 
+                          sortBy.includes('experience') ? 'experience_years' : 'rating';
+        
+        query = query.order(sortColumn, { ascending });
+
+        const { data, error } = await query;
+        
+        console.log('Trainers data:', data);
+        console.log('Trainers error:', error);
+        
+        if (error) {
+          console.error('Database query error:', error);
+          throw error;
+        }
+        
+        return data || [];
+      } catch (err) {
+        console.error('Search query failed:', err);
+        throw err;
       }
-
-      // Apply location filter
-      if (location) {
-        query = query.ilike('location', `%${location}%`);
-      }
-
-      // Apply sorting
-      const ascending = sortBy === 'price_low' || sortBy === 'experience_low';
-      const sortColumn = sortBy.includes('price') ? 'hourly_rate' : 
-                        sortBy.includes('experience') ? 'experience_years' : 'rating';
-      
-      query = query.order(sortColumn, { ascending });
-
-      const { data, error } = await query;
-      
-      console.log('Trainers data:', data);
-      console.log('Trainers error:', error);
-      
-      if (error) throw error;
-      return data || [];
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   const clearFilters = () => {
@@ -101,6 +113,29 @@ const SearchResults = () => {
   };
 
   const activeFiltersCount = [searchTerm, specialization, experienceLevel, priceRange, location].filter(Boolean).length;
+
+  // Handle error state
+  if (error) {
+    console.error('Search error:', error);
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card className="mb-8">
+            <CardContent className="p-6 text-center">
+              <h2 className="text-xl font-semibold text-red-600 mb-2">Search Error</h2>
+              <p className="text-gray-600 mb-4">
+                There was an issue loading trainers. Please try again.
+              </p>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Refresh Page
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -121,7 +156,7 @@ const SearchResults = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
                 type="text"
-                placeholder="Search by name, title, specialization, or skills..."
+                placeholder="Search by name, title, specialization..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 text-lg py-3"
