@@ -39,11 +39,18 @@ const NotificationSettings = () => {
   const { data: userPreferences } = useQuery({
     queryKey: ['notification-preferences', user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
         .from('profiles')
         .select('notification_preferences, phone')
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .single();
+
+      if (error) {
+        console.error('Error fetching notification preferences:', error);
+        return null;
+      }
 
       if (data?.notification_preferences) {
         const prefs = data.notification_preferences as NotificationPreferences;
@@ -61,13 +68,15 @@ const NotificationSettings = () => {
   // Update notification preferences
   const updatePreferencesMutation = useMutation({
     mutationFn: async (newPreferences: NotificationPreferences) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
       const { error } = await supabase
         .from('profiles')
         .update({
           notification_preferences: newPreferences,
           phone: newPreferences.whatsapp_number
         })
-        .eq('id', user?.id);
+        .eq('id', user.id);
 
       if (error) throw error;
     },

@@ -1,6 +1,9 @@
 
 import { useState } from 'react';
 import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
 import TrainerCalendar from '@/components/trainer/TrainerCalendar';
@@ -11,23 +14,49 @@ import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
+  const { user } = useAuth();
+
+  // Get trainer ID for the current user
+  const { data: trainer } = useQuery({
+    queryKey: ['trainer', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('trainers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const trainerId = trainer?.id;
 
   const renderContent = () => {
+    if (!trainerId) {
+      return (
+        <div className="flex items-center justify-center p-8">
+          <p className="text-gray-500">Loading trainer data...</p>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'analytics':
         return <TrainerAnalytics />;
       case 'profile':
-        return <TrainerProfile />;
+        return <TrainerProfile trainerId={trainerId} />;
       case 'bookings':
-        return <TrainerBookings />;
+        return <TrainerBookings trainerId={trainerId} />;
       case 'calendar':
-        return <TrainerCalendar />;
+        return <TrainerCalendar trainerId={trainerId} />;
       case 'earnings':
-        return <TrainerEarnings />;
+        return <TrainerEarnings trainerId={trainerId} />;
       case 'reviews':
         return <EnhancedTrainerReviews />;
       case 'settings':
-        return <TrainerSettings />;
+        return <TrainerSettings trainerId={trainerId} />;
       default:
         return <TrainerAnalytics />;
     }

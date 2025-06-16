@@ -6,8 +6,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Star, TrendingUp, DollarSign } from 'lucide-react';
 
+interface TrainerWithStats {
+  id: string;
+  user_id: string;
+  title: string;
+  specialization: string;
+  profile?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  totalBookings: number;
+  completedBookings: number;
+  totalEarnings: number;
+  averageRating: number;
+  totalReviews: number;
+  completionRate: number;
+  recentBookings: number;
+  bookingGrowth: number;
+}
+
+interface TopTrainersData {
+  topByEarnings: TrainerWithStats[];
+  topByRating: TrainerWithStats[];
+  topByBookings: TrainerWithStats[];
+  fastestGrowing: TrainerWithStats[];
+}
+
 const TopTrainersAnalytics = () => {
-  const { data: topTrainers, isLoading } = useQuery({
+  const { data: topTrainers, isLoading } = useQuery<TopTrainersData>({
     queryKey: ['top-trainers-analytics'],
     queryFn: async () => {
       // Get all trainers with their profiles
@@ -16,7 +43,12 @@ const TopTrainersAnalytics = () => {
         .select('*')
         .eq('status', 'approved');
 
-      if (!trainers) return [];
+      if (!trainers) return {
+        topByEarnings: [],
+        topByRating: [],
+        topByBookings: [],
+        fastestGrowing: []
+      };
 
       // Get user profiles
       const userIds = trainers.map(t => t.user_id);
@@ -39,7 +71,7 @@ const TopTrainersAnalytics = () => {
         .in('trainer_id', trainerIds);
 
       // Process data for each trainer
-      const trainersWithStats = trainers.map(trainer => {
+      const trainersWithStats: TrainerWithStats[] = trainers.map(trainer => {
         const profile = profiles?.find(p => p.id === trainer.user_id);
         const trainerBookings = bookings?.filter(b => b.trainer_id === trainer.id) || [];
         const trainerReviews = reviews?.filter(r => r.trainer_id === trainer.id) || [];
@@ -101,7 +133,7 @@ const TopTrainersAnalytics = () => {
     }).format(amount);
   };
 
-  const renderTrainerTable = (trainers: any[], title: string, sortBy: string) => (
+  const renderTrainerTable = (trainers: TrainerWithStats[], title: string, sortBy: string) => (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
