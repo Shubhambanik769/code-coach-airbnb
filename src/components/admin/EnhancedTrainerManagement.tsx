@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Ban, Edit, RotateCcw, DollarSign, User } from 'lucide-react';
+import { Search, Edit, RotateCcw } from 'lucide-react';
 
 const EnhancedTrainerManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,32 +41,72 @@ const EnhancedTrainerManagement = () => {
       const { data: trainersData, error } = await query;
       if (error) throw error;
 
-      // Get trainer profiles and pricing
+      // Get trainer profiles and comprehensive data
       const userIds = [...new Set(trainersData?.map(t => t.user_id) || [])];
       const trainerIds = [...new Set(trainersData?.map(t => t.id) || [])];
       
-      const [profilesResult, pricingResult, bookingsResult] = await Promise.all([
+      const [profilesResult, pricingResult, bookingsResult, reviewsResult, feedbackResult] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email').in('id', userIds),
         supabase.from('trainer_pricing').select('*').in('trainer_id', trainerIds),
-        supabase.from('bookings').select('trainer_id, total_amount, status').in('trainer_id', trainerIds)
+        supabase.from('bookings').select('trainer_id, total_amount, status').in('trainer_id', trainerIds),
+        supabase.from('reviews').select('trainer_id, rating, would_recommend').in('trainer_id', trainerIds),
+        supabase.from('feedback_responses')
+          .select(`
+            rating,
+            would_recommend,
+            feedback_links!inner(
+              booking_id,
+              bookings!inner(trainer_id)
+            )
+          `)
+          .in('feedback_links.bookings.trainer_id', trainerIds)
       ]);
 
-      return trainersData?.map(trainer => {
+      return await Promise.all(trainersData?.map(async (trainer) => {
         const profile = profilesResult.data?.find(p => p.id === trainer.user_id);
         const pricing = pricingResult.data?.find(p => p.trainer_id === trainer.id);
         const trainerBookings = bookingsResult.data?.filter(b => b.trainer_id === trainer.id) || [];
+        const trainerReviews = reviewsResult.data?.filter(r => r.trainer_id === trainer.id) || [];
+        const trainerFeedback = feedbackResult.data?.filter(
+          fr => fr.feedback_links?.bookings?.trainer_id === trainer.id
+        ) || [];
+
+        // Calculate comprehensive stats
+        const allRatings = [
+          ...trainerReviews.map(r => r.rating),
+          ...trainerFeedback.map(f => f.rating)
+        ];
+
+        const avgRating = allRatings.length > 0 
+          ? allRatings.reduce((sum, rating) => sum + rating, 0) / allRatings.length 
+          : 0;
+
+        const totalReviews = allRatings.length;
         const totalEarnings = trainerBookings
           .filter(b => b.status === 'completed')
           .reduce((sum, b) => sum + (b.total_amount || 0), 0);
+
+        // Update trainer rating in database for consistency
+        if (totalReviews > 0) {
+          await supabase
+            .from('trainers')
+            .update({
+              rating: Number(avgRating.toFixed(1)),
+              total_reviews: totalReviews
+            })
+            .eq('id', trainer.id);
+        }
 
         return {
           ...trainer,
           profile,
           pricing,
           total_bookings: trainerBookings.length,
-          total_earnings: totalEarnings
+          total_earnings: totalEarnings,
+          rating: Number(avgRating.toFixed(1)),
+          total_reviews: totalReviews
         };
-      }) || [];
+      }) || []);
     }
   });
 
@@ -91,15 +131,24 @@ const EnhancedTrainerManagement = () => {
   // Update trainer pricing mutation
   const updatePricingMutation = useMutation({
     mutationFn: async ({ trainerId, pricing }: { trainerId: string; pricing: any }) => {
-      const { error } = await supabase
-        .from('trainer_pricing')
-        .upsert({
-          trainer_id: trainerId,
-          hourly_rate: pricing.hourly_rate,
-          session_rate: pricing.session_rate,
-          updated_at: new Date().toISOString()
-        });
-      if (error) throw error;
+      // Update both trainer table and pricing table
+      const [trainerUpdate, pricingUpdate] = await Promise.all([
+        supabase
+          .from('trainers')
+          .update({ hourly_rate: pricing.hourly_rate })
+          .eq('id', trainerId),
+        supabase
+          .from('trainer_pricing')
+          .upsert({
+            trainer_id: trainerId,
+            hourly_rate: pricing.hourly_rate,
+            session_rate: pricing.session_rate,
+            updated_at: new Date().toISOString()
+          })
+      ]);
+
+      if (trainerUpdate.error) throw trainerUpdate.error;
+      if (pricingUpdate.error) throw pricingUpdate.error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enhanced-trainers'] });
@@ -223,6 +272,7 @@ const EnhancedTrainerManagement = () => {
                     <TableCell>
                       <div className="text-sm">
                         <div>Rating: {trainer.rating || 0}/5</div>
+                        <div>Reviews: {trainer.total_reviews || 0}</div>
                         <div>Bookings: {trainer.total_bookings}</div>
                         <div>Earnings: ₹{trainer.total_earnings}</div>
                       </div>

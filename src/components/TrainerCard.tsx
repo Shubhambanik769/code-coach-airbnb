@@ -77,6 +77,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const handleViewProfile = () => {
+    console.log('TrainerCard: Viewing profile for trainer ID:', trainer.id);
     if (onSelect) {
       onSelect(trainer.id);
     } else {
@@ -127,7 +128,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex items-center gap-1">
                     {renderStars(0)}
-                    <span className="text-sm font-medium text-gray-500">New</span>
+                    <span className="text-sm font-medium text-gray-500">New trainer</span>
                   </div>
                   <span className="text-xs text-gray-500">(No reviews yet)</span>
                 </div>

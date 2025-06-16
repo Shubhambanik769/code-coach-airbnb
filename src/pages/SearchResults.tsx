@@ -27,10 +27,12 @@ const SearchResults = () => {
   const { data: trainers, isLoading } = useQuery({
     queryKey: ['search-trainers', searchTerm, sortBy, filterBy],
     queryFn: async () => {
+      console.log('Searching trainers with:', { searchTerm, sortBy, filterBy });
+      
       let query = supabase
         .from('trainers')
         .select('*')
-        .eq('status', 'approved');
+        .eq('status', 'approved'); // Only show approved trainers
 
       // Apply search filter
       if (searchTerm) {
@@ -43,7 +45,12 @@ const SearchResults = () => {
       }
 
       const { data: trainersData, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trainers:', error);
+        throw error;
+      }
+
+      console.log('Found trainers:', trainersData?.length);
 
       // Get trainer profiles and comprehensive feedback data
       const userIds = [...new Set(trainersData?.map(t => t.user_id) || [])];
@@ -65,7 +72,7 @@ const SearchResults = () => {
       ]);
 
       // Process trainers with comprehensive data
-      const processedTrainers = trainersData?.map(trainer => {
+      const processedTrainers = await Promise.all(trainersData?.map(async (trainer) => {
         const profile = profilesResult.data?.find(p => p.id === trainer.user_id);
         const trainerReviews = reviewsResult.data?.filter(r => r.trainer_id === trainer.id) || [];
         const trainerFeedback = feedbackResult.data?.filter(
@@ -85,13 +92,26 @@ const SearchResults = () => {
 
         const totalReviews = allRatings.length;
 
+        // Update the trainer's rating in the database for consistency
+        if (totalReviews > 0) {
+          await supabase
+            .from('trainers')
+            .update({
+              rating: Number(avgRating.toFixed(1)),
+              total_reviews: totalReviews
+            })
+            .eq('id', trainer.id);
+        }
+
         return {
           ...trainer,
           profiles: profile,
           rating: Number(avgRating.toFixed(1)),
           total_reviews: totalReviews
         };
-      }) || [];
+      }) || []);
+
+      console.log('Processed trainers with ratings:', processedTrainers);
 
       // Apply sorting
       return processedTrainers.sort((a, b) => {
@@ -112,6 +132,7 @@ const SearchResults = () => {
   });
 
   const handleTrainerSelect = (trainerId: string) => {
+    console.log('Navigating to trainer profile:', trainerId);
     navigate(`/trainer/${trainerId}`);
   };
 
@@ -213,7 +234,7 @@ const SearchResults = () => {
             <p className="text-gray-600 text-center py-8">
               {searchTerm 
                 ? `No trainers found matching "${searchTerm}". Try adjusting your search terms.`
-                : 'No trainers available at the moment.'
+                : 'No approved trainers available at the moment.'
               }
             </p>
           </CardContent>

@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,14 +14,27 @@ const TrainerProfilePage = () => {
   const { data: trainerData, isLoading } = useQuery({
     queryKey: ['trainer-public-profile', id],
     queryFn: async () => {
-      // Get trainer data
+      console.log('Fetching trainer with ID:', id);
+      
+      // Get trainer data - only fetch approved trainers for public view
       const { data: trainer, error: trainerError } = await supabase
         .from('trainers')
         .select('*')
         .eq('id', id)
+        .eq('status', 'approved')
         .single();
 
-      if (trainerError) throw trainerError;
+      console.log('Trainer data:', trainer, 'Error:', trainerError);
+
+      if (trainerError) {
+        console.error('Trainer fetch error:', trainerError);
+        throw trainerError;
+      }
+
+      if (!trainer) {
+        console.error('No trainer found with ID:', id);
+        throw new Error('Trainer not found');
+      }
 
       // Get profile data
       const { data: profile } = await supabase
@@ -31,11 +43,15 @@ const TrainerProfilePage = () => {
         .eq('id', trainer.user_id)
         .single();
 
+      console.log('Profile data:', profile);
+
       // Get reviews from reviews table
       const { data: reviews } = await supabase
         .from('reviews')
         .select('*')
         .eq('trainer_id', id);
+
+      console.log('Reviews data:', reviews);
 
       // Get feedback responses through feedback links
       const { data: feedbackResponses } = await supabase
@@ -48,6 +64,8 @@ const TrainerProfilePage = () => {
           )
         `)
         .eq('feedback_links.bookings.trainer_id', id);
+
+      console.log('Feedback responses:', feedbackResponses);
 
       // Combine all feedback data
       const allFeedback = [
@@ -75,8 +93,32 @@ const TrainerProfilePage = () => {
         }))
       ];
 
+      // Calculate comprehensive rating
+      const totalRatings = allFeedback.length;
+      const averageRating = totalRatings > 0 
+        ? allFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalRatings
+        : 0;
+
+      console.log('Calculated average rating:', averageRating, 'from', totalRatings, 'responses');
+
+      // Update trainer rating in database to keep it synced
+      if (totalRatings > 0) {
+        await supabase
+          .from('trainers')
+          .update({
+            rating: Number(averageRating.toFixed(1)),
+            total_reviews: totalRatings
+          })
+          .eq('id', id);
+      }
+
       return { 
-        trainer: { ...trainer, profile },
+        trainer: { 
+          ...trainer, 
+          profile,
+          rating: Number(averageRating.toFixed(1)),
+          total_reviews: totalRatings
+        },
         reviews: allFeedback
       };
     },
@@ -151,7 +193,7 @@ const TrainerProfilePage = () => {
         <Card>
           <CardContent className="p-6 text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Trainer Not Found</h1>
-            <p className="text-gray-600">The trainer you're looking for doesn't exist.</p>
+            <p className="text-gray-600">The trainer you're looking for doesn't exist or is not approved yet.</p>
           </CardContent>
         </Card>
       </div>
@@ -201,7 +243,7 @@ const TrainerProfilePage = () => {
                             </span>
                           </div>
                           <span className="text-gray-500">
-                            ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+                            ({trainer.total_reviews} {trainer.total_reviews === 1 ? 'review' : 'reviews'})
                           </span>
                         </div>
                         {reviews.length > 0 && (
