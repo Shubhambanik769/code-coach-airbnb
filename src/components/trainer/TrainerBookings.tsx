@@ -109,6 +109,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
       if (error) throw error;
 
+      // If marking as completed, create feedback link immediately
+      if (status === 'completed') {
+        await createFeedbackLink(bookingId);
+      }
+
       toast({
         title: "Success",
         description: `Booking ${status} successfully`
@@ -121,6 +126,31 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         description: "Failed to update booking status",
         variant: "destructive"
       });
+    }
+  };
+
+  const createFeedbackLink = async (bookingId: string) => {
+    try {
+      console.log('Creating feedback link for booking:', bookingId);
+      
+      // Generate a unique token
+      const token = btoa(Math.random().toString()).substring(0, 32);
+      
+      const { error } = await supabase
+        .from('feedback_links')
+        .insert({
+          booking_id: bookingId,
+          token: token,
+          is_active: true
+        });
+
+      if (error) {
+        console.error('Error creating feedback link:', error);
+      } else {
+        console.log('Feedback link created successfully');
+      }
+    } catch (error) {
+      console.error('Error in createFeedbackLink:', error);
     }
   };
 
@@ -299,7 +329,15 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                           </Button>
                         )}
                         {booking.status === 'completed' && (!booking.feedback_links || booking.feedback_links.length === 0) && (
-                          <span className="text-sm text-gray-500">Feedback link generating...</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => createFeedbackLink(booking.id)}
+                            className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                          >
+                            <Link className="h-4 w-4 mr-1" />
+                            Generate Link
+                          </Button>
                         )}
                         {booking.status === 'cancelled' && (
                           <span className="text-sm text-red-500">Cancelled</span>
