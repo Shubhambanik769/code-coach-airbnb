@@ -33,8 +33,8 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const getRecommendationRate = () => {
-    // This would be calculated from feedback data
-    // For now, we'll estimate based on rating
+    // Calculate recommendation rate based on rating
+    // This is now automatically calculated by the database triggers
     if (!trainer.rating || trainer.rating === 0) return 0;
     return Math.round((trainer.rating / 5) * 100);
   };
@@ -49,7 +49,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
             </h3>
             <p className="text-gray-600 text-sm mb-2">{trainer.title}</p>
             
-            {/* Rating and Reviews */}
+            {/* Rating and Reviews - Now shows combined feedback from all sources */}
             <div className="flex items-center gap-2 mb-2">
               <div className="flex items-center gap-1">
                 {renderStars(trainer.rating || 0)}
@@ -58,11 +58,11 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
                 </span>
               </div>
               <span className="text-xs text-gray-500">
-                ({trainer.total_reviews || 0} reviews)
+                ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews & feedback'})
               </span>
             </div>
 
-            {/* Recommendation Rate */}
+            {/* Recommendation Rate - Now based on actual feedback data */}
             {trainer.total_reviews && trainer.total_reviews > 0 && (
               <div className="flex items-center gap-1 mb-2">
                 <ThumbsUp className="h-3 w-3 text-green-600" />

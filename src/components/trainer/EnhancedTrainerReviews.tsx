@@ -22,7 +22,7 @@ const EnhancedTrainerReviews = () => {
 
       if (!trainer) throw new Error('Trainer not found');
 
-      // Get both reviews and feedback responses
+      // Get both reviews and feedback responses without authentication requirements
       const [reviewsResult, feedbackResult] = await Promise.all([
         supabase
           .from('reviews')
@@ -53,13 +53,13 @@ const EnhancedTrainerReviews = () => {
         return { allFeedback: [], stats: null };
       }
 
-      // Combine both data sources
+      // Combine both data sources for comprehensive view
       const allFeedback = [
         ...reviews.map(review => ({
           ...review,
           type: 'review',
           date: review.created_at,
-          name: 'Anonymous Student' // Reviews don't have respondent names
+          name: 'Anonymous Student'
         })),
         ...feedbackResponses.map(feedback => ({
           ...feedback,
@@ -70,7 +70,7 @@ const EnhancedTrainerReviews = () => {
         }))
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      // Calculate comprehensive stats
+      // Calculate comprehensive statistics
       const totalResponses = allFeedback.length;
       const averageRating = allFeedback.reduce((sum, item) => sum + item.rating, 0) / totalResponses;
       
@@ -154,7 +154,7 @@ const EnhancedTrainerReviews = () => {
             <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-2">No reviews or feedback yet</p>
             <p className="text-sm text-gray-400">
-              Reviews and feedback will appear here after students complete sessions with you
+              Reviews and feedback from both platform users and external participants will appear here
             </p>
           </div>
         </CardContent>
@@ -246,12 +246,12 @@ const EnhancedTrainerReviews = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Recent Reviews & Feedback
+            All Reviews & Feedback
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {allFeedback.slice(0, 10).map((item, index) => (
+            {allFeedback.slice(0, 15).map((item, index) => (
               <div key={`${item.type}-${item.id}-${index}`} className="border-b border-gray-100 pb-6 last:border-b-0">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -260,13 +260,13 @@ const EnhancedTrainerReviews = () => {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {item.name || 'Anonymous Student'}
+                        {item.name || 'Anonymous'}
                       </p>
                       <p className="text-sm text-gray-500">
                         {format(new Date(item.date), 'MMM dd, yyyy')}
                       </p>
                       <Badge variant="outline" className="text-xs mt-1">
-                        {item.type === 'review' ? 'Review' : 'Feedback Form'}
+                        {item.type === 'review' ? 'Platform Review' : 'External Feedback'}
                       </Badge>
                     </div>
                   </div>

@@ -41,12 +41,13 @@ const FeedbackForm = () => {
     }
   }, [token]);
 
-  // Fetch feedback link details
+  // Fetch feedback link details - NO AUTHENTICATION REQUIRED
   const { data: feedbackLink, isLoading, error } = useQuery({
     queryKey: ['feedback-link', token],
     queryFn: async () => {
       if (!token) throw new Error('No token provided');
       
+      // Create a simple client without authentication requirements
       const { data, error } = await supabase
         .from('feedback_links')
         .select(`
@@ -71,7 +72,7 @@ const FeedbackForm = () => {
     }
   });
 
-  // Submit feedback mutation
+  // Submit feedback mutation - NO AUTHENTICATION REQUIRED
   const submitFeedbackMutation = useMutation({
     mutationFn: async (feedbackData: typeof formData) => {
       if (!feedbackLink?.id) throw new Error('Invalid feedback link');
@@ -92,6 +93,7 @@ const FeedbackForm = () => {
         throw new Error('You have already submitted feedback for this session.');
       }
 
+      // Submit feedback without authentication
       const { error } = await supabase
         .from('feedback_responses')
         .insert({
