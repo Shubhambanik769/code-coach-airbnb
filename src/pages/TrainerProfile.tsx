@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +52,7 @@ const TrainerProfile = () => {
         .from('trainers')
         .select(`
           *,
-          profiles!trainers_user_id_fkey (
+          profiles!user_id (
             full_name,
             avatar_url
           )
@@ -74,7 +73,7 @@ const TrainerProfile = () => {
         .from('reviews')
         .select(`
           *,
-          profiles!reviews_student_id_fkey (
+          profiles!student_id (
             full_name
           )
         `)
