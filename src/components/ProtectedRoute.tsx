@@ -24,6 +24,12 @@ const ProtectedRoute = ({
         return;
       }
 
+      // Special handling for trainer role
+      if (requiredRole === 'trainer' && userRole === 'trainer') {
+        // Let the TrainerDashboard component handle the trainer status check
+        return;
+      }
+
       if (requiredRole && userRole !== requiredRole) {
         // Redirect based on user role
         switch (userRole) {

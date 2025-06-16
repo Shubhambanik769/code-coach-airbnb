@@ -4,6 +4,8 @@ import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User } fro
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
 import TrainerCalendar from '@/components/trainer/TrainerCalendar';
@@ -15,29 +17,72 @@ import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Get trainer ID for the current user
-  const { data: trainer } = useQuery({
+  const { data: trainer, isLoading: trainerLoading, error } = useQuery({
     queryKey: ['trainer', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data } = await supabase
+      
+      console.log('Fetching trainer for user:', user.id);
+      
+      const { data, error } = await supabase
         .from('trainers')
-        .select('id')
+        .select('id, status')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle no results
+      
+      if (error) {
+        console.error('Error fetching trainer:', error);
+        throw error;
+      }
+      
+      console.log('Trainer data:', data);
       return data;
     },
     enabled: !!user?.id
   });
 
+  // Redirect to trainer status page if no trainer record exists or if not approved
+  useEffect(() => {
+    if (!trainerLoading && user?.id) {
+      if (!trainer) {
+        console.log('No trainer record found, redirecting to trainer status');
+        navigate('/trainer-status');
+      } else if (trainer.status !== 'approved') {
+        console.log('Trainer not approved, redirecting to trainer status');
+        navigate('/trainer-status');
+      }
+    }
+  }, [trainer, trainerLoading, user?.id, navigate]);
+
   const trainerId = trainer?.id;
 
   const renderContent = () => {
+    if (trainerLoading) {
+      return (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-techblue-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading trainer data...</p>
+          </div>
+        </div>
+      );
+    }
+
     if (!trainerId) {
       return (
         <div className="flex items-center justify-center p-8">
-          <p className="text-gray-500">Loading trainer data...</p>
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">Trainer profile not found</p>
+            <button 
+              onClick={() => navigate('/trainer-status')}
+              className="text-techblue-600 hover:text-techblue-700 underline"
+            >
+              Check your application status
+            </button>
+          </div>
         </div>
       );
     }
@@ -61,6 +106,11 @@ const TrainerDashboard = () => {
         return <TrainerAnalytics />;
     }
   };
+
+  // Don't render the full dashboard until we know the trainer status
+  if (trainerLoading || !trainer || trainer.status !== 'approved') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
