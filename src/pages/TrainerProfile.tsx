@@ -52,7 +52,7 @@ const TrainerProfile = () => {
         .from('trainers')
         .select(`
           *,
-          profiles (
+          profiles!fk_trainers_user_id (
             full_name,
             avatar_url
           )
@@ -73,7 +73,7 @@ const TrainerProfile = () => {
         .from('reviews')
         .select(`
           *,
-          profiles (
+          profiles!fk_reviews_student_id (
             full_name
           )
         `)
