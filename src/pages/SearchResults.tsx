@@ -32,18 +32,13 @@ const SearchResults = () => {
       });
 
       try {
+        // First, get basic trainer data
         let query = supabase
           .from('trainers')
-          .select(`
-            *,
-            profiles!inner(
-              full_name,
-              avatar_url
-            )
-          `)
+          .select('*')
           .eq('status', 'approved');
 
-        // Apply search term filter - simplified to avoid text search issues
+        // Apply search term filter
         if (searchTerm) {
           query = query.or(`name.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%`);
         }
@@ -75,7 +70,7 @@ const SearchResults = () => {
           query = query.ilike('location', `%${location}%`);
         }
 
-        // Apply sorting with fallback for null values
+        // Apply sorting
         const ascending = sortBy === 'price_low' || sortBy === 'experience_low';
         let sortColumn = 'rating';
         
@@ -87,16 +82,44 @@ const SearchResults = () => {
         
         query = query.order(sortColumn, { ascending, nullsFirst: false });
 
-        const { data, error } = await query;
+        const { data: trainersData, error: trainersError } = await query;
         
-        console.log('Trainers query result:', { data, error });
-        
-        if (error) {
-          console.error('Database query error:', error);
-          throw error;
+        if (trainersError) {
+          console.error('Trainers query error:', trainersError);
+          throw trainersError;
+        }
+
+        console.log('Raw trainers data:', trainersData);
+
+        // Now get profile data for each trainer
+        if (trainersData && trainersData.length > 0) {
+          const userIds = trainersData.map(trainer => trainer.user_id).filter(Boolean);
+          
+          let profilesData = [];
+          if (userIds.length > 0) {
+            const { data: profiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .in('id', userIds);
+
+            if (profilesError) {
+              console.warn('Profiles query error (non-fatal):', profilesError);
+            } else {
+              profilesData = profiles || [];
+            }
+          }
+
+          // Combine trainer data with profile data
+          const trainersWithProfiles = trainersData.map(trainer => ({
+            ...trainer,
+            profiles: profilesData.find(profile => profile.id === trainer.user_id) || null
+          }));
+
+          console.log('Combined trainers with profiles:', trainersWithProfiles);
+          return trainersWithProfiles;
         }
         
-        return data || [];
+        return trainersData || [];
       } catch (err) {
         console.error('Search query failed:', err);
         throw err;
