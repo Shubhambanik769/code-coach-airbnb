@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -208,22 +207,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       
+      // Clear local state first to ensure UI updates immediately
+      setUser(null);
+      setSession(null);
+      setUserRole(null);
+      
+      // Clear any cached data
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('supabase.auth.token');
+      }
+      
+      // Try to sign out from Supabase, but don't fail if session is already gone
       const { error } = await supabase.auth.signOut();
       
-      if (error) {
+      // Only show error if it's not a session-related error
+      if (error && !error.message?.includes('session') && !error.message?.includes('Session')) {
+        console.warn('Sign out warning:', error);
         showErrorToast(error, 'Sign out');
-      } else {
-        setUser(null);
-        setSession(null);
-        setUserRole(null);
-        
-        // Clear any cached data
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('supabase.auth.token');
-        }
       }
-    } catch (error) {
-      showErrorToast(error, 'Sign out');
+      
+    } catch (error: any) {
+      // Don't show errors for session-related issues during logout
+      if (!error.message?.includes('session') && !error.message?.includes('Session')) {
+        console.error('Sign out error:', error);
+        showErrorToast(error, 'Sign out');
+      }
     } finally {
       setLoading(false);
     }
