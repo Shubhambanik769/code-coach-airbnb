@@ -1,11 +1,16 @@
+
 import { useState } from 'react';
-import { BarChart3, Users, GraduationCap, Calendar, MessageSquare, Settings } from 'lucide-react';
+import { BarChart3, Users, GraduationCap, Calendar, MessageSquare, Settings, UserCheck, Shield, Globe } from 'lucide-react';
 import Analytics from '@/components/admin/Analytics';
 import UserManagement from '@/components/admin/UserManagement';
 import TrainerManagement from '@/components/admin/TrainerManagement';
 import BookingManagement from '@/components/admin/BookingManagement';
 import SystemSettings from '@/components/admin/SystemSettings';
 import ChatAudit from '@/components/admin/ChatAudit';
+import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
+import EnhancedTrainerManagement from '@/components/admin/EnhancedTrainerManagement';
+import EnhancedBookingOverview from '@/components/admin/EnhancedBookingOverview';
+import GlobalSettings from '@/components/admin/GlobalSettings';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -16,12 +21,20 @@ const AdminDashboard = () => {
         return <Analytics />;
       case 'users':
         return <UserManagement />;
+      case 'enhanced-users':
+        return <EnhancedUserManagement />;
       case 'trainers':
         return <TrainerManagement />;
+      case 'enhanced-trainers':
+        return <EnhancedTrainerManagement />;
       case 'bookings':
         return <BookingManagement />;
+      case 'enhanced-bookings':
+        return <EnhancedBookingOverview />;
       case 'chat-audit':
         return <ChatAudit />;
+      case 'global-settings':
+        return <GlobalSettings />;
       case 'settings':
         return <SystemSettings />;
       default:
@@ -46,10 +59,14 @@ const AdminDashboard = () => {
           <div className="w-64 space-y-2">
             {[
               { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-              { id: 'users', label: 'User Management', icon: Users },
-              { id: 'trainers', label: 'Trainer Management', icon: GraduationCap },
-              { id: 'bookings', label: 'Booking Management', icon: Calendar },
+              { id: 'enhanced-bookings', label: 'Bookings Overview', icon: Calendar },
+              { id: 'enhanced-users', label: 'User Management', icon: UserCheck },
+              { id: 'enhanced-trainers', label: 'Trainer Control', icon: GraduationCap },
+              { id: 'global-settings', label: 'Global Settings', icon: Globe },
               { id: 'chat-audit', label: 'Chat Audit', icon: MessageSquare },
+              { id: 'users', label: 'Basic Users', icon: Users },
+              { id: 'trainers', label: 'Basic Trainers', icon: GraduationCap },
+              { id: 'bookings', label: 'Basic Bookings', icon: Calendar },
               { id: 'settings', label: 'System Settings', icon: Settings },
             ].map((item) => {
               const Icon = item.icon;
