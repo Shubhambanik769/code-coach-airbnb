@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -49,7 +48,7 @@ const FeedbackForm = () => {
       
       console.log('Fetching feedback link for token:', token);
       
-      // Use the anon key directly for public access
+      // Use the anon key directly for public access - now works with updated RLS policies
       const { data, error } = await supabase
         .from('feedback_links')
         .select(`
@@ -73,7 +72,7 @@ const FeedbackForm = () => {
 
       if (error) {
         console.error('Error fetching feedback link:', error);
-        throw error;
+        throw new Error('This feedback link is invalid or has been deactivated.');
       }
       
       // Check if link has expired
@@ -93,7 +92,7 @@ const FeedbackForm = () => {
       
       console.log('Submitting feedback:', feedbackData);
       
-      // Check for duplicate submission by email (public access)
+      // Check for duplicate submission by email (public access - now works with RLS)
       const { data: existingFeedback, error: checkError } = await supabase
         .from('feedback_responses')
         .select('id')
@@ -110,7 +109,7 @@ const FeedbackForm = () => {
         throw new Error('You have already submitted feedback for this session.');
       }
 
-      // Submit feedback without authentication (public access)
+      // Submit feedback without authentication (public access - now works with RLS)
       const { error } = await supabase
         .from('feedback_responses')
         .insert({
