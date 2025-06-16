@@ -3,78 +3,174 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Users, Calendar, Star } from 'lucide-react';
+import { TrendingUp, Users, Calendar, Star, AlertCircle } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Analytics = () => {
-  // Fetch analytics data
-  const { data: analytics } = useQuery({
+  // Fetch analytics data with better error handling
+  const { data: analytics, isLoading, error } = useQuery({
     queryKey: ['admin-analytics'],
     queryFn: async () => {
-      // Get monthly booking data
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('created_at, total_amount, status');
+      try {
+        // Get monthly booking data
+        const { data: bookings, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('created_at, total_amount, status');
 
-      // Get user registration data
-      const { data: users } = await supabase
-        .from('profiles')
-        .select('created_at, role');
+        if (bookingsError) throw bookingsError;
 
-      // Get trainer specialization data
-      const { data: trainers } = await supabase
-        .from('trainers')
-        .select('specialization, status');
+        // Get user registration data
+        const { data: users, error: usersError } = await supabase
+          .from('profiles')
+          .select('created_at, role');
 
-      // Process monthly bookings
-      const monthlyBookings = bookings?.reduce((acc, booking) => {
-        const month = new Date(booking.created_at).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short' 
-        });
-        if (!acc[month]) {
-          acc[month] = { month, bookings: 0, revenue: 0 };
-        }
-        acc[month].bookings += 1;
-        acc[month].revenue += booking.total_amount || 0;
-        return acc;
-      }, {});
+        if (usersError) throw usersError;
 
-      // Process user registrations
-      const monthlyUsers = users?.reduce((acc, user) => {
-        const month = new Date(user.created_at).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short' 
-        });
-        if (!acc[month]) {
-          acc[month] = { month, users: 0 };
-        }
-        acc[month].users += 1;
-        return acc;
-      }, {});
+        // Get trainer specialization data
+        const { data: trainers, error: trainersError } = await supabase
+          .from('trainers')
+          .select('specialization, status');
 
-      // Process trainer specializations
-      const specializationData = trainers?.reduce((acc, trainer) => {
-        if (trainer.status === 'approved' && trainer.specialization) {
-          if (!acc[trainer.specialization]) {
-            acc[trainer.specialization] = 0;
+        if (trainersError) throw trainersError;
+
+        // Process monthly bookings with better error handling
+        const monthlyBookings = bookings?.reduce((acc: Record<string, any>, booking) => {
+          if (!booking.created_at) return acc;
+          
+          const month = new Date(booking.created_at).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short' 
+          });
+          
+          if (!acc[month]) {
+            acc[month] = { month, bookings: 0, revenue: 0 };
           }
-          acc[trainer.specialization] += 1;
-        }
-        return acc;
-      }, {});
+          acc[month].bookings += 1;
+          acc[month].revenue += Number(booking.total_amount) || 0;
+          return acc;
+        }, {}) || {};
 
-      return {
-        monthlyBookings: Object.values(monthlyBookings || {}),
-        monthlyUsers: Object.values(monthlyUsers || {}),
-        specializations: Object.entries(specializationData || {}).map(([name, value]) => ({ name, value }))
-      };
-    }
+        // Process user registrations
+        const monthlyUsers = users?.reduce((acc: Record<string, any>, user) => {
+          if (!user.created_at) return acc;
+          
+          const month = new Date(user.created_at).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short' 
+          });
+          
+          if (!acc[month]) {
+            acc[month] = { month, users: 0 };
+          }
+          acc[month].users += 1;
+          return acc;
+        }, {}) || {};
+
+        // Process trainer specializations
+        const specializationData = trainers?.reduce((acc: Record<string, number>, trainer) => {
+          if (trainer.status === 'approved' && trainer.specialization) {
+            acc[trainer.specialization] = (acc[trainer.specialization] || 0) + 1;
+          }
+          return acc;
+        }, {}) || {};
+
+        return {
+          monthlyBookings: Object.values(monthlyBookings).slice(-12), // Last 12 months
+          monthlyUsers: Object.values(monthlyUsers).slice(-12),
+          specializations: Object.entries(specializationData).map(([name, value]) => ({ name, value }))
+        };
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" text="Loading analytics..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load analytics data. Please try refreshing the page or contact support if the issue persists.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {analytics?.monthlyBookings?.reduce((sum: number, month: any) => sum + month.bookings, 0) || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ₹{analytics?.monthlyBookings?.reduce((sum: number, month: any) => sum + month.revenue, 0)?.toLocaleString() || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {analytics?.monthlyUsers?.reduce((sum: number, month: any) => sum + month.users, 0) || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Star className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Specializations</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {analytics?.specializations?.length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Bookings Chart */}
@@ -87,7 +183,7 @@ const Analytics = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics?.monthlyBookings}>
+              <BarChart data={analytics?.monthlyBookings || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -108,11 +204,11 @@ const Analytics = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={analytics?.monthlyBookings}>
+              <LineChart data={analytics?.monthlyBookings || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+                <Tooltip formatter={(value) => [`₹${value}`, 'Revenue']} />
                 <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
@@ -129,7 +225,7 @@ const Analytics = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics?.monthlyUsers}>
+              <BarChart data={analytics?.monthlyUsers || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -149,25 +245,31 @@ const Analytics = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={analytics?.specializations}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {analytics?.specializations?.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {analytics?.specializations && analytics.specializations.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={analytics.specializations}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {analytics.specializations.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-500">
+                No specialization data available
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
