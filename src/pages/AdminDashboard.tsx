@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { BarChart3, Users, GraduationCap, Calendar, MessageSquare, Settings, UserCheck, Shield, Globe } from 'lucide-react';
+import { BarChart3, Users, GraduationCap, Calendar, MessageSquare, Settings, UserCheck, Shield, Globe, TrendingUp } from 'lucide-react';
 import Analytics from '@/components/admin/Analytics';
 import UserManagement from '@/components/admin/UserManagement';
 import TrainerManagement from '@/components/admin/TrainerManagement';
@@ -11,6 +11,7 @@ import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
 import EnhancedTrainerManagement from '@/components/admin/EnhancedTrainerManagement';
 import EnhancedBookingOverview from '@/components/admin/EnhancedBookingOverview';
 import GlobalSettings from '@/components/admin/GlobalSettings';
+import TopTrainersAnalytics from '@/components/admin/TopTrainersAnalytics';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -19,6 +20,8 @@ const AdminDashboard = () => {
     switch (activeTab) {
       case 'analytics':
         return <Analytics />;
+      case 'top-trainers':
+        return <TopTrainersAnalytics />;
       case 'users':
         return <UserManagement />;
       case 'enhanced-users':
@@ -54,11 +57,12 @@ const AdminDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <div className="w-64 space-y-2">
+          <div className="w-full lg:w-64 space-y-2">
             {[
-              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+              { id: 'analytics', label: 'Platform Analytics', icon: BarChart3 },
+              { id: 'top-trainers', label: 'Top Trainers', icon: TrendingUp },
               { id: 'enhanced-bookings', label: 'Bookings Overview', icon: Calendar },
               { id: 'enhanced-users', label: 'User Management', icon: UserCheck },
               { id: 'enhanced-trainers', label: 'Trainer Control', icon: GraduationCap },
@@ -81,14 +85,14 @@ const AdminDashboard = () => {
                   }`}
                 >
                   <Icon className="h-5 w-5" />
-                  {item.label}
+                  <span className="hidden lg:block">{item.label}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {renderContent()}
           </div>
         </div>

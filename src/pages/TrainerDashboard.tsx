@@ -1,123 +1,60 @@
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import TrainerOnboardingStatus from '@/components/trainer/TrainerOnboardingStatus';
-import TrainerCalendar from '@/components/trainer/TrainerCalendar';
-import TrainerPricing from '@/components/trainer/TrainerPricing';
-import TrainerBookingManagement from '@/components/trainer/TrainerBookingManagement';
-import TrainerSchedule from '@/components/trainer/TrainerSchedule';
-import TrainerEarnings from '@/components/trainer/TrainerEarnings';
+import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User } from 'lucide-react';
 import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
-import TrainerReviews from '@/components/trainer/TrainerReviews';
+import TrainerCalendar from '@/components/trainer/TrainerCalendar';
+import TrainerEarnings from '@/components/trainer/TrainerEarnings';
 import TrainerSettings from '@/components/trainer/TrainerSettings';
-import { Calendar, DollarSign, Settings, User, MessageSquare, TrendingUp, Star, Clock } from 'lucide-react';
-import ChatList from '@/components/chat/ChatList';
+import EnhancedTrainerReviews from '@/components/trainer/EnhancedTrainerReviews';
+import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 
 const TrainerDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const { user, signOut } = useAuth();
-
-  const { data: trainerProfile, isLoading } = useQuery({
-    queryKey: ['trainer-profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from('trainers')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      return data;
-    },
-    enabled: !!user
-  });
+  const [activeTab, setActiveTab] = useState('analytics');
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return <TrainerProfile trainerId={trainerProfile?.id || ''} />;
+      case 'analytics':
+        return <TrainerAnalytics />;
+      case 'profile':
+        return <TrainerProfile />;
       case 'bookings':
-        return <TrainerBookings trainerId={trainerProfile?.id || ''} />;
-      case 'booking-management':
-        return <TrainerBookingManagement trainerId={trainerProfile?.id || ''} />;
+        return <TrainerBookings />;
       case 'calendar':
-        return <TrainerCalendar trainerId={trainerProfile?.id || ''} />;
-      case 'pricing':
-        return <TrainerPricing trainerId={trainerProfile?.id || ''} />;
-      case 'messages':
-        return <ChatList userRole="trainer" />;
+        return <TrainerCalendar />;
       case 'earnings':
-        return <TrainerEarnings trainerId={trainerProfile?.id || ''} />;
+        return <TrainerEarnings />;
       case 'reviews':
-        return <TrainerReviews trainerId={trainerProfile?.id || ''} />;
-      case 'schedule':
-        return <TrainerSchedule trainerId={trainerProfile?.id || ''} />;
+        return <EnhancedTrainerReviews />;
       case 'settings':
-        return <TrainerSettings trainerId={trainerProfile?.id || ''} />;
+        return <TrainerSettings />;
       default:
-        return <TrainerProfile trainerId={trainerProfile?.id || ''} />;
+        return <TrainerAnalytics />;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-techblue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading trainer dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show onboarding status if not approved
-  if (!trainerProfile || trainerProfile.status !== 'approved') {
-    return <TrainerOnboardingStatus />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Trainer Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {trainerProfile.title}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.email}</span>
-              <Button variant="outline" onClick={signOut}>
-                Sign Out
-              </Button>
-            </div>
-          </div>
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Trainer Dashboard
+          </h1>
         </div>
-      </div>
+      </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <div className="w-64 space-y-2">
+          <div className="w-full lg:w-64 space-y-2">
             {[
-              { id: 'overview', label: 'Profile Overview', icon: User },
-              { id: 'bookings', label: 'My Bookings', icon: Calendar },
-              { id: 'booking-management', label: 'Booking Management', icon: Settings },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+              { id: 'bookings', label: 'Bookings', icon: Calendar },
+              { id: 'reviews', label: 'Reviews & Ratings', icon: Star },
+              { id: 'earnings', label: 'Earnings', icon: DollarSign },
               { id: 'calendar', label: 'Calendar', icon: Calendar },
-              { id: 'pricing', label: 'Pricing', icon: DollarSign },
-              { id: 'messages', label: 'Messages', icon: MessageSquare },
-              { id: 'earnings', label: 'Earnings', icon: TrendingUp },
-              { id: 'reviews', label: 'Reviews', icon: Star },
-              { id: 'schedule', label: 'Schedule', icon: Clock },
+              { id: 'profile', label: 'Profile', icon: User },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((item) => {
               const Icon = item.icon;
@@ -132,14 +69,14 @@ const TrainerDashboard = () => {
                   }`}
                 >
                   <Icon className="h-5 w-5" />
-                  {item.label}
+                  <span className="hidden lg:block">{item.label}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {renderContent()}
           </div>
         </div>
