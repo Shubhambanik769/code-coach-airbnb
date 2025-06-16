@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,6 +95,30 @@ const TrainerProfile = () => {
     enabled: !!trainerId
   });
 
+  // Fetch feedback responses for this trainer
+  const { data: feedbackResponses = [] } = useQuery({
+    queryKey: ['trainer-feedback-responses', trainerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('feedback_responses')
+        .select(`
+          *,
+          feedback_links!inner (
+            booking_id,
+            bookings!inner (
+              trainer_id
+            )
+          )
+        `)
+        .eq('feedback_links.bookings.trainer_id', trainerId)
+        .order('submitted_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!trainerId
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -131,14 +154,46 @@ const TrainerProfile = () => {
     );
   }
 
+  // Combine reviews and feedback responses for comprehensive review display
+  const allReviews = [
+    ...reviews.map(r => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      created_at: r.created_at,
+      skills_rating: r.skills_rating,
+      communication_rating: r.communication_rating,
+      punctuality_rating: r.punctuality_rating,
+      would_recommend: r.would_recommend,
+      reviewer_name: r.profiles?.full_name || 'Anonymous',
+      source: 'booking'
+    })),
+    ...feedbackResponses.map(fr => ({
+      id: fr.id,
+      rating: fr.rating,
+      comment: fr.review_comment,
+      created_at: fr.submitted_at,
+      skills_rating: fr.skills_rating,
+      communication_rating: fr.communication_rating,
+      punctuality_rating: fr.punctuality_rating,
+      would_recommend: fr.would_recommend,
+      reviewer_name: fr.respondent_name,
+      organization: fr.organization_name,
+      source: 'feedback'
+    }))
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  // Calculate average ratings from all sources
+  const totalResponses = allReviews.length;
   const averageRatings = {
-    skills: reviews.reduce((acc, r) => acc + (r.skills_rating || 0), 0) / reviews.length || 0,
-    communication: reviews.reduce((acc, r) => acc + (r.communication_rating || 0), 0) / reviews.length || 0,
-    punctuality: reviews.reduce((acc, r) => acc + (r.punctuality_rating || 0), 0) / reviews.length || 0,
+    overall: totalResponses > 0 ? allReviews.reduce((acc, r) => acc + r.rating, 0) / totalResponses : 0,
+    skills: totalResponses > 0 ? allReviews.filter(r => r.skills_rating).reduce((acc, r) => acc + (r.skills_rating || 0), 0) / allReviews.filter(r => r.skills_rating).length : 0,
+    communication: totalResponses > 0 ? allReviews.filter(r => r.communication_rating).reduce((acc, r) => acc + (r.communication_rating || 0), 0) / allReviews.filter(r => r.communication_rating).length : 0,
+    punctuality: totalResponses > 0 ? allReviews.filter(r => r.punctuality_rating).reduce((acc, r) => acc + (r.punctuality_rating || 0), 0) / allReviews.filter(r => r.punctuality_rating).length : 0,
   };
 
-  const recommendationRate = reviews.length > 0 
-    ? (reviews.filter(r => r.would_recommend).length / reviews.length) * 100 
+  const recommendationRate = totalResponses > 0 
+    ? (allReviews.filter(r => r.would_recommend).length / totalResponses) * 100 
     : 0;
 
   // Display name with fallback logic
@@ -178,7 +233,7 @@ const TrainerProfile = () => {
                       {displayName}
                     </h1>
                     <Badge className="bg-green-500 text-white">
-                      {trainer.rating >= 4.8 ? 'Top Rated' : trainer.rating >= 4.5 ? 'Expert' : 'Pro'}
+                      {averageRatings.overall >= 4.8 ? 'Top Rated' : averageRatings.overall >= 4.5 ? 'Expert' : 'Pro'}
                     </Badge>
                   </div>
                   <p className="text-xl text-blue-100 mb-2">{trainer.title}</p>
@@ -187,8 +242,8 @@ const TrainerProfile = () => {
                   <div className="flex items-center space-x-6 text-blue-100">
                     <div className="flex items-center space-x-1">
                       <Star className="w-5 h-5 text-yellow-300 fill-current" />
-                      <span className="font-semibold text-white">{trainer.rating}</span>
-                      <span>({trainer.total_reviews} reviews)</span>
+                      <span className="font-semibold text-white">{averageRatings.overall.toFixed(1)}</span>
+                      <span>({totalResponses} reviews)</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <MapPin className="w-5 h-5" />
@@ -216,8 +271,8 @@ const TrainerProfile = () => {
                   <div className="text-sm text-gray-500">Years Experience</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-techblue-600">{trainer.total_reviews * 2}</div>
-                  <div className="text-sm text-gray-500">Students Taught</div>
+                  <div className="text-2xl font-bold text-techblue-600">{totalResponses}</div>
+                  <div className="text-sm text-gray-500">Total Reviews</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-techblue-600">{Math.round(recommendationRate)}%</div>
@@ -285,7 +340,7 @@ const TrainerProfile = () => {
 
           <TabsContent value="reviews" className="space-y-6">
             {/* Detailed Ratings */}
-            {reviews.length > 0 && (
+            {totalResponses > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -342,23 +397,26 @@ const TrainerProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
-                  Student Reviews ({reviews.length})
+                  Reviews & Feedback ({totalResponses})
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {reviews.length > 0 ? (
+                {totalResponses > 0 ? (
                   <div className="space-y-6">
-                    {reviews.slice(0, 5).map((review) => (
+                    {allReviews.slice(0, 10).map((review) => (
                       <div key={review.id} className="border-b border-gray-100 pb-6 last:border-b-0">
                         <div className="flex items-start space-x-4">
                           <Avatar className="w-10 h-10">
                             <AvatarFallback className="bg-gray-100 text-gray-600">
-                              {review.profiles?.full_name?.charAt(0) || 'S'}
+                              {review.reviewer_name?.charAt(0) || 'A'}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <span className="font-medium text-gray-900">{review.profiles?.full_name || 'Anonymous'}</span>
+                              <span className="font-medium text-gray-900">{review.reviewer_name}</span>
+                              {review.organization && (
+                                <span className="text-sm text-gray-500">from {review.organization}</span>
+                              )}
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
@@ -370,10 +428,15 @@ const TrainerProfile = () => {
                               <span className="text-sm text-gray-500">
                                 {new Date(review.created_at).toLocaleDateString()}
                               </span>
+                              <Badge variant="outline" className="text-xs">
+                                {review.source === 'feedback' ? 'Team Feedback' : 'Direct Review'}
+                              </Badge>
                             </div>
-                            <p className="text-gray-700">{review.comment}</p>
+                            {review.comment && (
+                              <p className="text-gray-700 mb-2">{review.comment}</p>
+                            )}
                             {review.would_recommend && (
-                              <div className="flex items-center space-x-1 mt-2 text-green-600 text-sm">
+                              <div className="flex items-center space-x-1 text-green-600 text-sm">
                                 <CheckCircle className="h-4 w-4" />
                                 <span>Would recommend</span>
                               </div>

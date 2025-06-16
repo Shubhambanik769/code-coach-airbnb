@@ -146,6 +146,94 @@ export type Database = {
           },
         ]
       }
+      feedback_links: {
+        Row: {
+          booking_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          token: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          token: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_responses: {
+        Row: {
+          communication_rating: number | null
+          feedback_link_id: string
+          id: string
+          organization_name: string | null
+          punctuality_rating: number | null
+          rating: number
+          respondent_email: string
+          respondent_name: string
+          review_comment: string | null
+          skills_rating: number | null
+          submitted_at: string
+          would_recommend: boolean | null
+        }
+        Insert: {
+          communication_rating?: number | null
+          feedback_link_id: string
+          id?: string
+          organization_name?: string | null
+          punctuality_rating?: number | null
+          rating: number
+          respondent_email: string
+          respondent_name: string
+          review_comment?: string | null
+          skills_rating?: number | null
+          submitted_at?: string
+          would_recommend?: boolean | null
+        }
+        Update: {
+          communication_rating?: number | null
+          feedback_link_id?: string
+          id?: string
+          organization_name?: string | null
+          punctuality_rating?: number | null
+          rating?: number
+          respondent_email?: string
+          respondent_name?: string
+          review_comment?: string | null
+          skills_rating?: number | null
+          submitted_at?: string
+          would_recommend?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_responses_feedback_link_id_fkey"
+            columns: ["feedback_link_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           booking_id: string | null
@@ -478,6 +566,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_feedback_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: string

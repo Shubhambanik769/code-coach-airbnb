@@ -1,107 +1,70 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/hooks/useAuth';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import Index from '@/pages/Index';
-import Auth from '@/pages/Auth';
-import UserDashboard from '@/pages/UserDashboard';
-import AdminDashboard from '@/pages/AdminDashboard';
-import TrainerDashboard from '@/pages/TrainerDashboard';
-import TrainerApplicationForm from '@/components/trainer/TrainerApplicationForm';
-import TrainerOnboardingStatus from '@/components/trainer/TrainerOnboardingStatus';
-import SearchResults from '@/pages/SearchResults';
-import TrainerProfile from '@/pages/TrainerProfile';
-import NotFound from '@/pages/NotFound';
-import './App.css';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import UserDashboard from "./pages/UserDashboard";
+import TrainerDashboard from "./pages/TrainerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import SearchResults from "./pages/SearchResults";
+import TrainerSearch from "./pages/TrainerSearch";
+import TrainerProfile from "./pages/TrainerProfile";
+import FeedbackForm from "./pages/FeedbackForm";
+import FeedbackSuccess from "./pages/FeedbackSuccess";
+import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// Create a single query client instance with proper configuration
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors
-        if (error?.status >= 400 && error?.status < 500) {
-          return false;
-        }
-        // Retry up to 3 times for other errors
-        return failureCount < 3;
-      },
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-    },
-    mutations: {
-      retry: false, // Don't retry mutations by default
-    },
-  },
-});
+const queryClient = new QueryClient();
 
-function App() {
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router>
-            <div className="min-h-screen bg-background">
-              <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/search" element={<SearchResults />} />
-                  <Route path="/trainer/:trainerId" element={<TrainerProfile />} />
-                  
-                  {/* Public trainer application route */}
-                  <Route path="/apply-trainer" element={<TrainerApplicationForm />} />
-                  
-                  {/* Protected Routes */}
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute requiredRole="user">
-                        <UserDashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  <Route 
-                    path="/admin" 
-                    element={
-                      <ProtectedRoute requiredRole="admin">
-                        <AdminDashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  <Route 
-                    path="/trainer" 
-                    element={
-                      <ProtectedRoute requiredRole="trainer">
-                        <TrainerDashboard />
-                      </ProtectedRoute>
-                    } 
-                  />
-
-                  <Route 
-                    path="/trainer-status" 
-                    element={
-                      <ProtectedRoute>
-                        <TrainerOnboardingStatus />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </ErrorBoundary>
-              <Toaster />
-            </div>
-          </Router>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/search" element={<TrainerSearch />} />
+            <Route path="/search-results" element={<SearchResults />} />
+            <Route path="/trainer/:trainerId" element={<TrainerProfile />} />
+            <Route path="/feedback/:token" element={<FeedbackForm />} />
+            <Route path="/feedback-success" element={<FeedbackSuccess />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/trainer-dashboard" 
+              element={
+                <ProtectedRoute>
+                  <TrainerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;

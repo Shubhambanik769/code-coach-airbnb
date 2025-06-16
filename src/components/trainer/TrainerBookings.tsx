@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, User, DollarSign, Search } from 'lucide-react';
+import { Calendar, Clock, User, DollarSign, Search, Link, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TrainerBookingsProps {
@@ -33,6 +33,11 @@ interface BookingWithProfile {
     full_name: string | null;
     email: string | null;
   };
+  feedback_links?: {
+    id: string;
+    token: string;
+    is_active: boolean;
+  }[];
 }
 
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
@@ -47,7 +52,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       
       let bookingsQuery = supabase
         .from('bookings')
-        .select('*')
+        .select(`
+          *,
+          feedback_links (
+            id,
+            token,
+            is_active
+          )
+        `)
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
@@ -110,6 +122,15 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         variant: "destructive"
       });
     }
+  };
+
+  const copyFeedbackLink = (token: string) => {
+    const feedbackUrl = `${window.location.origin}/feedback/${token}`;
+    navigator.clipboard.writeText(feedbackUrl);
+    toast({
+      title: "Link Copied!",
+      description: "Feedback link has been copied to clipboard"
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -235,7 +256,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         {booking.status === 'pending' && (
                           <>
                             <Button
@@ -266,8 +287,19 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             Mark Complete
                           </Button>
                         )}
-                        {booking.status === 'completed' && (
-                          <span className="text-sm text-gray-500">Completed</span>
+                        {booking.status === 'completed' && booking.feedback_links && booking.feedback_links.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyFeedbackLink(booking.feedback_links![0].token)}
+                            className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                          >
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy Feedback Link
+                          </Button>
+                        )}
+                        {booking.status === 'completed' && (!booking.feedback_links || booking.feedback_links.length === 0) && (
+                          <span className="text-sm text-gray-500">Feedback link generating...</span>
                         )}
                         {booking.status === 'cancelled' && (
                           <span className="text-sm text-red-500">Cancelled</span>
