@@ -13,10 +13,10 @@ import TrainerCard from '@/components/TrainerCard';
 
 const SearchResults = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [specialization, setSpecialization] = useState('');
-  const [experienceLevel, setExperienceLevel] = useState('');
-  const [priceRange, setPriceRange] = useState('');
-  const [location, setLocation] = useState('');
+  const [specialization, setSpecialization] = useState('all');
+  const [experienceLevel, setExperienceLevel] = useState('all');
+  const [priceRange, setPriceRange] = useState('all');
+  const [location, setLocation] = useState('all');
   const [sortBy, setSortBy] = useState('rating');
 
   const { data: trainers = [], isLoading, error } = useQuery({
@@ -44,19 +44,19 @@ const SearchResults = () => {
         }
 
         // Apply specialization filter
-        if (specialization) {
+        if (specialization && specialization !== 'all') {
           query = query.ilike('specialization', `%${specialization}%`);
         }
 
         // Apply experience level filter
-        if (experienceLevel) {
+        if (experienceLevel && experienceLevel !== 'all') {
           const minExp = experienceLevel === 'junior' ? 0 : experienceLevel === 'mid' ? 3 : 7;
           const maxExp = experienceLevel === 'junior' ? 2 : experienceLevel === 'mid' ? 6 : 50;
           query = query.gte('experience_years', minExp).lte('experience_years', maxExp);
         }
 
         // Apply price range filter
-        if (priceRange) {
+        if (priceRange && priceRange !== 'all') {
           const [min, max] = priceRange.split('-').map(Number);
           if (max) {
             query = query.gte('hourly_rate', min).lte('hourly_rate', max);
@@ -66,7 +66,7 @@ const SearchResults = () => {
         }
 
         // Apply location filter
-        if (location) {
+        if (location && location !== 'all') {
           query = query.ilike('location', `%${location}%`);
         }
 
@@ -137,14 +137,20 @@ const SearchResults = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSpecialization('');
-    setExperienceLevel('');
-    setPriceRange('');
-    setLocation('');
+    setSpecialization('all');
+    setExperienceLevel('all');
+    setPriceRange('all');
+    setLocation('all');
     setSortBy('rating');
   };
 
-  const activeFiltersCount = [searchTerm, specialization, experienceLevel, priceRange, location].filter(Boolean).length;
+  const activeFiltersCount = [
+    searchTerm, 
+    specialization !== 'all' ? specialization : '', 
+    experienceLevel !== 'all' ? experienceLevel : '', 
+    priceRange !== 'all' ? priceRange : '', 
+    location !== 'all' ? location : ''
+  ].filter(Boolean).length;
 
   // Handle error state with more specific error information
   if (error) {
@@ -207,7 +213,7 @@ const SearchResults = () => {
                   <SelectValue placeholder="Specialization" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Specializations</SelectItem>
+                  <SelectItem value="all">All Specializations</SelectItem>
                   <SelectItem value="weight loss">Weight Loss</SelectItem>
                   <SelectItem value="strength training">Strength Training</SelectItem>
                   <SelectItem value="yoga">Yoga</SelectItem>
@@ -222,7 +228,7 @@ const SearchResults = () => {
                   <SelectValue placeholder="Experience Level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Levels</SelectItem>
+                  <SelectItem value="all">All Levels</SelectItem>
                   <SelectItem value="junior">Junior (0-2 years)</SelectItem>
                   <SelectItem value="mid">Mid-level (3-6 years)</SelectItem>
                   <SelectItem value="senior">Senior (7+ years)</SelectItem>
@@ -234,7 +240,7 @@ const SearchResults = () => {
                   <SelectValue placeholder="Price Range" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Prices</SelectItem>
+                  <SelectItem value="all">All Prices</SelectItem>
                   <SelectItem value="0-50">$0 - $50/hr</SelectItem>
                   <SelectItem value="50-100">$50 - $100/hr</SelectItem>
                   <SelectItem value="100-150">$100 - $150/hr</SelectItem>
@@ -247,7 +253,7 @@ const SearchResults = () => {
                   <SelectValue placeholder="Location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Locations</SelectItem>
+                  <SelectItem value="all">All Locations</SelectItem>
                   <SelectItem value="remote">Remote</SelectItem>
                   <SelectItem value="new york">New York</SelectItem>
                   <SelectItem value="los angeles">Los Angeles</SelectItem>
@@ -288,23 +294,23 @@ const SearchResults = () => {
                     Search: {searchTerm} ×
                   </Badge>
                 )}
-                {specialization && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setSpecialization('')}>
+                {specialization !== 'all' && (
+                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setSpecialization('all')}>
                     {specialization} ×
                   </Badge>
                 )}
-                {experienceLevel && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setExperienceLevel('')}>
+                {experienceLevel !== 'all' && (
+                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setExperienceLevel('all')}>
                     {experienceLevel} experience ×
                   </Badge>
                 )}
-                {priceRange && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setPriceRange('')}>
+                {priceRange !== 'all' && (
+                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setPriceRange('all')}>
                     ${priceRange}/hr ×
                   </Badge>
                 )}
-                {location && (
-                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setLocation('')}>
+                {location !== 'all' && (
+                  <Badge variant="secondary" className="cursor-pointer" onClick={() => setLocation('all')}>
                     {location} ×
                   </Badge>
                 )}
