@@ -25,7 +25,7 @@ interface TrainerDetail {
   profiles: {
     full_name: string;
     avatar_url: string;
-  };
+  } | null;
 }
 
 interface Review {
@@ -39,7 +39,7 @@ interface Review {
   would_recommend: boolean;
   profiles: {
     full_name: string;
-  };
+  } | null;
 }
 
 const TrainerProfile = () => {
