@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User, LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -18,20 +17,20 @@ import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to sign out",
         variant: "destructive"
       });
-    } else {
-      navigate('/');
     }
   };
 
