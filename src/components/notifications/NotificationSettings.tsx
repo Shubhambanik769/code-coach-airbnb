@@ -12,12 +12,12 @@ import { Bell, Mail, MessageCircle, Smartphone } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface NotificationPreferences {
-  email_bookings: boolean;
-  email_messages: boolean;
-  email_reminders: boolean;
-  whatsapp_bookings: boolean;
-  whatsapp_reminders: boolean;
-  push_notifications: boolean;
+  email_bookings?: boolean;
+  email_messages?: boolean;
+  email_reminders?: boolean;
+  whatsapp_bookings?: boolean;
+  whatsapp_reminders?: boolean;
+  push_notifications?: boolean;
   whatsapp_number?: string;
 }
 
@@ -53,12 +53,20 @@ const NotificationSettings = () => {
       }
 
       if (data?.notification_preferences) {
-        const prefs = data.notification_preferences as NotificationPreferences;
-        setPreferences({
-          ...prefs,
+        // Safely cast the Json type to our interface
+        const prefs = data.notification_preferences as Record<string, any>;
+        const typedPrefs: NotificationPreferences = {
+          email_bookings: prefs.email_bookings ?? true,
+          email_messages: prefs.email_messages ?? true,
+          email_reminders: prefs.email_reminders ?? true,
+          whatsapp_bookings: prefs.whatsapp_bookings ?? false,
+          whatsapp_reminders: prefs.whatsapp_reminders ?? false,
+          push_notifications: prefs.push_notifications ?? true,
           whatsapp_number: data.phone || ''
-        });
-        return prefs;
+        };
+        
+        setPreferences(typedPrefs);
+        return typedPrefs;
       }
       return null;
     },
@@ -70,10 +78,20 @@ const NotificationSettings = () => {
     mutationFn: async (newPreferences: NotificationPreferences) => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      // Convert our interface to a plain object for Json compatibility
+      const prefsForDb = {
+        email_bookings: newPreferences.email_bookings,
+        email_messages: newPreferences.email_messages,
+        email_reminders: newPreferences.email_reminders,
+        whatsapp_bookings: newPreferences.whatsapp_bookings,
+        whatsapp_reminders: newPreferences.whatsapp_reminders,
+        push_notifications: newPreferences.push_notifications
+      };
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          notification_preferences: newPreferences,
+          notification_preferences: prefsForDb,
           phone: newPreferences.whatsapp_number
         })
         .eq('id', user.id);
@@ -131,7 +149,7 @@ const NotificationSettings = () => {
               </div>
               <Switch
                 id="email_bookings"
-                checked={preferences.email_bookings}
+                checked={preferences.email_bookings ?? false}
                 onCheckedChange={(checked) => handlePreferenceChange('email_bookings', checked)}
               />
             </div>
@@ -143,7 +161,7 @@ const NotificationSettings = () => {
               </div>
               <Switch
                 id="email_messages"
-                checked={preferences.email_messages}
+                checked={preferences.email_messages ?? false}
                 onCheckedChange={(checked) => handlePreferenceChange('email_messages', checked)}
               />
             </div>
@@ -155,7 +173,7 @@ const NotificationSettings = () => {
               </div>
               <Switch
                 id="email_reminders"
-                checked={preferences.email_reminders}
+                checked={preferences.email_reminders ?? false}
                 onCheckedChange={(checked) => handlePreferenceChange('email_reminders', checked)}
               />
             </div>
@@ -176,7 +194,7 @@ const NotificationSettings = () => {
                 id="whatsapp_number"
                 type="tel"
                 placeholder="+91 98765 43210"
-                value={preferences.whatsapp_number}
+                value={preferences.whatsapp_number || ''}
                 onChange={(e) => handlePreferenceChange('whatsapp_number', e.target.value)}
               />
               <p className="text-sm text-gray-500">Include country code (e.g., +91 for India)</p>
@@ -189,7 +207,7 @@ const NotificationSettings = () => {
               </div>
               <Switch
                 id="whatsapp_bookings"
-                checked={preferences.whatsapp_bookings}
+                checked={preferences.whatsapp_bookings ?? false}
                 onCheckedChange={(checked) => handlePreferenceChange('whatsapp_bookings', checked)}
                 disabled={!preferences.whatsapp_number}
               />
@@ -202,7 +220,7 @@ const NotificationSettings = () => {
               </div>
               <Switch
                 id="whatsapp_reminders"
-                checked={preferences.whatsapp_reminders}
+                checked={preferences.whatsapp_reminders ?? false}
                 onCheckedChange={(checked) => handlePreferenceChange('whatsapp_reminders', checked)}
                 disabled={!preferences.whatsapp_number}
               />
@@ -225,7 +243,7 @@ const NotificationSettings = () => {
               </div>
               <Switch
                 id="push_notifications"
-                checked={preferences.push_notifications}
+                checked={preferences.push_notifications ?? false}
                 onCheckedChange={(checked) => handlePreferenceChange('push_notifications', checked)}
               />
             </div>
