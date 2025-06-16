@@ -1,11 +1,13 @@
 
 import { useState } from 'react';
-import { Calendar, CreditCard, User, Settings, Star, MessageSquare, LogOut } from 'lucide-react';
+import { Calendar, CreditCard, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import UserBookings from '@/components/user/UserBookings';
+import UserProfile from '@/components/user/UserProfile';
+import UserBilling from '@/components/user/UserBilling';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -31,9 +33,9 @@ const UserDashboard = () => {
       case 'bookings':
         return <UserBookings />;
       case 'profile':
-        return <div className="p-6">Profile settings coming soon...</div>;
+        return <UserProfile />;
       case 'billing':
-        return <div className="p-6">Billing information coming soon...</div>;
+        return <UserBilling />;
       case 'settings':
         return <div className="p-6">Account settings coming soon...</div>;
       default:

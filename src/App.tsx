@@ -33,7 +33,7 @@ const App = () => (
             <Route path="/search" element={<TrainerSearch />} />
             <Route path="/search-results" element={<SearchResults />} />
             <Route path="/trainer" element={<Navigate to="/search" replace />} />
-            <Route path="/trainer/:trainerId" element={<TrainerProfile />} />
+            <Route path="/trainer/:id" element={<TrainerProfile />} />
             <Route path="/feedback/:token" element={<FeedbackForm />} />
             <Route path="/feedback-success" element={<FeedbackSuccess />} />
             <Route 

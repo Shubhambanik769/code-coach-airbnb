@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,11 +20,12 @@ const TrainerProfilePage = () => {
       }
 
       try {
-        // Get trainer data - removed status filter to allow all trainers
+        // Get trainer data - only fetch approved trainers for public view
         const { data: trainer, error: trainerError } = await supabase
           .from('trainers')
           .select('*')
           .eq('id', id)
+          .eq('status', 'approved')
           .single();
 
         console.log('Trainer query result:', { trainer, trainerError });
@@ -36,7 +36,7 @@ const TrainerProfilePage = () => {
         }
 
         if (!trainer) {
-          throw new Error('Trainer not found');
+          throw new Error('Trainer not found or not approved');
         }
 
         // Get profile data
@@ -47,6 +47,10 @@ const TrainerProfilePage = () => {
           .maybeSingle();
 
         console.log('Profile query result:', { profile, profileError });
+
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+        }
 
         // Get reviews from reviews table
         const { data: reviews, error: reviewsError } = await supabase
@@ -201,7 +205,7 @@ const TrainerProfilePage = () => {
           <CardContent className="p-6 text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Trainer Not Found</h1>
             <p className="text-gray-600 mb-4">
-              {error?.message || 'The trainer you\'re looking for doesn\'t exist or there was an error loading their profile.'}
+              The trainer you're looking for doesn't exist or is not approved yet.
             </p>
             <p className="text-sm text-gray-500 mb-4">Trainer ID: {id}</p>
             <div className="text-xs text-gray-400 bg-gray-100 p-3 rounded">
