@@ -17,6 +17,7 @@ interface TrainerProfileProps {
 const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
+    name: '',
     title: '',
     bio: '',
     specialization: '',
@@ -46,6 +47,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
   useEffect(() => {
     if (trainer) {
       setFormData({
+        name: trainer.name || '',
         title: trainer.title || '',
         bio: trainer.bio || '',
         specialization: trainer.specialization || '',
@@ -89,6 +91,7 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
   const handleCancel = () => {
     if (trainer) {
       setFormData({
+        name: trainer.name || '',
         title: trainer.title || '',
         bio: trainer.bio || '',
         specialization: trainer.specialization || '',
@@ -160,6 +163,21 @@ const TrainerProfile = ({ trainerId }: TrainerProfileProps) => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name
+            </label>
+            {isEditing ? (
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter your full name"
+              />
+            ) : (
+              <p className="text-gray-900">{trainer?.name || 'Not specified'}</p>
+            )}
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Professional Title

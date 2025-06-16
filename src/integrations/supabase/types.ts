@@ -410,6 +410,7 @@ export type Database = {
           hourly_rate: number | null
           id: string
           location: string | null
+          name: string
           rating: number | null
           skills: string[] | null
           specialization: string | null
@@ -430,6 +431,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           location?: string | null
+          name: string
           rating?: number | null
           skills?: string[] | null
           specialization?: string | null
@@ -450,6 +452,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           location?: string | null
+          name?: string
           rating?: number | null
           skills?: string[] | null
           specialization?: string | null

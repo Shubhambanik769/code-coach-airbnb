@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 interface TrainerCardProps {
   trainer: {
     id: string;
+    name: string;
     title: string;
     specialization: string;
     experience_years: number;
@@ -30,6 +31,9 @@ const TrainerCard = ({ trainer }: TrainerCardProps) => {
     navigate(`/trainer/${trainer.id}`);
   };
 
+  // Display name with fallback logic
+  const displayName = trainer.name || trainer.profiles?.full_name || trainer.title || 'Professional Trainer';
+
   return (
     <Card 
       className="cursor-pointer hover:shadow-lg transition-shadow duration-200" 
@@ -40,14 +44,14 @@ const TrainerCard = ({ trainer }: TrainerCardProps) => {
           <Avatar className="w-16 h-16">
             <AvatarImage src={trainer.profiles?.avatar_url} />
             <AvatarFallback className="bg-techblue-100 text-techblue-600 font-semibold">
-              {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || trainer.title?.charAt(0) || 'T'}
+              {displayName.split(' ').map(n => n[0]).join('') || 'T'}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-900 truncate">
-                {trainer.profiles?.full_name || trainer.title || 'Professional Trainer'}
+                {displayName}
               </h3>
               <div className="flex items-center space-x-1">
                 <Star className="w-4 h-4 text-yellow-400 fill-current" />

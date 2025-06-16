@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +13,7 @@ import BookingCalendar from '@/components/BookingCalendar';
 
 interface TrainerDetail {
   id: string;
+  name: string;
   title: string;
   specialization: string;
   experience_years: number;
@@ -139,9 +141,9 @@ const TrainerProfile = () => {
     ? (reviews.filter(r => r.would_recommend).length / reviews.length) * 100 
     : 0;
 
-  // Debug log to check trainer data structure
-  console.log('Trainer object in render:', trainer);
-  console.log('Trainer profiles:', trainer.profiles);
+  // Display name with fallback logic
+  const displayName = trainer.name || trainer.profiles?.full_name || trainer.title || 'Professional Trainer';
+  const displayFirstName = displayName.split(' ')[0] || 'Trainer';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,14 +168,14 @@ const TrainerProfile = () => {
                 <Avatar className="w-24 h-24 border-4 border-white">
                   <AvatarImage src={trainer.profiles?.avatar_url} />
                   <AvatarFallback className="bg-white text-techblue-600 text-2xl font-bold">
-                    {trainer.profiles?.full_name?.split(' ').map(n => n[0]).join('') || trainer.title?.charAt(0) || 'T'}
+                    {displayName.split(' ').map(n => n[0]).join('') || 'T'}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h1 className="text-3xl font-bold">
-                      {trainer.profiles?.full_name || trainer.title || 'Professional Trainer'}
+                      {displayName}
                     </h1>
                     <Badge className="bg-green-500 text-white">
                       {trainer.rating >= 4.8 ? 'Top Rated' : trainer.rating >= 4.5 ? 'Expert' : 'Pro'}
@@ -244,7 +246,7 @@ const TrainerProfile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  About {trainer.profiles?.full_name?.split(' ')[0] || trainer.title?.split(' ')[0] || 'Trainer'}
+                  About {displayFirstName}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -336,7 +338,6 @@ const TrainerProfile = () => {
               </Card>
             )}
 
-            {/* Reviews List */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -392,7 +393,7 @@ const TrainerProfile = () => {
           <TabsContent value="booking">
             <BookingCalendar 
               trainerId={trainer.id}
-              trainerName={trainer.profiles?.full_name || trainer.title || 'Trainer'}
+              trainerName={displayName}
               hourlyRate={trainer.hourly_rate || 0}
             />
           </TabsContent>
