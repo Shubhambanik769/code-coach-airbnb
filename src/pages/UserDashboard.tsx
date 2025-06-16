@@ -1,11 +1,31 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Calendar, MessageSquare, Settings } from 'lucide-react';
+import { User, Calendar, MessageSquare, Settings, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import ChatList from '@/components/chat/ChatList';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive"
+      });
+    } else {
+      navigate('/');
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -153,7 +173,16 @@ const UserDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">{user?.email}</span>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </header>
 

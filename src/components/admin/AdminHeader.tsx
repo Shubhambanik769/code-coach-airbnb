@@ -48,8 +48,9 @@ const AdminHeader = ({ user }: AdminHeaderProps) => {
               <span className="text-sm text-gray-700">
                 {user?.email}
               </span>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
+                <span>Logout</span>
               </Button>
             </div>
           </div>
