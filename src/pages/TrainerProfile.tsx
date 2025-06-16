@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MapPin, Clock, TrendingUp, User, DollarSign } from 'lucide-react';
 import BookingCalendar from '@/components/BookingCalendar';
@@ -21,114 +20,122 @@ const TrainerProfilePage = () => {
         throw new Error('No trainer ID provided');
       }
 
-      // Get trainer data
-      const { data: trainer, error: trainerError } = await supabase
-        .from('trainers')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      console.log('Trainer query result:', { trainer, trainerError });
-
-      if (trainerError) {
-        console.error('Trainer fetch error:', trainerError);
-        throw trainerError;
-      }
-
-      if (!trainer) {
-        throw new Error('Trainer not found');
-      }
-
-      // Get profile data
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', trainer.user_id)
-        .single();
-
-      console.log('Profile query result:', { profile, profileError });
-
-      // Get reviews from reviews table
-      const { data: reviews } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('trainer_id', id);
-
-      // Get feedback responses through feedback links
-      const { data: feedbackResponses } = await supabase
-        .from('feedback_responses')
-        .select(`
-          *,
-          feedback_links!inner(
-            booking_id,
-            bookings!inner(trainer_id)
-          )
-        `)
-        .eq('feedback_links.bookings.trainer_id', id);
-
-      console.log('Reviews and feedback:', { reviews, feedbackResponses });
-
-      // Combine all feedback data
-      const allFeedback = [
-        ...(reviews || []).map(r => ({
-          rating: r.rating,
-          comment: r.comment,
-          created_at: r.created_at,
-          communication_rating: r.communication_rating,
-          punctuality_rating: r.punctuality_rating,
-          skills_rating: r.skills_rating,
-          would_recommend: r.would_recommend,
-          respondent_name: 'Anonymous User',
-          source: 'review'
-        })),
-        ...(feedbackResponses || []).map(fr => ({
-          rating: fr.rating,
-          comment: fr.review_comment,
-          created_at: fr.submitted_at,
-          communication_rating: fr.communication_rating,
-          punctuality_rating: fr.punctuality_rating,
-          skills_rating: fr.skills_rating,
-          would_recommend: fr.would_recommend,
-          respondent_name: fr.respondent_name,
-          source: 'feedback'
-        }))
-      ];
-
-      // Calculate comprehensive rating
-      const totalRatings = allFeedback.length;
-      const averageRating = totalRatings > 0 
-        ? allFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalRatings
-        : 0;
-
-      console.log('Calculated rating:', { averageRating, totalRatings });
-
-      // Update trainer rating in database
-      if (totalRatings > 0) {
-        const { error: updateError } = await supabase
+      try {
+        // Get trainer data - removed status filter to allow all trainers
+        const { data: trainer, error: trainerError } = await supabase
           .from('trainers')
-          .update({
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        console.log('Trainer query result:', { trainer, trainerError });
+
+        if (trainerError) {
+          console.error('Trainer fetch error:', trainerError);
+          throw new Error(`Error fetching trainer: ${trainerError.message}`);
+        }
+
+        if (!trainer) {
+          throw new Error('Trainer not found');
+        }
+
+        // Get profile data
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', trainer.user_id)
+          .maybeSingle();
+
+        console.log('Profile query result:', { profile, profileError });
+
+        // Get reviews from reviews table
+        const { data: reviews, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('trainer_id', id);
+
+        console.log('Reviews query result:', { reviews, reviewsError });
+
+        // Get feedback responses through feedback links
+        const { data: feedbackResponses, error: feedbackError } = await supabase
+          .from('feedback_responses')
+          .select(`
+            *,
+            feedback_links!inner(
+              booking_id,
+              bookings!inner(trainer_id)
+            )
+          `)
+          .eq('feedback_links.bookings.trainer_id', id);
+
+        console.log('Feedback query result:', { feedbackResponses, feedbackError });
+
+        // Combine all feedback data
+        const allFeedback = [
+          ...(reviews || []).map(r => ({
+            rating: r.rating,
+            comment: r.comment,
+            created_at: r.created_at,
+            communication_rating: r.communication_rating,
+            punctuality_rating: r.punctuality_rating,
+            skills_rating: r.skills_rating,
+            would_recommend: r.would_recommend,
+            respondent_name: 'Anonymous User',
+            source: 'review'
+          })),
+          ...(feedbackResponses || []).map(fr => ({
+            rating: fr.rating,
+            comment: fr.review_comment,
+            created_at: fr.submitted_at,
+            communication_rating: fr.communication_rating,
+            punctuality_rating: fr.punctuality_rating,
+            skills_rating: fr.skills_rating,
+            would_recommend: fr.would_recommend,
+            respondent_name: fr.respondent_name || 'Anonymous',
+            source: 'feedback'
+          }))
+        ];
+
+        // Calculate comprehensive rating
+        const totalRatings = allFeedback.length;
+        const averageRating = totalRatings > 0 
+          ? allFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalRatings
+          : 0;
+
+        console.log('Calculated rating:', { averageRating, totalRatings });
+
+        // Update trainer rating in database if there are ratings
+        if (totalRatings > 0) {
+          const { error: updateError } = await supabase
+            .from('trainers')
+            .update({
+              rating: Number(averageRating.toFixed(1)),
+              total_reviews: totalRatings
+            })
+            .eq('id', id);
+          
+          if (updateError) {
+            console.error('Error updating trainer rating:', updateError);
+          }
+        }
+
+        return { 
+          trainer: { 
+            ...trainer, 
+            profile,
             rating: Number(averageRating.toFixed(1)),
             total_reviews: totalRatings
-          })
-          .eq('id', id);
-        
-        if (updateError) {
-          console.error('Error updating trainer rating:', updateError);
-        }
+          },
+          reviews: allFeedback
+        };
+      } catch (error) {
+        console.error('Error in trainer profile fetch:', error);
+        throw error;
       }
-
-      return { 
-        trainer: { 
-          ...trainer, 
-          profile,
-          rating: Number(averageRating.toFixed(1)),
-          total_reviews: totalRatings
-        },
-        reviews: allFeedback
-      };
     },
     enabled: !!id,
-    retry: 1
+    retry: 2,
+    retryDelay: 1000
   });
 
   const renderStars = (rating: number) => {
@@ -193,10 +200,16 @@ const TrainerProfilePage = () => {
         <Card>
           <CardContent className="p-6 text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Trainer Not Found</h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-4">
               {error?.message || 'The trainer you\'re looking for doesn\'t exist or there was an error loading their profile.'}
             </p>
-            <p className="text-sm text-gray-500 mt-2">Trainer ID: {id}</p>
+            <p className="text-sm text-gray-500 mb-4">Trainer ID: {id}</p>
+            <div className="text-xs text-gray-400 bg-gray-100 p-3 rounded">
+              <p>Debug Info:</p>
+              <p>Error: {error?.message}</p>
+              <p>Has Data: {!!trainerData}</p>
+              <p>Has Trainer: {!!trainerData?.trainer}</p>
+            </div>
           </CardContent>
         </Card>
       </div>
