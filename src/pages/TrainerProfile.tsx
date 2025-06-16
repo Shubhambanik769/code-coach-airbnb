@@ -1,3 +1,4 @@
+
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,20 +12,23 @@ import BookingCalendar from '@/components/BookingCalendar';
 const TrainerProfilePage = () => {
   const { id } = useParams();
 
-  const { data: trainerData, isLoading } = useQuery({
+  const { data: trainerData, isLoading, error } = useQuery({
     queryKey: ['trainer-public-profile', id],
     queryFn: async () => {
       console.log('Fetching trainer with ID:', id);
       
-      // Get trainer data - only fetch approved trainers for public view
+      if (!id) {
+        throw new Error('No trainer ID provided');
+      }
+
+      // Get trainer data
       const { data: trainer, error: trainerError } = await supabase
         .from('trainers')
         .select('*')
         .eq('id', id)
-        .eq('status', 'approved')
         .single();
 
-      console.log('Trainer data:', trainer, 'Error:', trainerError);
+      console.log('Trainer query result:', { trainer, trainerError });
 
       if (trainerError) {
         console.error('Trainer fetch error:', trainerError);
@@ -32,26 +36,23 @@ const TrainerProfilePage = () => {
       }
 
       if (!trainer) {
-        console.error('No trainer found with ID:', id);
         throw new Error('Trainer not found');
       }
 
       // Get profile data
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', trainer.user_id)
         .single();
 
-      console.log('Profile data:', profile);
+      console.log('Profile query result:', { profile, profileError });
 
       // Get reviews from reviews table
       const { data: reviews } = await supabase
         .from('reviews')
         .select('*')
         .eq('trainer_id', id);
-
-      console.log('Reviews data:', reviews);
 
       // Get feedback responses through feedback links
       const { data: feedbackResponses } = await supabase
@@ -65,7 +66,7 @@ const TrainerProfilePage = () => {
         `)
         .eq('feedback_links.bookings.trainer_id', id);
 
-      console.log('Feedback responses:', feedbackResponses);
+      console.log('Reviews and feedback:', { reviews, feedbackResponses });
 
       // Combine all feedback data
       const allFeedback = [
@@ -99,17 +100,21 @@ const TrainerProfilePage = () => {
         ? allFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalRatings
         : 0;
 
-      console.log('Calculated average rating:', averageRating, 'from', totalRatings, 'responses');
+      console.log('Calculated rating:', { averageRating, totalRatings });
 
-      // Update trainer rating in database to keep it synced
+      // Update trainer rating in database
       if (totalRatings > 0) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('trainers')
           .update({
             rating: Number(averageRating.toFixed(1)),
             total_reviews: totalRatings
           })
           .eq('id', id);
+        
+        if (updateError) {
+          console.error('Error updating trainer rating:', updateError);
+        }
       }
 
       return { 
@@ -122,7 +127,8 @@ const TrainerProfilePage = () => {
         reviews: allFeedback
       };
     },
-    enabled: !!id
+    enabled: !!id,
+    retry: 1
   });
 
   const renderStars = (rating: number) => {
@@ -144,12 +150,10 @@ const TrainerProfilePage = () => {
 
   const getBadgeText = () => {
     const trainer = trainerData?.trainer;
-    // First check if trainer has admin tags
     if (trainer?.tags && (trainer.tags as string[]).length > 0) {
-      return (trainer.tags as string[])[0]; // Show the first tag
+      return (trainer.tags as string[])[0];
     }
     
-    // Fallback to rating-based badges
     const rating = trainer?.rating || 0;
     if (rating >= 4.8) return 'Top Rated';
     if (rating >= 4.5) return 'Expert';
@@ -159,12 +163,10 @@ const TrainerProfilePage = () => {
 
   const getBadgeColor = () => {
     const trainer = trainerData?.trainer;
-    // If trainer has admin tags, use blue
     if (trainer?.tags && (trainer.tags as string[]).length > 0) {
       return 'bg-blue-500 text-white';
     }
     
-    // Fallback to rating-based colors
     const rating = trainer?.rating || 0;
     if (rating >= 4.8) return 'bg-green-500 text-white';
     if (rating >= 4.5) return 'bg-blue-500 text-white';
@@ -184,21 +186,25 @@ const TrainerProfilePage = () => {
     );
   }
 
-  const trainer = trainerData?.trainer;
-  const reviews = trainerData?.reviews || [];
-
-  if (!trainer) {
+  if (error || !trainerData?.trainer) {
+    console.error('Trainer profile error:', error);
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="p-6 text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Trainer Not Found</h1>
-            <p className="text-gray-600">The trainer you're looking for doesn't exist or is not approved yet.</p>
+            <p className="text-gray-600">
+              {error?.message || 'The trainer you\'re looking for doesn\'t exist or there was an error loading their profile.'}
+            </p>
+            <p className="text-sm text-gray-500 mt-2">Trainer ID: {id}</p>
           </CardContent>
         </Card>
       </div>
     );
   }
+
+  const trainer = trainerData.trainer;
+  const reviews = trainerData.reviews || [];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -322,7 +328,6 @@ const TrainerProfilePage = () => {
                 </div>
               )}
 
-              {/* Additional Tags */}
               {trainer.tags && (trainer.tags as string[]).length > 1 && (
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Achievements</h3>
@@ -366,7 +371,6 @@ const TrainerProfilePage = () => {
                         <p className="text-gray-700 mb-2">{review.comment}</p>
                       )}
                       
-                      {/* Detailed ratings */}
                       {(review.communication_rating || review.punctuality_rating || review.skills_rating) && (
                         <div className="flex gap-4 text-sm text-gray-600">
                           {review.communication_rating && (

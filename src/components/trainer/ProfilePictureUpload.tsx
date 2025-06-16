@@ -22,21 +22,43 @@ const ProfilePictureUpload = ({ currentAvatarUrl, onUploadSuccess }: ProfilePict
     mutationFn: async (file: File) => {
       if (!user) throw new Error('No user found');
 
+      console.log('Starting file upload for user:', user.id);
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `trainer-avatars/${fileName}`;
 
-      // Upload file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+      console.log('Uploading to path:', filePath);
 
-      if (uploadError) throw uploadError;
+      // First, ensure the bucket exists and is properly configured
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', buckets);
+      
+      if (bucketsError) {
+        console.error('Error listing buckets:', bucketsError);
+      }
+
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      console.log('Upload result:', { uploadData, uploadError });
+
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw uploadError;
+      }
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
+
+      console.log('Generated public URL:', publicUrl);
 
       // Update user profile
       const { error: updateError } = await supabase
@@ -44,11 +66,17 @@ const ProfilePictureUpload = ({ currentAvatarUrl, onUploadSuccess }: ProfilePict
         .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      console.log('Profile update result:', updateError);
+
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        throw updateError;
+      }
 
       return publicUrl;
     },
     onSuccess: (url) => {
+      console.log('Upload successful, URL:', url);
       queryClient.invalidateQueries({ queryKey: ['trainer-profile'] });
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       onUploadSuccess?.(url);
@@ -58,10 +86,10 @@ const ProfilePictureUpload = ({ currentAvatarUrl, onUploadSuccess }: ProfilePict
       });
     },
     onError: (error) => {
-      console.error('Upload error:', error);
+      console.error('Upload mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to upload profile picture",
+        description: error.message || "Failed to upload profile picture",
         variant: "destructive"
       });
     },
@@ -73,6 +101,8 @@ const ProfilePictureUpload = ({ currentAvatarUrl, onUploadSuccess }: ProfilePict
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    console.log('File selected:', file.name, file.type, file.size);
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -107,6 +137,10 @@ const ProfilePictureUpload = ({ currentAvatarUrl, onUploadSuccess }: ProfilePict
               src={currentAvatarUrl}
               alt="Profile"
               className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error('Image load error for URL:', currentAvatarUrl);
+                e.currentTarget.style.display = 'none';
+              }}
             />
           ) : (
             <User className="h-12 w-12 text-gray-400" />

@@ -43,18 +43,15 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const getRecommendationRate = () => {
-    // Calculate recommendation rate based on rating
     if (!trainer.rating || trainer.rating === 0) return 0;
     return Math.round((trainer.rating / 5) * 100);
   };
 
   const getBadgeText = () => {
-    // First check if trainer has admin tags
     if (trainer.tags && trainer.tags.length > 0) {
-      return trainer.tags[0]; // Show the first tag
+      return trainer.tags[0];
     }
     
-    // Fallback to rating-based badges
     const rating = trainer.rating || 0;
     if (rating >= 4.8) return 'Top Rated';
     if (rating >= 4.5) return 'Expert';
@@ -63,12 +60,10 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const getBadgeColor = () => {
-    // If trainer has admin tags, use blue
     if (trainer.tags && trainer.tags.length > 0) {
       return 'bg-blue-500 text-white';
     }
     
-    // Fallback to rating-based colors
     const rating = trainer.rating || 0;
     if (rating >= 4.8) return 'bg-green-500 text-white';
     if (rating >= 4.5) return 'bg-blue-500 text-white';
@@ -77,7 +72,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const handleViewProfile = () => {
-    console.log('TrainerCard: Viewing profile for trainer ID:', trainer.id);
+    console.log('TrainerCard: Navigating to trainer profile:', trainer.id);
     if (onSelect) {
       onSelect(trainer.id);
     } else {
@@ -93,7 +88,10 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
             <Avatar className="w-12 h-12">
               <AvatarImage 
                 src={trainer.profiles?.avatar_url} 
-                alt={trainer.profiles?.full_name || trainer.name} 
+                alt={trainer.profiles?.full_name || trainer.name}
+                onError={(e) => {
+                  console.error('Avatar load error:', e);
+                }}
               />
               <AvatarFallback>
                 <User className="h-6 w-6" />
@@ -135,7 +133,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
               )}
 
               {/* Recommendation Rate */}
-              {trainer.total_reviews && trainer.total_reviews > 0 && (
+              {trainer.total_reviews && trainer.total_reviews > 0 && trainer.rating && trainer.rating > 0 && (
                 <div className="flex items-center gap-1 mb-2">
                   <TrendingUp className="h-3 w-3 text-green-600" />
                   <span className="text-xs text-green-600 font-medium">
