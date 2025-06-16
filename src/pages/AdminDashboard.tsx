@@ -8,6 +8,7 @@ import { Users, UserCheck, Calendar, Star, DollarSign } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import TrainerManagement from '@/components/admin/TrainerManagement';
+import BookingManagement from '@/components/admin/BookingManagement';
 
 const AdminDashboard = () => {
   const { user, signOut } = useAuth();
@@ -113,7 +114,7 @@ const AdminDashboard = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats?.totalRevenue?.toFixed(2) || '0.00'}</div>
+              <div className="text-2xl font-bold">₹{stats?.totalRevenue?.toFixed(2) || '0.00'}</div>
             </CardContent>
           </Card>
 
@@ -189,14 +190,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="bookings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Booking Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Booking oversight and management features coming soon...</p>
-              </CardContent>
-            </Card>
+            <BookingManagement />
           </TabsContent>
         </Tabs>
       </main>

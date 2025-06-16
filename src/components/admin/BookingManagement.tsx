@@ -63,7 +63,10 @@ const BookingManagement = () => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'assigned': return 'bg-purple-100 text-purple-800';
+      case 'delivering': return 'bg-orange-100 text-orange-800';
+      case 'delivered': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -81,7 +84,7 @@ const BookingManagement = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
 
@@ -102,7 +105,7 @@ const BookingManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {bookings?.filter(b => b.status === 'completed').length || 0}
+              {bookings?.filter(b => ['delivered', 'completed'].includes(b.status)).length || 0}
             </div>
           </CardContent>
         </Card>
@@ -132,6 +135,9 @@ const BookingManagement = () => {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="assigned">Assigned</SelectItem>
+                <SelectItem value="delivering">Delivering</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
@@ -145,7 +151,9 @@ const BookingManagement = () => {
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead>Trainer</TableHead>
+                  <TableHead>Topic</TableHead>
                   <TableHead>Date & Time</TableHead>
+                  <TableHead>Duration</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
@@ -154,13 +162,13 @@ const BookingManagement = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       Loading bookings...
                     </TableCell>
                   </TableRow>
                 ) : bookings?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       No bookings found
                     </TableCell>
                   </TableRow>
@@ -173,10 +181,17 @@ const BookingManagement = () => {
                       <TableCell>
                         {booking.trainer_profile?.full_name || 'N/A'}
                       </TableCell>
+                      <TableCell>{booking.training_topic}</TableCell>
                       <TableCell>
-                        {new Date(booking.start_time).toLocaleString()}
+                        <div>
+                          <div>{new Date(booking.start_time).toLocaleDateString()}</div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(booking.start_time).toLocaleTimeString()}
+                          </div>
+                        </div>
                       </TableCell>
-                      <TableCell>${booking.total_amount}</TableCell>
+                      <TableCell>{booking.duration_hours}h</TableCell>
+                      <TableCell>₹{booking.total_amount}</TableCell>
                       <TableCell>
                         <Badge className={getStatusBadgeColor(booking.status)}>
                           {booking.status}
