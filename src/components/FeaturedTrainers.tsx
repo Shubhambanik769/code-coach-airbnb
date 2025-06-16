@@ -25,15 +25,15 @@ const FeaturedTrainers = () => {
           )
         `)
         .eq('status', 'approved')
-        .gte('rating', 4.5)
         .order('rating', { ascending: false })
-        .limit(3);
+        .order('total_reviews', { ascending: false })
+        .limit(6);
       
       console.log('Featured trainers data:', data);
       console.log('Featured trainers error:', error);
       
       if (error) throw error;
-      return data;
+      return data || [];
     }
   });
 
@@ -43,6 +43,24 @@ const FeaturedTrainers = () => {
 
   const handleViewAllTrainers = () => {
     navigate('/search');
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${
+          i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+        }`}
+      />
+    ));
+  };
+
+  const getBadgeText = (rating: number, totalReviews: number) => {
+    if (totalReviews === 0) return 'New';
+    if (rating >= 4.8) return 'Top Rated';
+    if (rating >= 4.5) return 'Expert';
+    return 'Pro';
   };
 
   if (isLoading) {
@@ -83,8 +101,10 @@ const FeaturedTrainers = () => {
 
         {trainers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-            {trainers.map((trainer, index) => {
+            {trainers.slice(0, 3).map((trainer, index) => {
               const displayName = trainer.name || trainer.profiles?.full_name || trainer.title || 'Professional Trainer';
+              const rating = trainer.rating || 0;
+              const totalReviews = trainer.total_reviews || 0;
               
               return (
                 <Card 
@@ -104,7 +124,7 @@ const FeaturedTrainers = () => {
                           />
                           <div className="absolute -top-1 -right-1">
                             <Badge className="bg-green-500 text-white text-xs px-1.5 py-0.5">
-                              {trainer.rating >= 4.8 ? 'Top Rated' : trainer.rating >= 4.5 ? 'Expert' : 'Pro'}
+                              {getBadgeText(rating, totalReviews)}
                             </Badge>
                           </div>
                         </div>
@@ -121,10 +141,18 @@ const FeaturedTrainers = () => {
                       {/* Rating & Location */}
                       <div className="flex items-center justify-between mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">
                         <div className="flex items-center space-x-1">
-                          <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 fill-current" />
-                          <span className="font-semibold text-gray-900">{trainer.rating}</span>
-                          <span className="hidden sm:inline">({trainer.total_reviews} reviews)</span>
-                          <span className="sm:hidden">({trainer.total_reviews})</span>
+                          {rating > 0 ? (
+                            <>
+                              <div className="flex items-center">
+                                {renderStars(rating)}
+                              </div>
+                              <span className="font-semibold text-gray-900">{rating.toFixed(1)}</span>
+                              <span className="hidden sm:inline">({totalReviews} reviews)</span>
+                              <span className="sm:hidden">({totalReviews})</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-500">New trainer</span>
+                          )}
                         </div>
                         <div className="flex items-center space-x-1">
                           <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -152,15 +180,15 @@ const FeaturedTrainers = () => {
                     {/* Stats */}
                     <div className="px-4 sm:px-6 pb-3 sm:pb-4 grid grid-cols-3 gap-2 sm:gap-4 text-center text-xs sm:text-sm">
                       <div>
-                        <div className="font-bold text-gray-900">{trainer.experience_years}+ years</div>
+                        <div className="font-bold text-gray-900">{trainer.experience_years || 0}+ years</div>
                         <div className="text-gray-500">Experience</div>
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900">{trainer.total_reviews * 2}</div>
-                        <div className="text-gray-500">Students</div>
+                        <div className="font-bold text-gray-900">{totalReviews}</div>
+                        <div className="text-gray-500">Reviews</div>
                       </div>
                       <div>
-                        <div className="font-bold text-techblue-600">${trainer.hourly_rate}/hr</div>
+                        <div className="font-bold text-techblue-600">${trainer.hourly_rate || 0}/hr</div>
                         <div className="text-gray-500">Starting</div>
                       </div>
                     </div>

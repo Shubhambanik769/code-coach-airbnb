@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +21,7 @@ const EnhancedTrainerReviews = () => {
 
       if (!trainer) throw new Error('Trainer not found');
 
-      // Get both reviews and feedback responses without authentication requirements
+      // Get both reviews and feedback responses
       const [reviewsResult, feedbackResult] = await Promise.all([
         supabase
           .from('reviews')
@@ -34,9 +33,10 @@ const EnhancedTrainerReviews = () => {
           .from('feedback_responses')
           .select(`
             *,
-            feedback_links (
+            feedback_links!inner (
               booking_id,
-              bookings (
+              bookings!inner (
+                trainer_id,
                 training_topic,
                 start_time
               )

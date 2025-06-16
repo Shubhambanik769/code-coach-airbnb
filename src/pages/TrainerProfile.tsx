@@ -31,24 +31,11 @@ interface TrainerDetail {
   } | null;
 }
 
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  skills_rating: number;
-  communication_rating: number;
-  punctuality_rating: number;
-  would_recommend: boolean;
-  profiles: {
-    full_name: string;
-  } | null;
-}
-
 const TrainerProfile = () => {
   const { trainerId } = useParams();
   const navigate = useNavigate();
 
+  // Fetch trainer profile - PUBLIC ACCESS (no authentication required)
   const { data: trainer, isLoading } = useQuery({
     queryKey: ['trainer-profile', trainerId],
     queryFn: async () => {
@@ -64,6 +51,7 @@ const TrainerProfile = () => {
           )
         `)
         .eq('id', trainerId)
+        .eq('status', 'approved')
         .single();
       
       console.log('Trainer data:', data);
@@ -75,6 +63,7 @@ const TrainerProfile = () => {
     enabled: !!trainerId
   });
 
+  // Fetch reviews - PUBLIC ACCESS
   const { data: reviews = [] } = useQuery({
     queryKey: ['trainer-reviews', trainerId],
     queryFn: async () => {
@@ -91,12 +80,12 @@ const TrainerProfile = () => {
         .limit(10);
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!trainerId
   });
 
-  // Fetch feedback responses for this trainer
+  // Fetch feedback responses - PUBLIC ACCESS
   const { data: feedbackResponses = [] } = useQuery({
     queryKey: ['trainer-feedback-responses', trainerId],
     queryFn: async () => {
@@ -107,7 +96,9 @@ const TrainerProfile = () => {
           feedback_links!inner (
             booking_id,
             bookings!inner (
-              trainer_id
+              trainer_id,
+              training_topic,
+              start_time
             )
           )
         `)
@@ -115,7 +106,7 @@ const TrainerProfile = () => {
         .order('submitted_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!trainerId
   });
@@ -167,7 +158,7 @@ const TrainerProfile = () => {
       punctuality_rating: r.punctuality_rating,
       would_recommend: r.would_recommend,
       reviewer_name: r.profiles?.full_name || 'Anonymous',
-      organization: undefined, // Reviews don't have organization info
+      organization: undefined,
       source: 'booking'
     })),
     ...feedbackResponses.map(fr => ({
@@ -202,6 +193,10 @@ const TrainerProfile = () => {
   const displayName = trainer.name || trainer.profiles?.full_name || trainer.title || 'Professional Trainer';
   const displayFirstName = displayName.split(' ')[0] || 'Trainer';
 
+  // Use combined data for ratings instead of trainer data
+  const displayRating = averageRatings.overall > 0 ? averageRatings.overall : (trainer.rating || 0);
+  const displayReviewCount = totalResponses > 0 ? totalResponses : (trainer.total_reviews || 0);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -235,7 +230,7 @@ const TrainerProfile = () => {
                       {displayName}
                     </h1>
                     <Badge className="bg-green-500 text-white">
-                      {averageRatings.overall >= 4.8 ? 'Top Rated' : averageRatings.overall >= 4.5 ? 'Expert' : 'Pro'}
+                      {displayRating >= 4.8 ? 'Top Rated' : displayRating >= 4.5 ? 'Expert' : 'Pro'}
                     </Badge>
                   </div>
                   <p className="text-xl text-blue-100 mb-2">{trainer.title}</p>
@@ -244,8 +239,8 @@ const TrainerProfile = () => {
                   <div className="flex items-center space-x-6 text-blue-100">
                     <div className="flex items-center space-x-1">
                       <Star className="w-5 h-5 text-yellow-300 fill-current" />
-                      <span className="font-semibold text-white">{averageRatings.overall.toFixed(1)}</span>
-                      <span>({totalResponses} reviews)</span>
+                      <span className="font-semibold text-white">{displayRating.toFixed(1)}</span>
+                      <span>({displayReviewCount} reviews)</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <MapPin className="w-5 h-5" />
@@ -273,7 +268,7 @@ const TrainerProfile = () => {
                   <div className="text-sm text-gray-500">Years Experience</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-techblue-600">{totalResponses}</div>
+                  <div className="text-2xl font-bold text-techblue-600">{displayReviewCount}</div>
                   <div className="text-sm text-gray-500">Total Reviews</div>
                 </div>
                 <div className="text-center">
@@ -352,44 +347,50 @@ const TrainerProfile = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Technical Skills</span>
-                        <span className="text-sm text-gray-600">{averageRatings.skills.toFixed(1)}/5</span>
+                    {averageRatings.skills > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Technical Skills</span>
+                          <span className="text-sm text-gray-600">{averageRatings.skills.toFixed(1)}/5</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-techblue-600 h-2 rounded-full" 
+                            style={{ width: `${(averageRatings.skills / 5) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-techblue-600 h-2 rounded-full" 
-                          style={{ width: `${(averageRatings.skills / 5) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                    )}
                     
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Communication</span>
-                        <span className="text-sm text-gray-600">{averageRatings.communication.toFixed(1)}/5</span>
+                    {averageRatings.communication > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Communication</span>
+                          <span className="text-sm text-gray-600">{averageRatings.communication.toFixed(1)}/5</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-techblue-600 h-2 rounded-full" 
+                            style={{ width: `${(averageRatings.communication / 5) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-techblue-600 h-2 rounded-full" 
-                          style={{ width: `${(averageRatings.communication / 5) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                    )}
                     
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Punctuality</span>
-                        <span className="text-sm text-gray-600">{averageRatings.punctuality.toFixed(1)}/5</span>
+                    {averageRatings.punctuality > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Punctuality</span>
+                          <span className="text-sm text-gray-600">{averageRatings.punctuality.toFixed(1)}/5</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-techblue-600 h-2 rounded-full" 
+                            style={{ width: `${(averageRatings.punctuality / 5) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-techblue-600 h-2 rounded-full" 
-                          style={{ width: `${(averageRatings.punctuality / 5) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

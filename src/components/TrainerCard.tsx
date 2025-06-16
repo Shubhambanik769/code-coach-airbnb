@@ -2,7 +2,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Star, MapPin, Clock, ThumbsUp } from 'lucide-react';
+import { Star, MapPin, Clock, TrendingUp } from 'lucide-react';
 
 interface TrainerCardProps {
   trainer: {
@@ -16,6 +16,7 @@ interface TrainerCardProps {
     total_reviews?: number;
     bio?: string;
     skills?: string[];
+    experience_years?: number;
   };
   onSelect?: (trainerId: string) => void;
 }
@@ -34,9 +35,24 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
 
   const getRecommendationRate = () => {
     // Calculate recommendation rate based on rating
-    // This is now automatically calculated by the database triggers
     if (!trainer.rating || trainer.rating === 0) return 0;
     return Math.round((trainer.rating / 5) * 100);
+  };
+
+  const getBadgeText = () => {
+    const rating = trainer.rating || 0;
+    if (rating >= 4.8) return 'Top Rated';
+    if (rating >= 4.5) return 'Expert';
+    if (rating >= 4.0) return 'Pro';
+    return 'New';
+  };
+
+  const getBadgeColor = () => {
+    const rating = trainer.rating || 0;
+    if (rating >= 4.8) return 'bg-green-500 text-white';
+    if (rating >= 4.5) return 'bg-blue-500 text-white';
+    if (rating >= 4.0) return 'bg-purple-500 text-white';
+    return 'bg-gray-500 text-white';
   };
 
   return (
@@ -44,30 +60,55 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              {trainer.name}
-            </h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {trainer.name}
+              </h3>
+              <Badge className={getBadgeText() === 'New' ? '' : getBadgeColor()}>
+                {getBadgeText()}
+              </Badge>
+            </div>
             <p className="text-gray-600 text-sm mb-2">{trainer.title}</p>
             
-            {/* Rating and Reviews - Now shows combined feedback from all sources */}
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex items-center gap-1">
-                {renderStars(trainer.rating || 0)}
-                <span className="text-sm font-medium text-gray-700">
-                  {trainer.rating?.toFixed(1) || '0.0'}
+            {/* Rating and Reviews */}
+            {trainer.rating && trainer.rating > 0 ? (
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-1">
+                  {renderStars(trainer.rating)}
+                  <span className="text-sm font-medium text-gray-700">
+                    {trainer.rating.toFixed(1)}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500">
+                  ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews'})
                 </span>
               </div>
-              <span className="text-xs text-gray-500">
-                ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews & feedback'})
-              </span>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-1">
+                  {renderStars(0)}
+                  <span className="text-sm font-medium text-gray-500">New</span>
+                </div>
+                <span className="text-xs text-gray-500">(No reviews yet)</span>
+              </div>
+            )}
 
-            {/* Recommendation Rate - Now based on actual feedback data */}
+            {/* Recommendation Rate */}
             {trainer.total_reviews && trainer.total_reviews > 0 && (
               <div className="flex items-center gap-1 mb-2">
-                <ThumbsUp className="h-3 w-3 text-green-600" />
+                <TrendingUp className="h-3 w-3 text-green-600" />
                 <span className="text-xs text-green-600 font-medium">
                   {getRecommendationRate()}% would recommend
+                </span>
+              </div>
+            )}
+
+            {/* Experience */}
+            {trainer.experience_years && (
+              <div className="flex items-center gap-1 mb-2">
+                <Clock className="h-3 w-3 text-gray-500" />
+                <span className="text-xs text-gray-500">
+                  {trainer.experience_years}+ years experience
                 </span>
               </div>
             )}

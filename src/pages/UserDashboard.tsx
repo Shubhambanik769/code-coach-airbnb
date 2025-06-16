@@ -1,14 +1,14 @@
+
 import { useState } from 'react';
+import { Calendar, CreditCard, User, Settings, Star, MessageSquare, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Calendar, MessageSquare, Settings, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import ChatList from '@/components/chat/ChatList';
 import UserBookings from '@/components/user/UserBookings';
 
 const UserDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('bookings');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,134 +28,28 @@ const UserDashboard = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return <ProfileOverview />;
       case 'bookings':
         return <UserBookings />;
-      case 'messages':
-        return <ChatList userRole="user" />;
+      case 'profile':
+        return <div className="p-6">Profile settings coming soon...</div>;
+      case 'billing':
+        return <div className="p-6">Billing information coming soon...</div>;
       case 'settings':
-        return <UserSettings />;
+        return <div className="p-6">Account settings coming soon...</div>;
       default:
-        return <ProfileOverview />;
+        return <UserBookings />;
     }
-  };
-
-  const ProfileOverview = () => {
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Profile Overview</h2>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-              {user?.email?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold">{user?.email}</h3>
-              <p className="text-gray-600">Student</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Account Information</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Email:</span>
-                  <span>{user?.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Member since:</span>
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Learning Stats</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Bookings:</span>
-                  <span>0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Hours Learned:</span>
-                  <span>0</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const UserSettings = () => {
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Account Settings</h2>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium mb-4">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full border rounded-md px-3 py-2"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full border rounded-md px-3 py-2"
-                    value={user?.email || ''}
-                    disabled
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-medium mb-4">Preferences</h3>
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <input type="checkbox" id="emailNotifications" className="mr-2" />
-                  <label htmlFor="emailNotifications">
-                    Receive email notifications
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input type="checkbox" id="marketingEmails" className="mr-2" />
-                  <label htmlFor="marketingEmails">
-                    Receive marketing emails
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="pt-4 border-t">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Client Dashboard
+            </h1>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
@@ -168,13 +62,13 @@ const UserDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <div className="w-64 space-y-2">
+          <div className="w-full lg:w-64 space-y-2">
             {[
-              { id: 'overview', label: 'Profile Overview', icon: User },
               { id: 'bookings', label: 'My Bookings', icon: Calendar },
-              { id: 'messages', label: 'Messages', icon: MessageSquare },
+              { id: 'profile', label: 'Profile', icon: User },
+              { id: 'billing', label: 'Billing', icon: CreditCard },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((item) => {
               const Icon = item.icon;
@@ -189,14 +83,14 @@ const UserDashboard = () => {
                   }`}
                 >
                   <Icon className="h-5 w-5" />
-                  {item.label}
+                  <span className="hidden lg:block">{item.label}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {renderContent()}
           </div>
         </div>
