@@ -11,6 +11,23 @@ interface TrainerScheduleProps {
   trainerId: string;
 }
 
+interface BookingWithProfile {
+  id: string;
+  created_at: string | null;
+  end_time: string;
+  start_time: string;
+  status: string | null;
+  student_id: string;
+  total_amount: number;
+  trainer_id: string;
+  updated_at: string | null;
+  student_profile?: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+  };
+}
+
 const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date()));
 
@@ -19,7 +36,6 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
     queryFn: async () => {
       const weekEnd = addDays(currentWeek, 6);
       
-      // First get the bookings for the week
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
@@ -30,7 +46,6 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
 
       if (bookingsError) throw bookingsError;
 
-      // Then get the student profiles for each booking
       if (bookingsData && bookingsData.length > 0) {
         const studentIds = bookingsData.map(booking => booking.student_id);
         const { data: profilesData, error: profilesError } = await supabase
@@ -40,8 +55,7 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
 
         if (profilesError) throw profilesError;
 
-        // Combine the data
-        const bookingsWithProfiles = bookingsData.map(booking => ({
+        const bookingsWithProfiles: BookingWithProfile[] = bookingsData.map(booking => ({
           ...booking,
           student_profile: profilesData?.find(profile => profile.id === booking.student_id)
         }));
@@ -49,7 +63,7 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
         return bookingsWithProfiles;
       }
 
-      return bookingsData || [];
+      return bookingsData as BookingWithProfile[] || [];
     },
     enabled: !!trainerId
   });
@@ -146,7 +160,7 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
                       dayBookings.map((booking) => (
                         <div
                           key={booking.id}
-                          className={`p-2 rounded border-l-4 text-xs ${getStatusColor(booking.status)}`}
+                          className={`p-2 rounded border-l-4 text-xs ${getStatusColor(booking.status || 'pending')}`}
                         >
                           <div className="flex items-center gap-1 mb-1">
                             <Clock className="h-3 w-3" />
@@ -161,7 +175,7 @@ const TrainerSchedule = ({ trainerId }: TrainerScheduleProps) => {
                             </span>
                           </div>
                           <div className="text-xs text-gray-500 mt-1 capitalize">
-                            {booking.status}
+                            {booking.status || 'pending'}
                           </div>
                         </div>
                       ))

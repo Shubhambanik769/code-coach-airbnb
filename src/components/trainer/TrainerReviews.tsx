@@ -10,11 +10,25 @@ interface TrainerReviewsProps {
   trainerId: string;
 }
 
+interface ReviewWithProfile {
+  id: string;
+  booking_id: string;
+  comment: string | null;
+  created_at: string | null;
+  rating: number;
+  student_id: string;
+  trainer_id: string;
+  student_profile?: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+  };
+}
+
 const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
   const { data: reviews, isLoading } = useQuery({
     queryKey: ['trainer-reviews', trainerId],
     queryFn: async () => {
-      // First get the reviews
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select('*')
@@ -23,7 +37,6 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
 
       if (reviewsError) throw reviewsError;
 
-      // Then get the student profiles for each review
       if (reviewsData && reviewsData.length > 0) {
         const studentIds = reviewsData.map(review => review.student_id);
         const { data: profilesData, error: profilesError } = await supabase
@@ -33,8 +46,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
 
         if (profilesError) throw profilesError;
 
-        // Combine the data
-        const reviewsWithProfiles = reviewsData.map(review => ({
+        const reviewsWithProfiles: ReviewWithProfile[] = reviewsData.map(review => ({
           ...review,
           student_profile: profilesData?.find(profile => profile.id === review.student_id)
         }));
@@ -42,7 +54,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
         return reviewsWithProfiles;
       }
 
-      return reviewsData || [];
+      return reviewsData as ReviewWithProfile[] || [];
     },
     enabled: !!trainerId
   });
@@ -175,7 +187,7 @@ const TrainerReviews = ({ trainerId }: TrainerReviewsProps) => {
                           {review.student_profile?.full_name || 'Anonymous'}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {format(new Date(review.created_at), 'MMM dd, yyyy')}
+                          {format(new Date(review.created_at || ''), 'MMM dd, yyyy')}
                         </p>
                       </div>
                     </div>

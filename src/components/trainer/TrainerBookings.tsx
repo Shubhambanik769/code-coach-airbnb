@@ -16,6 +16,23 @@ interface TrainerBookingsProps {
   trainerId: string;
 }
 
+interface BookingWithProfile {
+  id: string;
+  created_at: string | null;
+  end_time: string;
+  start_time: string;
+  status: string | null;
+  student_id: string;
+  total_amount: number;
+  trainer_id: string;
+  updated_at: string | null;
+  student_profile?: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+  };
+}
+
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,7 +41,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
-      // First get the bookings
       let bookingsQuery = supabase
         .from('bookings')
         .select('*')
@@ -38,7 +54,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       const { data: bookingsData, error: bookingsError } = await bookingsQuery;
       if (bookingsError) throw bookingsError;
 
-      // Then get the student profiles for each booking
       if (bookingsData && bookingsData.length > 0) {
         const studentIds = bookingsData.map(booking => booking.student_id);
         const { data: profilesData, error: profilesError } = await supabase
@@ -48,8 +63,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
         if (profilesError) throw profilesError;
 
-        // Combine the data
-        const bookingsWithProfiles = bookingsData.map(booking => ({
+        const bookingsWithProfiles: BookingWithProfile[] = bookingsData.map(booking => ({
           ...booking,
           student_profile: profilesData?.find(profile => profile.id === booking.student_id)
         }));
@@ -57,7 +71,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return bookingsWithProfiles;
       }
 
-      return bookingsData || [];
+      return bookingsData as BookingWithProfile[] || [];
     },
     enabled: !!trainerId
   });
@@ -168,7 +182,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                         <User className="h-4 w-4 text-gray-400" />
                         <div>
                           <p className="font-medium">{booking.student_profile?.full_name || 'N/A'}</p>
-                          <p className="text-sm text-gray-500">{booking.student_profile?.email}</p>
+                          <p className="text-sm text-gray-500">{booking.student_profile?.email || 'N/A'}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -195,8 +209,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(booking.status)}>
-                        {booking.status}
+                      <Badge className={getStatusColor(booking.status || 'pending')}>
+                        {booking.status || 'pending'}
                       </Badge>
                     </TableCell>
                     <TableCell>
