@@ -15,7 +15,7 @@ const Header = () => {
       case 'admin':
         return '/admin';
       case 'trainer':
-        return '/trainer';
+        return '/trainer-dashboard';
       default:
         return '/dashboard';
     }
