@@ -17,7 +17,7 @@ interface TrainerCardProps {
     total_reviews: number;
     skills: string[];
     location: string;
-    profiles: {
+    profiles?: {
       full_name: string;
       avatar_url: string;
     } | null;
