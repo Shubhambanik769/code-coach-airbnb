@@ -24,14 +24,25 @@ const AdminDashboard = () => {
       const [usersResult, trainersResult, bookingsResult, feedbackResult] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact' }),
         supabase.from('trainers').select('id', { count: 'exact' }),
-        supabase.from('bookings').select('id', { count: 'exact' }),
+        supabase.from('bookings').select('id, total_amount, status'),
         supabase.from('feedback_responses').select('id', { count: 'exact' })
       ]);
+
+      // Calculate completed bookings and confirmed revenue
+      const completedBookings = bookingsResult.data?.filter(b => 
+        b.status === 'completed' || b.status === 'delivered'
+      ) || [];
+      
+      const confirmedRevenue = bookingsResult.data?.filter(b => 
+        b.status === 'confirmed' || b.status === 'delivering' || 
+        b.status === 'delivered' || b.status === 'completed'
+      ).reduce((sum, booking) => sum + (booking.total_amount || 0), 0) || 0;
 
       return {
         totalUsers: usersResult.count || 0,
         totalTrainers: trainersResult.count || 0,
-        totalBookings: bookingsResult.count || 0,
+        completedBookings: completedBookings.length,
+        confirmedRevenue: confirmedRevenue,
         totalFeedback: feedbackResult.count || 0
       };
     }
@@ -81,21 +92,21 @@ const AdminDashboard = () => {
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+                  <CardTitle className="text-sm font-medium">Completed Bookings</CardTitle>
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalBookings || 0}</div>
+                  <div className="text-2xl font-bold">{stats?.completedBookings || 0}</div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Feedback</CardTitle>
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Confirmed Revenue</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalFeedback || 0}</div>
+                  <div className="text-2xl font-bold">₹{stats?.confirmedRevenue?.toFixed(2) || '0.00'}</div>
                 </CardContent>
               </Card>
             </div>

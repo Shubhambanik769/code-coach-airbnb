@@ -13,7 +13,7 @@ const Analytics = () => {
     queryKey: ['admin-analytics'],
     queryFn: async () => {
       try {
-        // Get monthly booking data
+        // Get booking data with status filtering
         const { data: bookings, error: bookingsError } = await supabase
           .from('bookings')
           .select('created_at, total_amount, status');
@@ -34,7 +34,7 @@ const Analytics = () => {
 
         if (trainersError) throw trainersError;
 
-        // Process monthly bookings with better error handling
+        // Process monthly bookings with confirmed revenue only
         const monthlyBookings = bookings?.reduce((acc: Record<string, any>, booking) => {
           if (!booking.created_at) return acc;
           
@@ -44,10 +44,21 @@ const Analytics = () => {
           });
           
           if (!acc[month]) {
-            acc[month] = { month, bookings: 0, revenue: 0 };
+            acc[month] = { month, bookings: 0, completedBookings: 0, confirmedRevenue: 0 };
           }
+          
           acc[month].bookings += 1;
-          acc[month].revenue += Number(booking.total_amount) || 0;
+          
+          // Count completed bookings
+          if (['delivered', 'completed'].includes(booking.status)) {
+            acc[month].completedBookings += 1;
+          }
+          
+          // Add to confirmed revenue only if status is confirmed or beyond
+          if (['confirmed', 'delivering', 'delivered', 'completed'].includes(booking.status)) {
+            acc[month].confirmedRevenue += Number(booking.total_amount) || 0;
+          }
+          
           return acc;
         }, {}) || {};
 
@@ -119,9 +130,9 @@ const Analytics = () => {
             <div className="flex items-center">
               <Calendar className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                <p className="text-sm font-medium text-gray-600">Completed Bookings</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {analytics?.monthlyBookings?.reduce((sum: number, month: any) => sum + month.bookings, 0) || 0}
+                  {analytics?.monthlyBookings?.reduce((sum: number, month: any) => sum + month.completedBookings, 0) || 0}
                 </p>
               </div>
             </div>
@@ -133,9 +144,9 @@ const Analytics = () => {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-sm font-medium text-gray-600">Confirmed Revenue</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ₹{analytics?.monthlyBookings?.reduce((sum: number, month: any) => sum + month.revenue, 0)?.toLocaleString() || 0}
+                  ₹{analytics?.monthlyBookings?.reduce((sum: number, month: any) => sum + month.confirmedRevenue, 0)?.toLocaleString() || 0}
                 </p>
               </div>
             </div>
@@ -173,12 +184,12 @@ const Analytics = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Bookings Chart */}
+        {/* Monthly Completed Bookings Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Monthly Bookings
+              Monthly Completed Bookings
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -188,18 +199,18 @@ const Analytics = () => {
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="bookings" fill="#3B82F6" />
+                <Bar dataKey="completedBookings" fill="#3B82F6" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Revenue Chart */}
+        {/* Confirmed Revenue Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Monthly Revenue
+              Monthly Confirmed Revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -208,8 +219,8 @@ const Analytics = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`₹${value}`, 'Revenue']} />
-                <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} />
+                <Tooltip formatter={(value) => [`₹${value}`, 'Confirmed Revenue']} />
+                <Line type="monotone" dataKey="confirmedRevenue" stroke="#10B981" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -236,7 +247,6 @@ const Analytics = () => {
           </CardContent>
         </Card>
 
-        {/* Trainer Specializations */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
