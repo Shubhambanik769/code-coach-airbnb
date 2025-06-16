@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { User, Calendar, MessageSquare, Settings, LogOut } from 'lucide-react';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import ChatList from '@/components/chat/ChatList';
+import UserBookings from '@/components/user/UserBookings';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -83,24 +83,6 @@ const UserDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    );
-  };
-
-  const UserBookings = () => {
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
-        <div className="bg-white rounded-lg shadow p-6 text-center py-12">
-          <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-medium mb-2">No bookings yet</h3>
-          <p className="text-gray-600 mb-6">
-            You haven't booked any training sessions yet.
-          </p>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-            Find a Trainer
-          </button>
         </div>
       </div>
     );
