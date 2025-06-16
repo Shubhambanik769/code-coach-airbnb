@@ -29,8 +29,10 @@ const Header = () => {
   const handleBecomeTrainer = () => {
     if (userRole === 'trainer') {
       navigate('/trainer');
-    } else {
+    } else if (user) {
       navigate('/apply-trainer');
+    } else {
+      navigate('/auth');
     }
   };
 
@@ -51,7 +53,12 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
             <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Find Trainers</a>
-            <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Become a Trainer</a>
+            <button 
+              onClick={handleBecomeTrainer}
+              className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base"
+            >
+              Become a Trainer
+            </button>
             <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">For Companies</a>
             <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Help</a>
           </nav>
@@ -67,7 +74,12 @@ const Header = () => {
               <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full"></div>
             ) : !user ? (
               <>
-                <Button variant="ghost" size="sm" className="hidden md:inline-flex text-xs sm:text-sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleBecomeTrainer}
+                  className="hidden md:inline-flex text-xs sm:text-sm"
+                >
                   Become a trainer
                 </Button>
                 <Button 
@@ -132,7 +144,12 @@ const Header = () => {
           <div className="lg:hidden py-4 border-t border-gray-100 animate-fade-in">
             <nav className="flex flex-col space-y-3">
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Find Trainers</a>
-              <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Become a Trainer</a>
+              <button 
+                onClick={handleBecomeTrainer}
+                className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base text-left"
+              >
+                Become a Trainer
+              </button>
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">For Companies</a>
               <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Help</a>
               {user && (
