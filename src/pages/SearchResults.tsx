@@ -36,17 +36,16 @@ const SearchResults = () => {
           .from('trainers')
           .select(`
             *,
-            profiles (
+            profiles!inner(
               full_name,
               avatar_url
             )
           `)
           .eq('status', 'approved');
 
-        // Apply search term filter
+        // Apply search term filter - simplified to avoid text search issues
         if (searchTerm) {
-          // Use a simpler search approach to avoid potential issues
-          query = query.or(`name.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%`);
+          query = query.or(`name.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%`);
         }
 
         // Apply specialization filter
@@ -76,17 +75,21 @@ const SearchResults = () => {
           query = query.ilike('location', `%${location}%`);
         }
 
-        // Apply sorting
+        // Apply sorting with fallback for null values
         const ascending = sortBy === 'price_low' || sortBy === 'experience_low';
-        const sortColumn = sortBy.includes('price') ? 'hourly_rate' : 
-                          sortBy.includes('experience') ? 'experience_years' : 'rating';
+        let sortColumn = 'rating';
         
-        query = query.order(sortColumn, { ascending });
+        if (sortBy.includes('price')) {
+          sortColumn = 'hourly_rate';
+        } else if (sortBy.includes('experience')) {
+          sortColumn = 'experience_years';
+        }
+        
+        query = query.order(sortColumn, { ascending, nullsLast: true });
 
         const { data, error } = await query;
         
-        console.log('Trainers data:', data);
-        console.log('Trainers error:', error);
+        console.log('Trainers query result:', { data, error });
         
         if (error) {
           console.error('Database query error:', error);
@@ -99,7 +102,13 @@ const SearchResults = () => {
         throw err;
       }
     },
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on certain types of errors
+      if (error?.code === 'PGRST116' || error?.message?.includes('syntax')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     retryDelay: 1000
   });
 
@@ -114,9 +123,9 @@ const SearchResults = () => {
 
   const activeFiltersCount = [searchTerm, specialization, experienceLevel, priceRange, location].filter(Boolean).length;
 
-  // Handle error state
+  // Handle error state with more specific error information
   if (error) {
-    console.error('Search error:', error);
+    console.error('Search error details:', error);
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -125,11 +134,16 @@ const SearchResults = () => {
             <CardContent className="p-6 text-center">
               <h2 className="text-xl font-semibold text-red-600 mb-2">Search Error</h2>
               <p className="text-gray-600 mb-4">
-                There was an issue loading trainers. Please try again.
+                {error?.message || 'There was an issue loading trainers. Please try again.'}
               </p>
-              <Button onClick={() => window.location.reload()} variant="outline">
-                Refresh Page
-              </Button>
+              <div className="space-y-2">
+                <Button onClick={() => window.location.reload()} variant="outline">
+                  Refresh Page
+                </Button>
+                <Button onClick={clearFilters} variant="secondary">
+                  Clear Filters
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
