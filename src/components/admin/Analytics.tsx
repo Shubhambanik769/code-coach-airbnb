@@ -34,6 +34,8 @@ const Analytics = () => {
 
         if (trainersError) throw trainersError;
 
+        console.log('Analytics - All bookings:', bookings);
+
         // Process monthly bookings with confirmed revenue only
         const monthlyBookings = bookings?.reduce((acc: Record<string, any>, booking) => {
           if (!booking.created_at) return acc;
@@ -49,13 +51,13 @@ const Analytics = () => {
           
           acc[month].bookings += 1;
           
-          // Count completed bookings
-          if (['delivered', 'completed'].includes(booking.status)) {
+          // Count completed bookings (completed status only)
+          if (booking.status === 'completed') {
             acc[month].completedBookings += 1;
           }
           
           // Add to confirmed revenue only if status is confirmed or beyond
-          if (['confirmed', 'delivering', 'delivered', 'completed'].includes(booking.status)) {
+          if (['confirmed', 'assigned', 'delivering', 'delivered', 'completed'].includes(booking.status)) {
             acc[month].confirmedRevenue += Number(booking.total_amount) || 0;
           }
           
@@ -85,6 +87,8 @@ const Analytics = () => {
           }
           return acc;
         }, {}) || {};
+
+        console.log('Analytics - Monthly bookings processed:', Object.values(monthlyBookings));
 
         return {
           monthlyBookings: Object.values(monthlyBookings).slice(-12), // Last 12 months

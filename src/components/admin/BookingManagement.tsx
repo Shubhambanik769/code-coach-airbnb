@@ -51,11 +51,16 @@ const BookingManagement = () => {
       ]);
 
       // Map the data together
-      return bookingsData?.map(booking => ({
+      const mappedBookings = bookingsData?.map(booking => ({
         ...booking,
         student_profile: studentsResult.data?.find(p => p.id === booking.student_id),
         trainer_profile: trainersResult.data?.find(p => p.id === booking.trainers?.user_id)
       })) || [];
+
+      console.log('BookingManagement - All bookings:', mappedBookings);
+      console.log('BookingManagement - Booking statuses:', mappedBookings.map(b => b.status));
+
+      return mappedBookings;
     }
   });
 
@@ -72,14 +77,20 @@ const BookingManagement = () => {
     }
   };
 
-  // Calculate confirmed revenue only (confirmed, delivering, delivered, completed)
+  // Calculate confirmed revenue (confirmed and beyond statuses)
   const confirmedRevenue = bookings?.filter(booking => 
-    ['confirmed', 'delivering', 'delivered', 'completed'].includes(booking.status)
+    ['confirmed', 'assigned', 'delivering', 'delivered', 'completed'].includes(booking.status)
   ).reduce((sum, booking) => sum + (booking.total_amount || 0), 0) || 0;
 
+  // Calculate completed bookings (completed status only)
   const completedBookings = bookings?.filter(b => 
-    ['delivered', 'completed'].includes(b.status)
+    b.status === 'completed'
   ).length || 0;
+
+  console.log('BookingManagement - Confirmed revenue bookings:', bookings?.filter(booking => 
+    ['confirmed', 'assigned', 'delivering', 'delivered', 'completed'].includes(booking.status)
+  ));
+  console.log('BookingManagement - Completed bookings:', bookings?.filter(b => b.status === 'completed'));
 
   return (
     <div className="space-y-6">

@@ -28,15 +28,21 @@ const AdminDashboard = () => {
         supabase.from('feedback_responses').select('id', { count: 'exact' })
       ]);
 
-      // Calculate completed bookings and confirmed revenue
+      // Calculate completed bookings (completed status only)
       const completedBookings = bookingsResult.data?.filter(b => 
-        b.status === 'completed' || b.status === 'delivered'
+        b.status === 'completed'
       ) || [];
       
+      // Calculate confirmed revenue (confirmed and beyond statuses)
       const confirmedRevenue = bookingsResult.data?.filter(b => 
-        b.status === 'confirmed' || b.status === 'delivering' || 
-        b.status === 'delivered' || b.status === 'completed'
+        ['confirmed', 'assigned', 'delivering', 'delivered', 'completed'].includes(b.status)
       ).reduce((sum, booking) => sum + (booking.total_amount || 0), 0) || 0;
+
+      console.log('Admin Stats - All bookings:', bookingsResult.data);
+      console.log('Admin Stats - Completed bookings:', completedBookings);
+      console.log('Admin Stats - Confirmed revenue bookings:', bookingsResult.data?.filter(b => 
+        ['confirmed', 'assigned', 'delivering', 'delivered', 'completed'].includes(b.status)
+      ));
 
       return {
         totalUsers: usersResult.count || 0,
