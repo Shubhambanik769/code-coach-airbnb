@@ -34,7 +34,7 @@ const HowItWorks = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
-            How <span className="text-gradient">TechTrainer</span> Works
+            How <span className="text-gradient">Skilloop.io</span> Works
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Get started with expert IT training in just four simple steps
@@ -83,7 +83,7 @@ const HowItWorks = () => {
             Ready to upskill your team?
           </h3>
           <p className="text-gray-600 mb-4 sm:mb-6 max-w-2xl mx-auto text-sm sm:text-base">
-            Join thousands of companies that trust TechTrainer for their technology training needs
+            Join thousands of companies that trust Skilloop.io for their technology training needs
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <button className="px-6 sm:px-8 py-3 bg-gradient-to-r from-techblue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base">
