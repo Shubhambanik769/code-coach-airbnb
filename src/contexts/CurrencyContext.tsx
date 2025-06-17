@@ -1,0 +1,75 @@
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+export interface Currency {
+  code: string;
+  symbol: string;
+  name: string;
+  rate: number;
+}
+
+export const currencies: Currency[] = [
+  { code: 'USD', symbol: '$', name: 'US Dollar', rate: 1 },
+  { code: 'EUR', symbol: '€', name: 'Euro', rate: 0.85 },
+  { code: 'GBP', symbol: '£', name: 'British Pound', rate: 0.73 },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee', rate: 83.12 },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', rate: 1.25 },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', rate: 1.35 },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', rate: 1.35 },
+];
+
+interface CurrencyContextType {
+  selectedCurrency: Currency;
+  setCurrency: (currency: Currency) => void;
+  convertPrice: (price: number) => number;
+  formatPrice: (price: number) => string;
+}
+
+const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
+
+export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currencies[0]);
+
+  useEffect(() => {
+    const savedCurrency = localStorage.getItem('selectedCurrency');
+    if (savedCurrency) {
+      const currency = currencies.find(c => c.code === savedCurrency);
+      if (currency) {
+        setSelectedCurrency(currency);
+      }
+    }
+  }, []);
+
+  const setCurrency = (currency: Currency) => {
+    setSelectedCurrency(currency);
+    localStorage.setItem('selectedCurrency', currency.code);
+  };
+
+  const convertPrice = (price: number): number => {
+    return Math.round(price * selectedCurrency.rate * 100) / 100;
+  };
+
+  const formatPrice = (price: number): string => {
+    const convertedPrice = convertPrice(price);
+    return `${selectedCurrency.symbol}${convertedPrice.toFixed(2)}`;
+  };
+
+  return (
+    <CurrencyContext.Provider value={{
+      selectedCurrency,
+      setCurrency,
+      convertPrice,
+      formatPrice
+    }}>
+      {children}
+    </CurrencyContext.Provider>
+  );
+};
+
+export const useCurrency = () => {
+  const context = useContext(CurrencyContext);
+  if (context === undefined) {
+    throw new Error('useCurrency must be used within a CurrencyProvider');
+  }
+  return context;
+};

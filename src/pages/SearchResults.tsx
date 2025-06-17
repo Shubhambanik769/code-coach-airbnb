@@ -9,25 +9,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter } from 'lucide-react';
 import TrainerCard from '@/components/TrainerCard';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 const SearchResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState('rating');
-  const [filterBy, setFilterBy] = useState('all');
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(200);
+  const [experienceFilter, setExperienceFilter] = useState('');
+  const { convertPrice } = useCurrency();
 
   // Get search params from URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const query = params.get('q') || '';
+    const loc = params.get('location') || '';
+    const cat = params.get('category') || '';
+    const exp = params.get('experience') || '';
+    const minPriceParam = params.get('minPrice');
+    const maxPriceParam = params.get('maxPrice');
+    
     setSearchTerm(query);
+    setLocationFilter(loc);
+    setCategoryFilter(cat);
+    setExperienceFilter(exp);
+    if (minPriceParam) setMinPrice(parseInt(minPriceParam));
+    if (maxPriceParam) setMaxPrice(parseInt(maxPriceParam));
   }, [location.search]);
 
   const { data: trainers, isLoading } = useQuery({
-    queryKey: ['search-trainers', searchTerm, sortBy, filterBy],
+    queryKey: ['search-trainers', searchTerm, locationFilter, categoryFilter, sortBy, minPrice, maxPrice, experienceFilter],
     queryFn: async () => {
-      console.log('Searching trainers with:', { searchTerm, sortBy, filterBy });
+      console.log('Searching trainers with:', { 
+        searchTerm, locationFilter, categoryFilter, sortBy, minPrice, maxPrice, experienceFilter 
+      });
       
       let query = supabase
         .from('trainers')
@@ -36,12 +55,32 @@ const SearchResults = () => {
 
       // Apply search filter
       if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,skills.cs.{${searchTerm}}`);
+        query = query.or(`title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,skills.cs.{${searchTerm}},bio.ilike.%${searchTerm}%`);
+      }
+
+      // Apply location filter
+      if (locationFilter && locationFilter !== 'Remote') {
+        query = query.or(`location.ilike.%${locationFilter}%,location.ilike.%Remote%`);
+      } else if (locationFilter === 'Remote') {
+        query = query.ilike('location', '%Remote%');
       }
 
       // Apply category filter
-      if (filterBy !== 'all') {
-        query = query.ilike('specialization', `%${filterBy}%`);
+      if (categoryFilter) {
+        query = query.or(`specialization.ilike.%${categoryFilter}%,skills.cs.{${categoryFilter}}`);
+      }
+
+      // Apply price range filter
+      if (minPrice > 0) {
+        query = query.gte('hourly_rate', minPrice);
+      }
+      if (maxPrice < 200) {
+        query = query.lte('hourly_rate', maxPrice);
+      }
+
+      // Apply experience filter
+      if (experienceFilter) {
+        query = query.gte('experience_years', parseInt(experienceFilter));
       }
 
       const { data: trainersData, error } = await query;
@@ -124,6 +163,8 @@ const SearchResults = () => {
             return (b.hourly_rate || 0) - (a.hourly_rate || 0);
           case 'experience':
             return (b.experience_years || 0) - (a.experience_years || 0);
+          case 'reviews':
+            return (b.total_reviews || 0) - (a.total_reviews || 0);
           default:
             return 0;
         }
@@ -138,14 +179,27 @@ const SearchResults = () => {
 
   const handleSearch = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm);
-    navigate(`/search?q=${encodeURIComponent(newSearchTerm)}`);
+    const params = new URLSearchParams();
+    if (newSearchTerm) params.set('q', newSearchTerm);
+    if (locationFilter) params.set('location', locationFilter);
+    if (categoryFilter) params.set('category', categoryFilter);
+    if (experienceFilter) params.set('experience', experienceFilter);
+    if (minPrice > 0) params.set('minPrice', minPrice.toString());
+    if (maxPrice < 200) params.set('maxPrice', maxPrice.toString());
+    navigate(`/search?${params.toString()}`);
+  };
+
+  const getSearchTitle = () => {
+    const filters = [searchTerm, locationFilter, categoryFilter].filter(Boolean);
+    if (filters.length === 0) return 'All Trainers';
+    return `Results for: ${filters.join(', ')}`;
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          {searchTerm ? `Search Results for "${searchTerm}"` : 'All Trainers'}
+          {getSearchTitle()}
         </h1>
         
         {/* Search and Filters */}
@@ -153,27 +207,41 @@ const SearchResults = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search trainers by name, specialization, or skills..."
+              placeholder="Refine your search..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
             />
           </div>
           
-          <div className="flex gap-2">
-            <Select value={filterBy} onValueChange={setFilterBy}>
+          <div className="flex gap-2 flex-wrap">
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
               <SelectTrigger className="w-40">
                 <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border shadow-lg z-50">
+                <SelectItem value="">Any Location</SelectItem>
+                <SelectItem value="Remote">Remote</SelectItem>
+                <SelectItem value="New York">New York</SelectItem>
+                <SelectItem value="San Francisco">San Francisco</SelectItem>
+                <SelectItem value="London">London</SelectItem>
+                <SelectItem value="Toronto">Toronto</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-48">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="fitness">Fitness</SelectItem>
-                <SelectItem value="yoga">Yoga</SelectItem>
-                <SelectItem value="nutrition">Nutrition</SelectItem>
-                <SelectItem value="strength">Strength Training</SelectItem>
-                <SelectItem value="cardio">Cardio</SelectItem>
-                <SelectItem value="weight loss">Weight Loss</SelectItem>
+              <SelectContent className="bg-white border shadow-lg z-50">
+                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="Web Development">Web Development</SelectItem>
+                <SelectItem value="Mobile Development">Mobile Development</SelectItem>
+                <SelectItem value="DevOps">DevOps</SelectItem>
+                <SelectItem value="Cloud Computing">Cloud Computing</SelectItem>
+                <SelectItem value="Data Science">Data Science</SelectItem>
+                <SelectItem value="Machine Learning">Machine Learning</SelectItem>
               </SelectContent>
             </Select>
             
@@ -181,15 +249,42 @@ const SearchResults = () => {
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border shadow-lg z-50">
                 <SelectItem value="rating">Highest Rated</SelectItem>
                 <SelectItem value="price_low">Price: Low to High</SelectItem>
                 <SelectItem value="price_high">Price: High to Low</SelectItem>
                 <SelectItem value="experience">Most Experienced</SelectItem>
+                <SelectItem value="reviews">Most Reviews</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
+
+        {/* Active Filters */}
+        {(searchTerm || locationFilter || categoryFilter || experienceFilter || minPrice > 0 || maxPrice < 200) && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {searchTerm && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                Search: {searchTerm}
+              </Badge>
+            )}
+            {locationFilter && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                Location: {locationFilter}
+              </Badge>
+            )}
+            {categoryFilter && (
+              <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                Category: {categoryFilter}
+              </Badge>
+            )}
+            {experienceFilter && (
+              <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                Experience: {experienceFilter}+ years
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Results */}
@@ -232,10 +327,7 @@ const SearchResults = () => {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 text-center py-8">
-              {searchTerm 
-                ? `No trainers found matching "${searchTerm}". Try adjusting your search terms.`
-                : 'No approved trainers available at the moment.'
-              }
+              No trainers found matching your criteria. Try adjusting your search terms or filters.
             </p>
           </CardContent>
         </Card>

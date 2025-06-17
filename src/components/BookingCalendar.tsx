@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar as CalendarIcon, Clock, CreditCard, Users, CheckCircle2, Star } from 'lucide-react';
 import { format, addDays, isSameDay, parseISO, isWithinInterval } from 'date-fns';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface BookingCalendarProps {
   trainerId: string;
@@ -49,6 +49,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
 
   // Fetch availability slots for the selected date
   const { data: availability = [], isLoading: isLoadingAvailability } = useQuery({
@@ -246,7 +247,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold">${hourlyRate}</div>
+            <div className="text-2xl font-bold">{formatPrice(hourlyRate)}</div>
             <div className="text-blue-100 text-sm">per hour</div>
           </div>
         </CardTitle>
@@ -329,7 +330,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
                   </div>
                 </div>
                 <Badge className="bg-green-100 text-green-800 border-green-200">
-                  ${hourlyRate}/hour
+                  {formatPrice(hourlyRate)}/hour
                 </Badge>
               </div>
 
@@ -422,7 +423,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
                     <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Rate per hour:</span>
-                        <span className="font-medium">${hourlyRate}</span>
+                        <span className="font-medium">{formatPrice(hourlyRate)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Duration:</span>
@@ -430,7 +431,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
                       </div>
                       <div className="border-t pt-2 flex justify-between text-lg font-semibold">
                         <span>Total:</span>
-                        <span className="text-blue-600">${hourlyRate * bookingData.duration}</span>
+                        <span className="text-blue-600">{formatPrice(hourlyRate * bookingData.duration)}</span>
                       </div>
                     </div>
                     

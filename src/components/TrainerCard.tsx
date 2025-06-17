@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MapPin, Clock, TrendingUp, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface TrainerCardProps {
   trainer: {
@@ -31,6 +33,7 @@ interface TrainerCardProps {
 const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -173,7 +176,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
           
           <div className="text-right ml-4">
             <p className="text-lg font-bold text-blue-600">
-              ${trainer.hourly_rate || 0}
+              {formatPrice(trainer.hourly_rate || 0)}
             </p>
             <p className="text-xs text-gray-500">per hour</p>
           </div>

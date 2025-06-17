@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import CurrencySelector from '@/components/CurrencySelector';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,6 +56,8 @@ const Header = () => {
 
           {/* Right Section */}
           <div className="flex items-center space-x-4">
+            <CurrencySelector />
+            
             {loading ? (
               <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full"></div>
             ) : !user ? (
