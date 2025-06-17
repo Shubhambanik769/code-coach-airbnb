@@ -1,3 +1,4 @@
+
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -223,6 +224,11 @@ const TrainerProfilePage = () => {
   const trainer = trainerData.trainer;
   const reviews = trainerData.reviews || [];
 
+  // Create proper avatar URL from profile data
+  const avatarUrl = trainer.profile?.avatar_url 
+    ? `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profile.avatar_url}`
+    : null;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -234,7 +240,7 @@ const TrainerProfilePage = () => {
               <div className="flex items-start gap-6">
                 <Avatar className="w-24 h-24">
                   <AvatarImage 
-                    src={trainer.profile?.avatar_url} 
+                    src={avatarUrl} 
                     alt={trainer.profile?.full_name || trainer.name} 
                   />
                   <AvatarFallback>

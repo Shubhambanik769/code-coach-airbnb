@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -44,6 +44,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
@@ -98,8 +99,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     enabled: !!trainerId
   });
 
-  const updateBookingStatus = async (bookingId: string, status: string) => {
-    try {
+  const updateBookingStatusMutation = useMutation({
+    mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
       console.log('Updating booking status:', { bookingId, status });
       
       const { error } = await supabase
@@ -114,12 +115,17 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         await createFeedbackLink(bookingId);
       }
 
+      return { bookingId, status };
+    },
+    onSuccess: (data) => {
       toast({
         title: "Success",
-        description: `Booking ${status} successfully`
+        description: `Booking ${data.status} successfully`
       });
       refetch();
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ['trainer-bookings'] });
+    },
+    onError: (error: any) => {
       console.error('Error updating booking status:', error);
       toast({
         title: "Error",
@@ -127,10 +133,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         variant: "destructive"
       });
     }
+  });
+
+  const updateBookingStatus = (bookingId: string, status: string) => {
+    updateBookingStatusMutation.mutate({ bookingId, status });
   };
 
-  const createFeedbackLink = async (bookingId: string) => {
-    try {
+  const createFeedbackLinkMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
       console.log('Creating feedback link for booking:', bookingId);
       
       // Check if feedback link already exists for this booking
@@ -143,16 +153,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
       if (checkError && checkError.code !== 'PGRST116') {
         console.error('Error checking existing feedback link:', checkError);
-        return;
+        throw checkError;
       }
 
       if (existingLink) {
         console.log('Feedback link already exists for this booking');
-        toast({
-          title: "Info",
-          description: "Feedback link already exists for this booking"
-        });
-        return;
+        return existingLink;
       }
 
       // Generate a unique token using crypto API for better randomness
@@ -160,38 +166,51 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       crypto.getRandomValues(array);
       const token = btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '').substring(0, 32);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('feedback_links')
         .insert({
           booking_id: bookingId,
           token: token,
           is_active: true,
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error creating feedback link:', error);
+        throw error;
+      }
+
+      console.log('Feedback link created successfully');
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Feedback link created successfully"
+      });
+      refetch();
+    },
+    onError: (error: any) => {
+      console.error('Error in createFeedbackLink:', error);
+      if (error.message.includes('already exists')) {
+        toast({
+          title: "Info",
+          description: "Feedback link already exists for this booking"
+        });
+      } else {
         toast({
           title: "Error",
           description: "Failed to create feedback link",
           variant: "destructive"
         });
-      } else {
-        console.log('Feedback link created successfully');
-        toast({
-          title: "Success",
-          description: "Feedback link created successfully"
-        });
-        refetch();
       }
-    } catch (error) {
-      console.error('Error in createFeedbackLink:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create feedback link",
-        variant: "destructive"
-      });
     }
+  });
+
+  const createFeedbackLink = (bookingId: string) => {
+    createFeedbackLinkMutation.mutate(bookingId);
   };
 
   const copyFeedbackLink = (token: string) => {
@@ -333,6 +352,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               variant="outline"
                               size="sm"
                               onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                              disabled={updateBookingStatusMutation.isPending}
                               className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                             >
                               Accept
@@ -341,6 +361,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               variant="outline"
                               size="sm"
                               onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                              disabled={updateBookingStatusMutation.isPending}
                               className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
                             >
                               Decline
@@ -352,6 +373,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             variant="outline"
                             size="sm"
                             onClick={() => updateBookingStatus(booking.id, 'completed')}
+                            disabled={updateBookingStatusMutation.isPending}
                             className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                           >
                             Mark Complete
@@ -373,6 +395,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             variant="outline"
                             size="sm"
                             onClick={() => createFeedbackLink(booking.id)}
+                            disabled={createFeedbackLinkMutation.isPending}
                             className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
                           >
                             <Link className="h-4 w-4 mr-1" />

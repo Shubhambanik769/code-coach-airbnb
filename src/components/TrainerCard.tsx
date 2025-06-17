@@ -80,6 +80,11 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
     }
   };
 
+  // Create proper avatar URL from profiles data
+  const avatarUrl = trainer.profiles?.avatar_url 
+    ? `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`
+    : null;
+
   return (
     <Card className="hover:shadow-lg transition-shadow cursor-pointer">
       <CardContent className="p-6">
@@ -87,11 +92,8 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
           <div className="flex items-start gap-3 flex-1">
             <Avatar className="w-12 h-12">
               <AvatarImage 
-                src={trainer.profiles?.avatar_url} 
+                src={avatarUrl} 
                 alt={trainer.profiles?.full_name || trainer.name}
-                onError={(e) => {
-                  console.error('Avatar load error:', e);
-                }}
               />
               <AvatarFallback>
                 <User className="h-6 w-6" />
