@@ -153,12 +153,20 @@ const SearchResults = () => {
 
         console.log(`Trainer ${trainer.name}: ${totalReviews} reviews, avg rating: ${avgRating.toFixed(1)}`);
 
+        // Fix the profiles structure - take the first profile if it's an array, or use the object directly
+        const profileData = Array.isArray(trainer.profiles) 
+          ? trainer.profiles[0] 
+          : trainer.profiles;
+
         return {
           ...trainer,
           rating: Number(avgRating.toFixed(1)),
           total_reviews: totalReviews,
           // Ensure the profile data is properly structured for TrainerCard
-          profiles: trainer.profiles
+          profiles: profileData ? {
+            avatar_url: profileData.avatar_url,
+            full_name: profileData.full_name
+          } : undefined
         };
       });
 
