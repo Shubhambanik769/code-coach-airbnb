@@ -14,7 +14,7 @@ const TrainerProfilePage = () => {
   const { data: trainerData, isLoading, error } = useQuery({
     queryKey: ['trainer-public-profile', id],
     queryFn: async () => {
-      console.log('Fetching trainer with ID:', id);
+      console.log('Fetching trainer profile for all users with ID:', id);
       
       if (!id) {
         throw new Error('No trainer ID provided');
@@ -29,7 +29,7 @@ const TrainerProfilePage = () => {
           .eq('status', 'approved')
           .single();
 
-        console.log('Trainer query result:', { trainer, trainerError });
+        console.log('Trainer query result for public:', { trainer, trainerError });
 
         if (trainerError) {
           console.error('Trainer fetch error:', trainerError);
@@ -40,28 +40,28 @@ const TrainerProfilePage = () => {
           throw new Error('Trainer not found or not approved');
         }
 
-        // Get profile data
+        // Get profile data - now accessible to all users
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', trainer.user_id)
           .maybeSingle();
 
-        console.log('Profile query result:', { profile, profileError });
+        console.log('Profile query result for public:', { profile, profileError });
 
         if (profileError) {
           console.error('Profile fetch error:', profileError);
         }
 
-        // Get reviews from reviews table
+        // Get reviews from reviews table - now accessible to all users
         const { data: reviews, error: reviewsError } = await supabase
           .from('reviews')
           .select('*')
           .eq('trainer_id', id);
 
-        console.log('Reviews query result:', { reviews, reviewsError });
+        console.log('Reviews query result for public:', { reviews, reviewsError });
 
-        // Get feedback responses through feedback links
+        // Get feedback responses through feedback links - now accessible to all users
         const { data: feedbackResponses, error: feedbackError } = await supabase
           .from('feedback_responses')
           .select(`
@@ -73,7 +73,7 @@ const TrainerProfilePage = () => {
           `)
           .eq('feedback_links.bookings.trainer_id', id);
 
-        console.log('Feedback query result:', { feedbackResponses, feedbackError });
+        console.log('Feedback query result for public:', { feedbackResponses, feedbackError });
 
         // Combine all feedback data
         const allFeedback = [
@@ -107,22 +107,7 @@ const TrainerProfilePage = () => {
           ? allFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalRatings
           : 0;
 
-        console.log('Calculated rating:', { averageRating, totalRatings });
-
-        // Update trainer rating in database if there are ratings
-        if (totalRatings > 0) {
-          const { error: updateError } = await supabase
-            .from('trainers')
-            .update({
-              rating: Number(averageRating.toFixed(1)),
-              total_reviews: totalRatings
-            })
-            .eq('id', id);
-          
-          if (updateError) {
-            console.error('Error updating trainer rating:', updateError);
-          }
-        }
+        console.log('Calculated rating for public view:', { averageRating, totalRatings });
 
         return { 
           trainer: { 
@@ -134,7 +119,7 @@ const TrainerProfilePage = () => {
           reviews: allFeedback
         };
       } catch (error) {
-        console.error('Error in trainer profile fetch:', error);
+        console.error('Error in trainer profile fetch for public:', error);
         throw error;
       }
     },
@@ -199,7 +184,7 @@ const TrainerProfilePage = () => {
   }
 
   if (error || !trainerData?.trainer) {
-    console.error('Trainer profile error:', error);
+    console.error('Trainer profile error for public view:', error);
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -209,12 +194,6 @@ const TrainerProfilePage = () => {
               The trainer you're looking for doesn't exist or is not approved yet.
             </p>
             <p className="text-sm text-gray-500 mb-4">Trainer ID: {id}</p>
-            <div className="text-xs text-gray-400 bg-gray-100 p-3 rounded">
-              <p>Debug Info:</p>
-              <p>Error: {error?.message}</p>
-              <p>Has Data: {!!trainerData}</p>
-              <p>Has Trainer: {!!trainerData?.trainer}</p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -224,9 +203,11 @@ const TrainerProfilePage = () => {
   const trainer = trainerData.trainer;
   const reviews = trainerData.reviews || [];
 
-  // Create proper avatar URL from profile data
+  // Create proper avatar URL from profile data - now accessible to all users
   const avatarUrl = trainer.profile?.avatar_url 
-    ? `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profile.avatar_url}`
+    ? (trainer.profile.avatar_url.startsWith('http') 
+        ? trainer.profile.avatar_url 
+        : `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profile.avatar_url}`)
     : null;
 
   return (
@@ -241,7 +222,11 @@ const TrainerProfilePage = () => {
                 <Avatar className="w-24 h-24">
                   <AvatarImage 
                     src={avatarUrl} 
-                    alt={trainer.profile?.full_name || trainer.name} 
+                    alt={trainer.profile?.full_name || trainer.name}
+                    onError={(e) => {
+                      console.log('Profile avatar failed to load:', avatarUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                   <AvatarFallback>
                     <User className="h-12 w-12" />
@@ -260,7 +245,7 @@ const TrainerProfilePage = () => {
                   
                   <p className="text-xl text-gray-600 mb-4">{trainer.title}</p>
 
-                  {/* Rating and Reviews */}
+                  {/* Rating and Reviews - now visible to all users */}
                   <div className="flex items-center gap-4 mb-4">
                     {trainer.rating && trainer.rating > 0 ? (
                       <>
@@ -366,7 +351,7 @@ const TrainerProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Reviews Section */}
+          {/* Reviews Section - now visible to all users */}
           <Card>
             <CardHeader>
               <CardTitle>Reviews ({reviews.length})</CardTitle>

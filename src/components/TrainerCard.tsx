@@ -80,9 +80,11 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
     }
   };
 
-  // Create proper avatar URL from profiles data - now accessible to all users
+  // Create proper avatar URL - now accessible to all users
   const avatarUrl = trainer.profiles?.avatar_url 
-    ? `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`
+    ? (trainer.profiles.avatar_url.startsWith('http') 
+        ? trainer.profiles.avatar_url 
+        : `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`)
     : null;
 
   return (
@@ -94,6 +96,10 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
               <AvatarImage 
                 src={avatarUrl} 
                 alt={trainer.profiles?.full_name || trainer.name}
+                onError={(e) => {
+                  console.log('Avatar failed to load:', avatarUrl);
+                  e.currentTarget.style.display = 'none';
+                }}
               />
               <AvatarFallback>
                 <User className="h-6 w-6" />

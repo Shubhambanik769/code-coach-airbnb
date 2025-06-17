@@ -1,7 +1,8 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, MapPin, Clock, Award } from 'lucide-react';
+import { Star, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ const FeaturedTrainers = () => {
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ['featured-trainers'],
     queryFn: async () => {
-      console.log('Fetching featured trainers...');
+      console.log('Fetching featured trainers for all users...');
       
       // Query is now accessible to all users thanks to RLS policies
       const { data, error } = await supabase
@@ -29,10 +30,13 @@ const FeaturedTrainers = () => {
         .order('total_reviews', { ascending: false })
         .limit(6);
       
-      console.log('Featured trainers data:', data);
+      console.log('Featured trainers data for public:', data);
       console.log('Featured trainers error:', error);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trainers:', error);
+        throw error;
+      }
       return data || [];
     }
   });
@@ -113,9 +117,11 @@ const FeaturedTrainers = () => {
               const rating = trainer.rating || 0;
               const totalReviews = trainer.total_reviews || 0;
               
-              // Profile pictures now accessible to all users
+              // Handle profile pictures for all users (including non-authenticated)
               const avatarUrl = trainer.profiles?.avatar_url 
-                ? `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`
+                ? (trainer.profiles.avatar_url.startsWith('http') 
+                    ? trainer.profiles.avatar_url 
+                    : `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`)
                 : `https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face`;
               
               return (
@@ -138,6 +144,10 @@ const FeaturedTrainers = () => {
                                 src={avatarUrl}
                                 alt={displayName}
                                 className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  console.log('Featured trainer avatar failed to load:', avatarUrl);
+                                  e.currentTarget.src = `https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face`;
+                                }}
                               />
                             </div>
                             <div className="absolute -top-1 -right-1">
