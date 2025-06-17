@@ -80,7 +80,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
     }
   };
 
-  // Create proper avatar URL from profiles data
+  // Create proper avatar URL from profiles data - now accessible to all users
   const avatarUrl = trainer.profiles?.avatar_url 
     ? `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`
     : null;
@@ -111,7 +111,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
               </div>
               <p className="text-gray-600 text-sm mb-2 truncate">{trainer.title}</p>
               
-              {/* Rating and Reviews */}
+              {/* Rating and Reviews - now visible to all users */}
               {trainer.rating && trainer.rating > 0 ? (
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex items-center gap-1">

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,7 @@ const FeaturedTrainers = () => {
     queryFn: async () => {
       console.log('Fetching featured trainers...');
       
+      // Query is now accessible to all users thanks to RLS policies
       const { data, error } = await supabase
         .from('trainers')
         .select(`
@@ -113,6 +113,11 @@ const FeaturedTrainers = () => {
               const rating = trainer.rating || 0;
               const totalReviews = trainer.total_reviews || 0;
               
+              // Profile pictures now accessible to all users
+              const avatarUrl = trainer.profiles?.avatar_url 
+                ? `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`
+                : `https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face`;
+              
               return (
                 <Card 
                   key={trainer.id} 
@@ -130,7 +135,7 @@ const FeaturedTrainers = () => {
                           <div className="relative">
                             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 p-0.5">
                               <img
-                                src={trainer.profiles?.avatar_url || `https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face`}
+                                src={avatarUrl}
                                 alt={displayName}
                                 className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
@@ -154,7 +159,7 @@ const FeaturedTrainers = () => {
                         </div>
                       </div>
 
-                      {/* Rating Section */}
+                      {/* Rating Section - now visible to all users */}
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center space-x-2">
                           {rating > 0 ? (
