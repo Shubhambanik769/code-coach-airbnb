@@ -1,10 +1,10 @@
-
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MapPin, Clock, TrendingUp, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TrainerCardProps {
   trainer: {
@@ -30,6 +30,7 @@ interface TrainerCardProps {
 
 const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -72,7 +73,15 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
   };
 
   const handleViewProfile = () => {
-    console.log('TrainerCard: Navigating to trainer profile:', trainer.id);
+    console.log('TrainerCard: User authentication status:', !!user);
+    
+    if (!user) {
+      console.log('TrainerCard: User not authenticated, redirecting to login');
+      navigate('/auth');
+      return;
+    }
+
+    console.log('TrainerCard: User authenticated, navigating to trainer profile:', trainer.id);
     if (onSelect) {
       onSelect(trainer.id);
     } else {
@@ -205,9 +214,9 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
         )}
 
         {/* Additional Tags */}
-        {trainer.tags && trainer.tags.length > 1 && (
+        {trainer.tags && (trainer.tags as string[]).length > 1 && (
           <div className="flex flex-wrap gap-1 mb-4">
-            {trainer.tags.slice(1, 4).map((tag, index) => (
+            {(trainer.tags as string[]).slice(1, 4).map((tag: string, index: number) => (
               <Badge key={index} variant="outline" className="text-xs bg-blue-50 text-blue-700">
                 {tag}
               </Badge>
@@ -219,7 +228,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
           onClick={handleViewProfile}
           className="w-full bg-blue-600 hover:bg-blue-700"
         >
-          View Profile
+          {user ? 'View Profile' : 'Login to View Profile'}
         </Button>
       </CardContent>
     </Card>

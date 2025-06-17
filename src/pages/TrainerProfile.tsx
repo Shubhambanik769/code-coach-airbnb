@@ -1,20 +1,31 @@
-
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MapPin, Clock, TrendingUp, User, DollarSign } from 'lucide-react';
 import BookingCalendar from '@/components/BookingCalendar';
+import { useAuth } from '@/hooks/useAuth';
 
 const TrainerProfilePage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      console.log('TrainerProfile: User not authenticated, redirecting to login');
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
 
   const { data: trainerData, isLoading, error } = useQuery({
     queryKey: ['trainer-public-profile', id],
     queryFn: async () => {
-      console.log('Fetching trainer profile for all users with ID:', id);
+      console.log('Fetching trainer profile for authenticated user with ID:', id);
       
       if (!id) {
         throw new Error('No trainer ID provided');
@@ -29,7 +40,7 @@ const TrainerProfilePage = () => {
           .eq('status', 'approved')
           .single();
 
-        console.log('Trainer query result for public:', { trainer, trainerError });
+        console.log('Trainer query result for authenticated user:', { trainer, trainerError });
 
         if (trainerError) {
           console.error('Trainer fetch error:', trainerError);
@@ -47,7 +58,7 @@ const TrainerProfilePage = () => {
           .eq('id', trainer.user_id)
           .maybeSingle();
 
-        console.log('Profile query result for public:', { profile, profileError });
+        console.log('Profile query result for authenticated user:', { profile, profileError });
 
         if (profileError) {
           console.error('Profile fetch error:', profileError);
@@ -59,7 +70,7 @@ const TrainerProfilePage = () => {
           .select('*')
           .eq('trainer_id', id);
 
-        console.log('Reviews query result for public:', { reviews, reviewsError });
+        console.log('Reviews query result for authenticated user:', { reviews, reviewsError });
 
         // Get feedback responses through feedback links - now accessible to all users
         const { data: feedbackResponses, error: feedbackError } = await supabase
@@ -73,7 +84,7 @@ const TrainerProfilePage = () => {
           `)
           .eq('feedback_links.bookings.trainer_id', id);
 
-        console.log('Feedback query result for public:', { feedbackResponses, feedbackError });
+        console.log('Feedback query result for authenticated user:', { feedbackResponses, feedbackError });
 
         // Combine all feedback data
         const allFeedback = [
@@ -107,7 +118,7 @@ const TrainerProfilePage = () => {
           ? allFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalRatings
           : 0;
 
-        console.log('Calculated rating for public view:', { averageRating, totalRatings });
+        console.log('Calculated rating for authenticated view:', { averageRating, totalRatings });
 
         return { 
           trainer: { 
@@ -119,11 +130,11 @@ const TrainerProfilePage = () => {
           reviews: allFeedback
         };
       } catch (error) {
-        console.error('Error in trainer profile fetch for public:', error);
+        console.error('Error in trainer profile fetch for authenticated user:', error);
         throw error;
       }
     },
-    enabled: !!id,
+    enabled: !!id && !!user,
     retry: 2,
     retryDelay: 1000
   });
@@ -171,6 +182,24 @@ const TrainerProfilePage = () => {
     return 'bg-gray-500 text-white';
   };
 
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if user is not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -184,7 +213,7 @@ const TrainerProfilePage = () => {
   }
 
   if (error || !trainerData?.trainer) {
-    console.error('Trainer profile error for public view:', error);
+    console.error('Trainer profile error for authenticated view:', error);
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -245,7 +274,7 @@ const TrainerProfilePage = () => {
                   
                   <p className="text-xl text-gray-600 mb-4">{trainer.title}</p>
 
-                  {/* Rating and Reviews - now visible to all users */}
+                  {/* Rating and Reviews - now visible to authenticated users */}
                   <div className="flex items-center gap-4 mb-4">
                     {trainer.rating && trainer.rating > 0 ? (
                       <>
@@ -351,7 +380,7 @@ const TrainerProfilePage = () => {
             </CardContent>
           </Card>
 
-          {/* Reviews Section - now visible to all users */}
+          {/* Reviews Section - now visible to authenticated users */}
           <Card>
             <CardHeader>
               <CardTitle>Reviews ({reviews.length})</CardTitle>

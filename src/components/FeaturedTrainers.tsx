@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,9 +5,11 @@ import { Star, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 const FeaturedTrainers = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ['featured-trainers'],
@@ -42,6 +43,15 @@ const FeaturedTrainers = () => {
   });
 
   const handleViewProfile = (trainerId: string) => {
+    console.log('FeaturedTrainers: User authentication status:', !!user);
+    
+    if (!user) {
+      console.log('FeaturedTrainers: User not authenticated, redirecting to login');
+      navigate('/auth');
+      return;
+    }
+
+    console.log('FeaturedTrainers: User authenticated, navigating to trainer profile:', trainerId);
     navigate(`/trainer/${trainerId}`);
   };
 
@@ -231,7 +241,7 @@ const FeaturedTrainers = () => {
                         onClick={() => handleViewProfile(trainer.id)}
                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-[1.02]"
                       >
-                        View Profile
+                        {user ? 'View Profile' : 'Login to View Profile'}
                       </Button>
                     </div>
                   </CardContent>
