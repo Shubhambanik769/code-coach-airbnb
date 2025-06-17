@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Menu, User } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -43,22 +43,15 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
             <div className="w-8 h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TT</span>
+              <span className="text-white font-bold text-sm">SL</span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-techblue-600 to-purple-600 bg-clip-text text-transparent">
-              TechTrainer
-            </span>
+            <div className="flex flex-col">
+              <span className="text-xl font-bold bg-gradient-to-r from-techblue-600 to-purple-600 bg-clip-text text-transparent">
+                Skilloop.io
+              </span>
+              <span className="text-xs text-gray-500 -mt-1">by Gyanyodha</span>
+            </div>
           </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <a href="/search" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors">
-              Find Trainers
-            </a>
-            <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors">
-              About
-            </a>
-          </nav>
 
           {/* Right Section */}
           <div className="flex items-center space-x-4">
@@ -119,12 +112,6 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
             <nav className="flex flex-col space-y-3">
-              <a href="/search" className="text-gray-700 hover:text-techblue-600 font-medium py-2">
-                Find Trainers
-              </a>
-              <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2">
-                About
-              </a>
               {user && (
                 <>
                   <Button 
