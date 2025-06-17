@@ -3,7 +3,7 @@
 export const config = {
   // App configuration
   app: {
-    name: 'TrainerConnect',
+    name: 'Skilloop.io',
     version: '1.0.0',
     environment: import.meta.env.MODE || 'development',
     isProd: import.meta.env.PROD,

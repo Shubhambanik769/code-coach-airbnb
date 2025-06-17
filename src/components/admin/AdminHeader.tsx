@@ -33,9 +33,9 @@ const AdminHeader = ({ user }: AdminHeaderProps) => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">TT</span>
+                <span className="text-white font-bold text-sm">SL</span>
               </div>
-              <span className="text-xl font-bold text-gradient">TrainerWorld Admin</span>
+              <span className="text-xl font-bold text-gradient">Skilloop.io Admin</span>
             </div>
           </div>
 

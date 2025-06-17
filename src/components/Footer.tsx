@@ -4,7 +4,7 @@ import { Globe, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 const Footer = () => {
   const footerSections = [
     {
-      title: 'TechTrainer',
+      title: 'Skilloop.io',
       links: [
         'About us',
         'Careers',
@@ -56,12 +56,12 @@ const Footer = () => {
           <div className="lg:col-span-1 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center space-x-2 mb-4 sm:mb-6">
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs sm:text-sm">TT</span>
+                <span className="text-white font-bold text-xs sm:text-sm">SL</span>
               </div>
-              <span className="text-lg sm:text-xl font-bold">TechTrainer</span>
+              <span className="text-lg sm:text-xl font-bold">Skilloop.io</span>
             </div>
             <p className="text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">
-              Connecting companies with expert IT trainers for personalized technology education.
+              Connecting companies with expert technology trainers for personalized learning experiences.
             </p>
             <div className="flex space-x-3 sm:space-x-4">
               <Facebook className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
@@ -124,7 +124,7 @@ const Footer = () => {
             </div>
             
             <div className="text-xs sm:text-sm text-gray-400">
-              © 2024 TechTrainer, Inc. All rights reserved.
+              © 2024 Skilloop.io, Inc. All rights reserved.
             </div>
           </div>
         </div>
