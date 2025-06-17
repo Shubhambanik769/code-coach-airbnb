@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,21 +15,21 @@ const SearchResults = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('any');
+  const [categoryFilter, setCategoryFilter] = useState('any');
   const [sortBy, setSortBy] = useState('rating');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(200);
-  const [experienceFilter, setExperienceFilter] = useState('');
+  const [experienceFilter, setExperienceFilter] = useState('any');
   const { convertPrice } = useCurrency();
 
   // Get search params from URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const query = params.get('q') || '';
-    const loc = params.get('location') || '';
-    const cat = params.get('category') || '';
-    const exp = params.get('experience') || '';
+    const loc = params.get('location') || 'any';
+    const cat = params.get('category') || 'any';
+    const exp = params.get('experience') || 'any';
     const minPriceParam = params.get('minPrice');
     const maxPriceParam = params.get('maxPrice');
     
@@ -59,14 +59,14 @@ const SearchResults = () => {
       }
 
       // Apply location filter
-      if (locationFilter && locationFilter !== 'Remote') {
+      if (locationFilter && locationFilter !== 'any' && locationFilter !== 'Remote') {
         query = query.or(`location.ilike.%${locationFilter}%,location.ilike.%Remote%`);
       } else if (locationFilter === 'Remote') {
         query = query.ilike('location', '%Remote%');
       }
 
       // Apply category filter
-      if (categoryFilter) {
+      if (categoryFilter && categoryFilter !== 'any') {
         query = query.or(`specialization.ilike.%${categoryFilter}%,skills.cs.{${categoryFilter}}`);
       }
 
@@ -79,7 +79,7 @@ const SearchResults = () => {
       }
 
       // Apply experience filter
-      if (experienceFilter) {
+      if (experienceFilter && experienceFilter !== 'any') {
         query = query.gte('experience_years', parseInt(experienceFilter));
       }
 
@@ -181,16 +181,16 @@ const SearchResults = () => {
     setSearchTerm(newSearchTerm);
     const params = new URLSearchParams();
     if (newSearchTerm) params.set('q', newSearchTerm);
-    if (locationFilter) params.set('location', locationFilter);
-    if (categoryFilter) params.set('category', categoryFilter);
-    if (experienceFilter) params.set('experience', experienceFilter);
+    if (locationFilter && locationFilter !== 'any') params.set('location', locationFilter);
+    if (categoryFilter && categoryFilter !== 'any') params.set('category', categoryFilter);
+    if (experienceFilter && experienceFilter !== 'any') params.set('experience', experienceFilter);
     if (minPrice > 0) params.set('minPrice', minPrice.toString());
     if (maxPrice < 200) params.set('maxPrice', maxPrice.toString());
     navigate(`/search?${params.toString()}`);
   };
 
   const getSearchTitle = () => {
-    const filters = [searchTerm, locationFilter, categoryFilter].filter(Boolean);
+    const filters = [searchTerm, locationFilter !== 'any' ? locationFilter : '', categoryFilter !== 'any' ? categoryFilter : ''].filter(Boolean);
     if (filters.length === 0) return 'All Trainers';
     return `Results for: ${filters.join(', ')}`;
   };
@@ -221,7 +221,7 @@ const SearchResults = () => {
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent className="bg-white border shadow-lg z-50">
-                <SelectItem value="">Any Location</SelectItem>
+                <SelectItem value="any">Any Location</SelectItem>
                 <SelectItem value="Remote">Remote</SelectItem>
                 <SelectItem value="New York">New York</SelectItem>
                 <SelectItem value="San Francisco">San Francisco</SelectItem>
@@ -235,7 +235,7 @@ const SearchResults = () => {
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent className="bg-white border shadow-lg z-50">
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="any">All Categories</SelectItem>
                 <SelectItem value="Web Development">Web Development</SelectItem>
                 <SelectItem value="Mobile Development">Mobile Development</SelectItem>
                 <SelectItem value="DevOps">DevOps</SelectItem>
@@ -261,24 +261,24 @@ const SearchResults = () => {
         </div>
 
         {/* Active Filters */}
-        {(searchTerm || locationFilter || categoryFilter || experienceFilter || minPrice > 0 || maxPrice < 200) && (
+        {(searchTerm || (locationFilter && locationFilter !== 'any') || (categoryFilter && categoryFilter !== 'any') || (experienceFilter && experienceFilter !== 'any') || minPrice > 0 || maxPrice < 200) && (
           <div className="flex flex-wrap gap-2 mb-4">
             {searchTerm && (
               <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                 Search: {searchTerm}
               </Badge>
             )}
-            {locationFilter && (
+            {locationFilter && locationFilter !== 'any' && (
               <Badge variant="secondary" className="bg-green-100 text-green-800">
                 Location: {locationFilter}
               </Badge>
             )}
-            {categoryFilter && (
+            {categoryFilter && categoryFilter !== 'any' && (
               <Badge variant="secondary" className="bg-purple-100 text-purple-800">
                 Category: {categoryFilter}
               </Badge>
             )}
-            {experienceFilter && (
+            {experienceFilter && experienceFilter !== 'any' && (
               <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                 Experience: {experienceFilter}+ years
               </Badge>
