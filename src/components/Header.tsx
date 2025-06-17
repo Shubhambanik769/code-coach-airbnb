@@ -46,23 +46,17 @@ const Header = () => {
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs sm:text-sm">TC</span>
+                <span className="text-white font-bold text-xs sm:text-sm">TT</span>
               </div>
-              <span className="text-lg sm:text-xl font-bold text-gradient">TrainerConnect</span>
+              <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-techblue-600 to-purple-600 bg-clip-text text-transparent">TechTrainer</span>
             </div>
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-            <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Find Trainers</a>
-            <button 
-              onClick={handleBecomeTrainer}
-              className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base"
-            >
-              Become a Trainer
-            </button>
-            <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">For Companies</a>
-            <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Help</a>
+            <a href="/search" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Browse Trainers</a>
+            <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">Enterprise</a>
+            <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium transition-colors text-sm xl:text-base">About</a>
           </nav>
 
           {/* Right Section */}
@@ -82,7 +76,7 @@ const Header = () => {
                   onClick={handleBecomeTrainer}
                   className="hidden md:inline-flex text-xs sm:text-sm"
                 >
-                  Become a trainer
+                  Become a Trainer
                 </Button>
                 <Button 
                   variant="ghost" 
@@ -145,15 +139,9 @@ const Header = () => {
         {isMenuOpen && (
           <div className="lg:hidden py-4 border-t border-gray-100 animate-fade-in">
             <nav className="flex flex-col space-y-3">
-              <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Find Trainers</a>
-              <button 
-                onClick={handleBecomeTrainer}
-                className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base text-left"
-              >
-                Become a Trainer
-              </button>
-              <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">For Companies</a>
-              <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Help</a>
+              <a href="/search" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Browse Trainers</a>
+              <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">Enterprise</a>
+              <a href="#" className="text-gray-700 hover:text-techblue-600 font-medium py-2 text-base">About</a>
               {user && (
                 <>
                   <Button 
