@@ -67,29 +67,16 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				techblue: {
-					50: '#0f172a',
-					100: '#1e293b',
-					200: '#334155',
-					300: '#475569',
-					400: '#64748b',
+					50: '#eff6ff',
+					100: '#dbeafe',
+					200: '#bfdbfe',
+					300: '#93c5fd',
+					400: '#60a5fa',
 					500: '#3b82f6',
 					600: '#2563eb',
 					700: '#1d4ed8',
 					800: '#1e40af',
 					900: '#1e3a8a',
-				},
-				gray: {
-					50: '#f8fafc',
-					100: '#f1f5f9',
-					200: '#e2e8f0',
-					300: '#cbd5e1',
-					400: '#94a3b8',
-					500: '#64748b',
-					600: '#475569',
-					700: '#334155',
-					800: '#1e293b',
-					900: '#0f172a',
-					950: '#020617',
 				}
 			},
 			borderRadius: {
@@ -149,8 +136,8 @@ export default {
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 				'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-				'hero-gradient': 'linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #581c87 75%, #6b21a8 100%)',
-				'card-gradient': 'linear-gradient(145deg, #1f2937 0%, #374151 100%)'
+				'hero-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+				'card-gradient': 'linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%)'
 			}
 		}
 	},
