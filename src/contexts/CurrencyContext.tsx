@@ -28,6 +28,7 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Initialize with USD as default to avoid undefined state
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currencies[0]);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const convertPrice = (price: number): number => {
+    if (!price || !selectedCurrency?.rate) return 0;
     return Math.round(price * selectedCurrency.rate * 100) / 100;
   };
 

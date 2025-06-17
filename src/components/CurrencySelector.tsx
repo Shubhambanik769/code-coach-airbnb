@@ -14,12 +14,15 @@ import { ChevronDown, DollarSign } from 'lucide-react';
 const CurrencySelector = () => {
   const { selectedCurrency, setCurrency } = useCurrency();
 
+  // Ensure we have a valid currency selected
+  const currentCurrency = selectedCurrency || currencies[0];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="flex items-center gap-2">
           <DollarSign className="h-4 w-4" />
-          <span>{selectedCurrency.code}</span>
+          <span>{currentCurrency.code}</span>
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -34,7 +37,7 @@ const CurrencySelector = () => {
               <span className="font-medium">{currency.symbol}</span>
               <span className="text-sm">{currency.name}</span>
             </div>
-            {selectedCurrency.code === currency.code && (
+            {currentCurrency.code === currency.code && (
               <Badge variant="secondary" className="text-xs">Selected</Badge>
             )}
           </DropdownMenuItem>
