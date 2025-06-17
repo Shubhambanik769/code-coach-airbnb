@@ -24,10 +24,10 @@ const locations = [
 
 const EnhancedSearchButton = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [category, setCategory] = useState('');
+  const [location, setLocation] = useState('any');
+  const [category, setCategory] = useState('any');
   const [priceRange, setPriceRange] = useState([0, 200]);
-  const [experience, setExperience] = useState('');
+  const [experience, setExperience] = useState('any');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
@@ -36,15 +36,15 @@ const EnhancedSearchButton = () => {
     e.preventDefault();
     
     // Only search if there's actual content
-    if (!searchQuery.trim() && !location && !category && experience === '' && priceRange[0] === 0 && priceRange[1] === 200) {
+    if (!searchQuery.trim() && location === 'any' && category === 'any' && experience === 'any' && priceRange[0] === 0 && priceRange[1] === 200) {
       return;
     }
 
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.set('q', searchQuery.trim());
-    if (location) params.set('location', location);
-    if (category) params.set('category', category);
-    if (experience) params.set('experience', experience);
+    if (location !== 'any') params.set('location', location);
+    if (category !== 'any') params.set('category', category);
+    if (experience !== 'any') params.set('experience', experience);
     if (priceRange[0] > 0) params.set('minPrice', priceRange[0].toString());
     if (priceRange[1] < 200) params.set('maxPrice', priceRange[1].toString());
     
@@ -53,13 +53,13 @@ const EnhancedSearchButton = () => {
 
   const clearFilters = () => {
     setSearchQuery('');
-    setLocation('');
-    setCategory('');
+    setLocation('any');
+    setCategory('any');
     setPriceRange([0, 200]);
-    setExperience('');
+    setExperience('any');
   };
 
-  const hasActiveFilters = location || category || experience || priceRange[0] > 0 || priceRange[1] < 200;
+  const hasActiveFilters = location !== 'any' || category !== 'any' || experience !== 'any' || priceRange[0] > 0 || priceRange[1] < 200;
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -84,7 +84,7 @@ const EnhancedSearchButton = () => {
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent className="bg-white border shadow-lg z-50">
-                <SelectItem value="">Any Location</SelectItem>
+                <SelectItem value="any">Any Location</SelectItem>
                 {locations.map((loc) => (
                   <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                 ))}
@@ -96,7 +96,7 @@ const EnhancedSearchButton = () => {
             <Button 
               type="submit" 
               className="bg-techblue-600 hover:bg-techblue-700 h-12 px-8"
-              disabled={!searchQuery.trim() && !location && !category && experience === '' && priceRange[0] === 0 && priceRange[1] === 200}
+              disabled={!searchQuery.trim() && location === 'any' && category === 'any' && experience === 'any' && priceRange[0] === 0 && priceRange[1] === 200}
             >
               Search
             </Button>
@@ -142,7 +142,7 @@ const EnhancedSearchButton = () => {
                         <SelectValue placeholder="Any Category" />
                       </SelectTrigger>
                       <SelectContent className="bg-white border shadow-lg z-50">
-                        <SelectItem value="">Any Category</SelectItem>
+                        <SelectItem value="any">Any Category</SelectItem>
                         {categories.map((cat) => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
@@ -160,7 +160,7 @@ const EnhancedSearchButton = () => {
                         <SelectValue placeholder="Any Experience" />
                       </SelectTrigger>
                       <SelectContent className="bg-white border shadow-lg z-50">
-                        <SelectItem value="">Any Experience</SelectItem>
+                        <SelectItem value="any">Any Experience</SelectItem>
                         <SelectItem value="1">1+ years</SelectItem>
                         <SelectItem value="3">3+ years</SelectItem>
                         <SelectItem value="5">5+ years</SelectItem>
@@ -189,17 +189,17 @@ const EnhancedSearchButton = () => {
                 {hasActiveFilters && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex flex-wrap gap-2">
-                      {location && (
+                      {location !== 'any' && (
                         <Badge variant="secondary" className="bg-techblue-100 text-techblue-800">
                           Location: {location}
                         </Badge>
                       )}
-                      {category && (
+                      {category !== 'any' && (
                         <Badge variant="secondary" className="bg-techblue-100 text-techblue-800">
                           Category: {category}
                         </Badge>
                       )}
-                      {experience && (
+                      {experience !== 'any' && (
                         <Badge variant="secondary" className="bg-techblue-100 text-techblue-800">
                           Experience: {experience}+ years
                         </Badge>
