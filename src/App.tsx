@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import UserDashboard from "./pages/UserDashboard";
@@ -23,50 +24,52 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <CurrencyProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/search" element={<SearchResults />} />
-              <Route path="/trainers" element={<TrainerSearch />} />
-              <Route path="/trainer/:id" element={<TrainerProfile />} />
-              <Route path="/feedback/:token" element={<FeedbackForm />} />
-              <Route path="/feedback/success" element={<FeedbackSuccess />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <UserDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/trainer-dashboard" 
-                element={
-                  <ProtectedRoute requiredRole="trainer">
-                    <TrainerDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin" 
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-        </BrowserRouter>
-      </TooltipProvider>
-    </CurrencyProvider>
+    <AuthProvider>
+      <CurrencyProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/search" element={<SearchResults />} />
+                <Route path="/trainers" element={<TrainerSearch />} />
+                <Route path="/trainer/:id" element={<TrainerProfile />} />
+                <Route path="/feedback/:token" element={<FeedbackForm />} />
+                <Route path="/feedback/success" element={<FeedbackSuccess />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <UserDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/trainer-dashboard" 
+                  element={
+                    <ProtectedRoute requiredRole="trainer">
+                      <TrainerDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CurrencyProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
