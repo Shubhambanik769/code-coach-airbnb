@@ -8,48 +8,60 @@ const categories = [
     title: 'Web Development',
     description: 'React, Angular, Vue.js, Node.js',
     count: '500+ trainers',
-    color: 'from-blue-500 to-cyan-500'
+    color: 'from-blue-500 to-cyan-500',
+    bgGradient: 'from-slate-50 to-blue-50',
+    borderColor: 'border-blue-100'
   },
   {
     icon: Cloud,
     title: 'Cloud Computing',
     description: 'AWS, Azure, Google Cloud',
     count: '300+ trainers',
-    color: 'from-purple-500 to-pink-500'
+    color: 'from-purple-500 to-pink-500',
+    bgGradient: 'from-slate-50 to-purple-50',
+    borderColor: 'border-purple-100'
   },
   {
     icon: Database,
     title: 'Data Science',
     description: 'Python, R, Machine Learning',
     count: '250+ trainers',
-    color: 'from-green-500 to-teal-500'
+    color: 'from-green-500 to-teal-500',
+    bgGradient: 'from-slate-50 to-emerald-50',
+    borderColor: 'border-emerald-100'
   },
   {
     icon: Shield,
     title: 'Cybersecurity',
     description: 'Ethical Hacking, Penetration Testing',
     count: '180+ trainers',
-    color: 'from-red-500 to-orange-500'
+    color: 'from-red-500 to-orange-500',
+    bgGradient: 'from-slate-50 to-red-50',
+    borderColor: 'border-red-100'
   },
   {
     icon: Smartphone,
     title: 'Mobile Development',
     description: 'iOS, Android, React Native',
     count: '220+ trainers',
-    color: 'from-indigo-500 to-purple-500'
+    color: 'from-indigo-500 to-purple-500',
+    bgGradient: 'from-slate-50 to-indigo-50',
+    borderColor: 'border-indigo-100'
   },
   {
     icon: BarChart,
     title: 'DevOps',
     description: 'Docker, Kubernetes, CI/CD',
     count: '160+ trainers',
-    color: 'from-yellow-500 to-orange-500'
+    color: 'from-yellow-500 to-orange-500',
+    bgGradient: 'from-slate-50 to-amber-50',
+    borderColor: 'border-amber-100'
   }
 ];
 
 const CategoryCards = () => {
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-white">
+    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
@@ -66,24 +78,29 @@ const CategoryCards = () => {
             return (
               <Card 
                 key={category.title} 
-                className="group cursor-pointer card-hover border-0 shadow-lg bg-card-gradient animate-fade-in"
+                className={`group cursor-pointer card-hover border ${category.borderColor} shadow-lg bg-gradient-to-br ${category.bgGradient} hover:shadow-xl transition-all duration-300 animate-fade-in backdrop-blur-sm`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <CardContent className="p-6 sm:p-8">
-                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r ${category.color} flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <CardContent className="p-6 sm:p-8 relative overflow-hidden">
+                  {/* Subtle background pattern */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className={`w-full h-full bg-gradient-to-br ${category.color}`}></div>
+                  </div>
+                  
+                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r ${category.color} flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg relative z-10`}>
                     <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   </div>
                   
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3 group-hover:text-techblue-600 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3 group-hover:text-techblue-600 transition-colors relative z-10">
                     {category.title}
                   </h3>
                   
-                  <p className="text-gray-600 mb-3 sm:mb-4 leading-relaxed text-sm sm:text-base">
+                  <p className="text-gray-600 mb-3 sm:mb-4 leading-relaxed text-sm sm:text-base relative z-10">
                     {category.description}
                   </p>
                   
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-sm font-semibold text-techblue-600 bg-techblue-50 px-2 sm:px-3 py-1 rounded-full">
+                  <div className="flex items-center justify-between relative z-10">
+                    <span className="text-xs sm:text-sm font-semibold text-techblue-600 bg-white/80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full shadow-sm">
                       {category.count}
                     </span>
                     <span className="text-xs sm:text-sm text-gray-500 group-hover:text-techblue-600 font-medium transition-colors">
