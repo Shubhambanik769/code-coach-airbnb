@@ -37,24 +37,24 @@ const UserDashboard = () => {
       case 'billing':
         return <UserBilling />;
       case 'settings':
-        return <div className="p-6">Account settings coming soon...</div>;
+        return <div className="p-6 text-gray-300">Account settings coming soon...</div>;
       default:
         return <UserBookings />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-gray-800 shadow-lg border-b border-gray-700">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-white">
               Client Dashboard
             </h1>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">{user?.email}</span>
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
+              <span className="text-sm text-gray-300">{user?.email}</span>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2 border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </Button>
@@ -80,8 +80,8 @@ const UserDashboard = () => {
                   onClick={() => setActiveTab(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
                     activeTab === item.id
-                      ? 'bg-techblue-100 text-techblue-700 border border-techblue-200'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      ? 'bg-blue-600 text-white border border-blue-500'
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white border border-gray-700'
                   }`}
                 >
                   <Icon className="h-5 w-5" />

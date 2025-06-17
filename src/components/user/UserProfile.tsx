@@ -93,12 +93,12 @@ const UserProfile = () => {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-gray-800 border-gray-700">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-700 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+            <div className="h-20 bg-gray-700 rounded"></div>
           </div>
         </CardContent>
       </Card>
@@ -106,25 +106,25 @@ const UserProfile = () => {
   }
 
   return (
-    <Card>
+    <Card className="bg-gray-800 border-gray-700">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between text-white">
           <div className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+            <User className="h-5 w-5 text-blue-400" />
             My Profile
           </div>
           {!isEditing ? (
-            <Button variant="outline" onClick={() => setIsEditing(true)}>
+            <Button variant="outline" onClick={() => setIsEditing(true)} className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">
               <Edit3 className="h-4 w-4 mr-2" />
               Edit Profile
             </Button>
           ) : (
             <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={updateProfileMutation.isPending}>
+              <Button onClick={handleSave} disabled={updateProfileMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Save className="h-4 w-4 mr-2" />
                 Save
               </Button>
-              <Button variant="outline" onClick={handleCancel}>
+              <Button variant="outline" onClick={handleCancel} className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
@@ -135,9 +135,9 @@ const UserProfile = () => {
       <CardContent className="space-y-6">
         {/* Profile Picture Section */}
         <div className="flex justify-center">
-          <Avatar className="w-24 h-24">
+          <Avatar className="w-24 h-24 border-2 border-gray-600">
             <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || 'User'} />
-            <AvatarFallback>
+            <AvatarFallback className="bg-gray-700 text-white">
               <User className="h-12 w-12" />
             </AvatarFallback>
           </Avatar>
@@ -145,14 +145,14 @@ const UserProfile = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Email
             </label>
-            <p className="text-gray-900">{profile?.email || 'Not specified'}</p>
+            <p className="text-white">{profile?.email || 'Not specified'}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Full Name
             </label>
             {isEditing ? (
@@ -160,14 +160,15 @@ const UserProfile = () => {
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 placeholder="Enter your full name"
+                className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
               />
             ) : (
-              <p className="text-gray-900">{profile?.full_name || 'Not specified'}</p>
+              <p className="text-white">{profile?.full_name || 'Not specified'}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Phone
             </label>
             {isEditing ? (
@@ -175,25 +176,26 @@ const UserProfile = () => {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="Enter your phone number"
+                className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
               />
             ) : (
-              <p className="text-gray-900">{profile?.phone || 'Not specified'}</p>
+              <p className="text-white">{profile?.phone || 'Not specified'}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Role
             </label>
-            <p className="text-gray-900 capitalize">{profile?.role || 'User'}</p>
+            <p className="text-white capitalize">{profile?.role || 'User'}</p>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             Member Since
           </label>
-          <p className="text-gray-900">
+          <p className="text-white">
             {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Unknown'}
           </p>
         </div>
