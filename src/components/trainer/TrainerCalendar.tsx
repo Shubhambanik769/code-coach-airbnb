@@ -8,12 +8,27 @@ import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Clock, Plus } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { Calendar as CalendarIcon, Clock, Plus, AlertCircle } from 'lucide-react';
+import { format, parseISO, isWithinInterval } from 'date-fns';
 
 interface TrainerCalendarProps {
   trainerId: string;
+}
+
+interface AvailabilitySlot {
+  id: string;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+  is_booked: boolean;
+}
+
+interface ConfirmedBooking {
+  start_time: string;
+  end_time: string;
+  status: string;
 }
 
 const TrainerCalendar = ({ trainerId }: TrainerCalendarProps) => {
@@ -35,13 +50,50 @@ const TrainerCalendar = ({ trainerId }: TrainerCalendarProps) => {
         .order('start_time');
 
       if (error) throw error;
-      return data;
+      return data as AvailabilitySlot[];
+    },
+    enabled: !!trainerId
+  });
+
+  // Fetch confirmed bookings for the selected date
+  const { data: confirmedBookings = [] } = useQuery({
+    queryKey: ['confirmed-bookings-trainer', trainerId, selectedDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('start_time, end_time, status')
+        .eq('trainer_id', trainerId)
+        .eq('status', 'confirmed')
+        .gte('start_time', format(selectedDate, 'yyyy-MM-dd 00:00:00'))
+        .lt('start_time', format(selectedDate, 'yyyy-MM-dd 23:59:59'));
+
+      if (error) throw error;
+      return data as ConfirmedBooking[];
     },
     enabled: !!trainerId
   });
 
   const addSlotMutation = useMutation({
     mutationFn: async ({ date, startTime, endTime }: { date: Date; startTime: string; endTime: string }) => {
+      // Check if the new slot conflicts with any confirmed bookings
+      const slotStart = new Date(`${format(date, 'yyyy-MM-dd')}T${startTime}`);
+      const slotEnd = new Date(`${format(date, 'yyyy-MM-dd')}T${endTime}`);
+
+      const hasConflict = confirmedBookings.some(booking => {
+        const bookingStart = parseISO(booking.start_time);
+        const bookingEnd = parseISO(booking.end_time);
+
+        return (
+          (slotStart >= bookingStart && slotStart < bookingEnd) ||
+          (slotEnd > bookingStart && slotEnd <= bookingEnd) ||
+          (slotStart <= bookingStart && slotEnd >= bookingEnd)
+        );
+      });
+
+      if (hasConflict) {
+        throw new Error('This time slot conflicts with an existing confirmed booking');
+      }
+
       const { error } = await supabase
         .from('trainer_availability')
         .insert({
@@ -65,10 +117,10 @@ const TrainerCalendar = ({ trainerId }: TrainerCalendarProps) => {
         description: "Time slot added successfully"
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to add time slot",
+        description: error.message || "Failed to add time slot",
         variant: "destructive"
       });
     }
@@ -106,6 +158,23 @@ const TrainerCalendar = ({ trainerId }: TrainerCalendarProps) => {
       date: selectedDate,
       startTime,
       endTime
+    });
+  };
+
+  // Check if a slot conflicts with confirmed bookings
+  const isSlotConflicted = (slot: AvailabilitySlot) => {
+    const slotStart = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${slot.start_time}`);
+    const slotEnd = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${slot.end_time}`);
+
+    return confirmedBookings.some(booking => {
+      const bookingStart = parseISO(booking.start_time);
+      const bookingEnd = parseISO(booking.end_time);
+
+      return (
+        (slotStart >= bookingStart && slotStart < bookingEnd) ||
+        (slotEnd > bookingStart && slotEnd <= bookingEnd) ||
+        (slotStart <= bookingStart && slotEnd >= bookingEnd)
+      );
     });
   };
 
@@ -176,6 +245,22 @@ const TrainerCalendar = ({ trainerId }: TrainerCalendarProps) => {
               </Dialog>
             </div>
 
+            {confirmedBookings.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">Confirmed Bookings</span>
+                </div>
+                <div className="space-y-1">
+                  {confirmedBookings.map((booking, index) => (
+                    <div key={index} className="text-sm text-blue-700">
+                      {format(parseISO(booking.start_time), 'HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               {isLoading ? (
                 <div className="text-center py-8">Loading availability...</div>
@@ -184,46 +269,57 @@ const TrainerCalendar = ({ trainerId }: TrainerCalendarProps) => {
                   No time slots for this date
                 </div>
               ) : (
-                availability?.map((slot) => (
-                  <div
-                    key={slot.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      slot.is_booked
-                        ? 'bg-red-50 border-red-200'
-                        : slot.is_available
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{slot.start_time} - {slot.end_time}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        slot.is_booked
-                          ? 'bg-red-100 text-red-700'
+                availability?.map((slot) => {
+                  const isConflicted = isSlotConflicted(slot);
+                  
+                  return (
+                    <div
+                      key={slot.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        isConflicted
+                          ? 'bg-red-50 border-red-200'
+                          : slot.is_booked
+                          ? 'bg-orange-50 border-orange-200'
                           : slot.is_available
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {slot.is_booked ? 'Booked' : slot.is_available ? 'Available' : 'Blocked'}
-                      </span>
-                      {!slot.is_booked && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleSlotMutation.mutate({
-                            slotId: slot.id,
-                            isAvailable: slot.is_available
-                          })}
-                        >
-                          {slot.is_available ? 'Block' : 'Unblock'}
-                        </Button>
-                      )}
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>{slot.start_time} - {slot.end_time}</span>
+                        {isConflicted && (
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={`text-xs px-2 py-1 rounded ${
+                          isConflicted
+                            ? 'bg-red-100 text-red-700'
+                            : slot.is_booked
+                            ? 'bg-orange-100 text-orange-700'
+                            : slot.is_available
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {isConflicted ? 'Conflicted' : slot.is_booked ? 'Booked' : slot.is_available ? 'Available' : 'Blocked'}
+                        </Badge>
+                        {!slot.is_booked && !isConflicted && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleSlotMutation.mutate({
+                              slotId: slot.id,
+                              isAvailable: slot.is_available
+                            })}
+                          >
+                            {slot.is_available ? 'Block' : 'Unblock'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
