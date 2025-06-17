@@ -41,7 +41,7 @@ const SearchResults = () => {
     if (maxPriceParam) setMaxPrice(parseInt(maxPriceParam));
   }, [location.search]);
 
-  const { data: trainers, isLoading } = useQuery({
+  const { data: trainers, isLoading, error } = useQuery({
     queryKey: ['search-trainers', searchTerm, locationFilter, categoryFilter, sortBy, minPrice, maxPrice, experienceFilter],
     queryFn: async () => {
       console.log('Searching trainers with:', { 
@@ -50,8 +50,15 @@ const SearchResults = () => {
       
       let query = supabase
         .from('trainers')
-        .select('*')
-        .eq('status', 'approved'); // Only show approved trainers
+        .select(`
+          *,
+          profiles!trainers_user_id_fkey (
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('status', 'approved');
 
       // Apply search filter
       if (searchTerm) {
@@ -91,14 +98,21 @@ const SearchResults = () => {
 
       console.log('Found trainers:', trainersData?.length);
 
-      // Get trainer profiles and comprehensive feedback data
-      const userIds = [...new Set(trainersData?.map(t => t.user_id) || [])];
-      const trainerIds = [...new Set(trainersData?.map(t => t.id) || [])];
+      if (!trainersData || trainersData.length === 0) {
+        return [];
+      }
+
+      // Get trainer IDs for fetching reviews and feedback
+      const trainerIds = trainersData.map(t => t.id);
       
-      const [profilesResult, reviewsResult, feedbackResult] = await Promise.all([
-        supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds),
-        supabase.from('reviews').select('trainer_id, rating, would_recommend').in('trainer_id', trainerIds),
-        supabase.from('feedback_responses')
+      // Fetch reviews and feedback in parallel
+      const [reviewsResult, feedbackResult] = await Promise.all([
+        supabase
+          .from('reviews')
+          .select('trainer_id, rating, would_recommend')
+          .in('trainer_id', trainerIds),
+        supabase
+          .from('feedback_responses')
           .select(`
             rating,
             would_recommend,
@@ -110,9 +124,15 @@ const SearchResults = () => {
           .in('feedback_links.bookings.trainer_id', trainerIds)
       ]);
 
-      // Process trainers with comprehensive data
-      const processedTrainers = await Promise.all(trainersData?.map(async (trainer) => {
-        const profile = profilesResult.data?.find(p => p.id === trainer.user_id);
+      if (reviewsResult.error) {
+        console.error('Error fetching reviews:', reviewsResult.error);
+      }
+      if (feedbackResult.error) {
+        console.error('Error fetching feedback:', feedbackResult.error);
+      }
+
+      // Process trainers with comprehensive rating data
+      const processedTrainers = trainersData.map((trainer) => {
         const trainerReviews = reviewsResult.data?.filter(r => r.trainer_id === trainer.id) || [];
         const trainerFeedback = feedbackResult.data?.filter(
           fr => fr.feedback_links?.bookings?.trainer_id === trainer.id
@@ -120,8 +140,8 @@ const SearchResults = () => {
 
         // Combine all ratings
         const allRatings = [
-          ...trainerReviews.map(r => r.rating),
-          ...trainerFeedback.map(f => f.rating)
+          ...trainerReviews.map(r => r.rating).filter(r => r != null),
+          ...trainerFeedback.map(f => f.rating).filter(r => r != null)
         ];
 
         // Calculate comprehensive stats
@@ -131,24 +151,16 @@ const SearchResults = () => {
 
         const totalReviews = allRatings.length;
 
-        // Update the trainer's rating in the database for consistency
-        if (totalReviews > 0) {
-          await supabase
-            .from('trainers')
-            .update({
-              rating: Number(avgRating.toFixed(1)),
-              total_reviews: totalReviews
-            })
-            .eq('id', trainer.id);
-        }
+        console.log(`Trainer ${trainer.name}: ${totalReviews} reviews, avg rating: ${avgRating.toFixed(1)}`);
 
         return {
           ...trainer,
-          profiles: profile,
           rating: Number(avgRating.toFixed(1)),
-          total_reviews: totalReviews
+          total_reviews: totalReviews,
+          // Ensure the profile data is properly structured for TrainerCard
+          profiles: trainer.profiles
         };
-      }) || []);
+      });
 
       console.log('Processed trainers with ratings:', processedTrainers);
 
@@ -194,6 +206,10 @@ const SearchResults = () => {
     if (filters.length === 0) return 'All Trainers';
     return `Results for: ${filters.join(', ')}`;
   };
+
+  if (error) {
+    console.error('Search error:', error);
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

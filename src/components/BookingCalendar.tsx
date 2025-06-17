@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,8 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Clock, CreditCard, Users, CheckCircle2, Star } from 'lucide-react';
-import { format, addDays, isSameDay, parseISO, isWithinInterval } from 'date-fns';
+import { Calendar as CalendarIcon, Clock, CreditCard, Users, CheckCircle2, Star, AlertCircle } from 'lucide-react';
+import { format, addDays, isSameDay, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface BookingCalendarProps {
@@ -31,9 +32,11 @@ interface AvailabilitySlot {
 }
 
 interface ConfirmedBooking {
+  id: string;
   start_time: string;
   end_time: string;
   status: string;
+  student_id: string;
 }
 
 const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendarProps) => {
@@ -68,22 +71,34 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
     }
   });
 
-  // Fetch confirmed bookings for the selected date
-  const { data: confirmedBookings = [], isLoading: isLoadingBookings } = useQuery({
-    queryKey: ['confirmed-bookings', trainerId, selectedDate],
+  // Fetch ALL bookings for the trainer and student to prevent multiple bookings
+  const { data: allBookings = [], isLoading: isLoadingBookings } = useQuery({
+    queryKey: ['all-bookings', trainerId, user?.id],
     queryFn: async () => {
+      if (!user) return [];
+      
       const { data, error } = await supabase
         .from('bookings')
-        .select('start_time, end_time, status')
+        .select('*')
         .eq('trainer_id', trainerId)
-        .eq('status', 'confirmed')
-        .gte('start_time', format(selectedDate, 'yyyy-MM-dd 00:00:00'))
-        .lt('start_time', format(addDays(selectedDate, 1), 'yyyy-MM-dd 00:00:00'));
+        .in('status', ['pending', 'confirmed']);
 
       if (error) throw error;
       return data as ConfirmedBooking[];
-    }
+    },
+    enabled: !!user
   });
+
+  // Get confirmed bookings for the selected date
+  const confirmedBookings = allBookings.filter(booking => {
+    const bookingDate = new Date(booking.start_time);
+    return isSameDay(bookingDate, selectedDate) && booking.status === 'confirmed';
+  });
+
+  // Check if user has any pending bookings with this trainer
+  const userPendingBookings = allBookings.filter(booking => 
+    booking.student_id === user?.id && booking.status === 'pending'
+  );
 
   const createBookingMutation = useMutation({
     mutationFn: async (bookingInfo: any) => {
@@ -91,13 +106,18 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
         throw new Error('User must be authenticated to book a session');
       }
 
+      // Check for existing pending bookings
+      if (userPendingBookings.length > 0) {
+        throw new Error('You already have a pending booking with this trainer. Please wait for confirmation before booking another session.');
+      }
+
       const startTime = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedSlot.start_time}`);
       const endTime = new Date(startTime.getTime() + bookingInfo.duration * 60 * 60 * 1000);
       
       console.log('Creating booking with user ID:', user.id);
       
-      // Check for conflicts with confirmed bookings before creating
-      const hasConflict = confirmedBookings.some(booking => {
+      // Check for conflicts with all existing bookings
+      const hasConflict = allBookings.some(booking => {
         const bookingStart = parseISO(booking.start_time);
         const bookingEnd = parseISO(booking.end_time);
         
@@ -109,7 +129,18 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
       });
 
       if (hasConflict) {
-        throw new Error('This time slot conflicts with an existing confirmed booking');
+        throw new Error('This time slot conflicts with an existing booking');
+      }
+
+      // Double-check slot availability
+      const slotCheck = await supabase
+        .from('trainer_availability')
+        .select('is_available, is_booked')
+        .eq('id', selectedSlot.id)
+        .single();
+
+      if (slotCheck.error || !slotCheck.data?.is_available || slotCheck.data?.is_booked) {
+        throw new Error('This time slot is no longer available');
       }
 
       const { error } = await supabase
@@ -131,10 +162,16 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
         console.error('Booking creation error:', error);
         throw error;
       }
+
+      // Mark the slot as booked
+      await supabase
+        .from('trainer_availability')
+        .update({ is_booked: true })
+        .eq('id', selectedSlot.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainer-availability'] });
-      queryClient.invalidateQueries({ queryKey: ['confirmed-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['all-bookings'] });
       setShowBookingForm(false);
       setSelectedSlot(null);
       setBookingData({
@@ -158,18 +195,18 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
     }
   });
 
-  // Filter available slots to exclude those that conflict with confirmed bookings
+  // Filter available slots to exclude those that conflict with bookings
   const getAvailableSlots = () => {
-    if (!availability || !confirmedBookings) return [];
+    if (!availability || !allBookings) return [];
 
     return availability.filter(slot => {
       if (slot.is_booked) return false;
 
-      // Check if this slot conflicts with any confirmed booking
+      // Check if this slot conflicts with any booking
       const slotStart = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${slot.start_time}`);
       const slotEnd = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${slot.end_time}`);
 
-      const hasConflict = confirmedBookings.some(booking => {
+      const hasConflict = allBookings.some(booking => {
         const bookingStart = parseISO(booking.start_time);
         const bookingEnd = parseISO(booking.end_time);
 
@@ -189,6 +226,15 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
       toast({
         title: "Authentication Required",
         description: "Please sign in to book a session.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (userPendingBookings.length > 0) {
+      toast({
+        title: "Pending Booking Exists",
+        description: "You already have a pending booking with this trainer. Please wait for confirmation.",
         variant: "destructive"
       });
       return;
@@ -254,6 +300,19 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
       </CardHeader>
       
       <CardContent className="p-8">
+        {/* Show pending booking warning */}
+        {userPendingBookings.length > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+              <span className="font-medium text-orange-800">Pending Booking</span>
+            </div>
+            <p className="text-orange-700 text-sm mt-1">
+              You have a pending booking with this trainer. Please wait for confirmation before booking another session.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-8">
           {/* Calendar Section */}
           <div>
@@ -301,8 +360,9 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
                       selectedSlot?.id === slot.id 
                         ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg scale-105" 
                         : "hover:bg-blue-50 hover:border-blue-300 hover:shadow-md"
-                    }`}
-                    onClick={() => setSelectedSlot(slot)}
+                    } ${userPendingBookings.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => !userPendingBookings.length && setSelectedSlot(slot)}
+                    disabled={userPendingBookings.length > 0}
                   >
                     <div className="font-medium">
                       {slot.start_time} - {slot.end_time}
@@ -317,7 +377,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
           </div>
 
           {/* Selected Slot & Booking */}
-          {selectedSlot && (
+          {selectedSlot && userPendingBookings.length === 0 && (
             <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
