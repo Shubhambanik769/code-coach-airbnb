@@ -49,8 +49,8 @@ const FeaturedTrainers = () => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${
-          i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+        className={`h-3.5 w-3.5 ${
+          i < Math.floor(rating) ? 'text-amber-400 fill-current' : 'text-slate-300'
         }`}
       />
     ));
@@ -63,22 +63,29 @@ const FeaturedTrainers = () => {
     return 'Pro';
   };
 
+  const getBadgeStyle = (rating: number, totalReviews: number) => {
+    if (totalReviews === 0) return 'bg-slate-100 text-slate-600 border border-slate-200';
+    if (rating >= 4.8) return 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm';
+    if (rating >= 4.5) return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm';
+    return 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-sm';
+  };
+
   if (isLoading) {
     return (
-      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-gray-50 to-white">
+      <section className="py-16 lg:py-24 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
-              Meet Our <span className="text-gradient">Top Trainers</span>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+              Meet Our <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Elite Trainers</span>
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-              Learn from industry experts who have worked at top tech companies
+            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+              Learn from industry experts with proven track records
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-white rounded-lg h-80 shadow-lg"></div>
+                <div className="bg-white rounded-2xl h-96 shadow-xl border border-slate-100"></div>
               </div>
             ))}
           </div>
@@ -88,19 +95,19 @@ const FeaturedTrainers = () => {
   }
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section className="py-16 lg:py-24 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
-            Meet Our <span className="text-gradient">Top Trainers</span>
+        <div className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+            Meet Our <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Elite Trainers</span>
           </h2>
-          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-            Learn from industry experts with the highest ratings
+          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+            Learn from industry experts with the highest ratings and proven expertise
           </p>
         </div>
 
         {trainers.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {trainers.slice(0, 3).map((trainer, index) => {
               const displayName = trainer.name || trainer.profiles?.full_name || trainer.title || 'Professional Trainer';
               const rating = trainer.rating || 0;
@@ -109,95 +116,105 @@ const FeaturedTrainers = () => {
               return (
                 <Card 
                   key={trainer.id} 
-                  className="group cursor-pointer card-hover border-0 shadow-lg animate-fade-in overflow-hidden"
-                  style={{ animationDelay: `${index * 0.2}s` }}
+                  className="group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 border-0 bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden animate-fade-in"
+                  style={{ animationDelay: `${index * 0.15}s` }}
                 >
-                  <CardContent className="p-0">
-                    {/* Trainer Avatar & Badge */}
-                    <div className="relative p-4 sm:p-6 pb-3 sm:pb-4">
-                      <div className="flex items-start space-x-3 sm:space-x-4">
-                        <div className="relative">
-                          <img
-                            src={trainer.profiles?.avatar_url || `https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face`}
-                            alt={displayName}
-                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute -top-1 -right-1">
-                            <Badge className="bg-green-500 text-white text-xs px-1.5 py-0.5">
-                              {getBadgeText(rating, totalReviews)}
-                            </Badge>
+                  <CardContent className="p-0 relative">
+                    {/* Elegant gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-blue-50/30 pointer-events-none"></div>
+                    
+                    {/* Header Section */}
+                    <div className="relative p-6 pb-4">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start space-x-4">
+                          <div className="relative">
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 p-0.5">
+                              <img
+                                src={trainer.profiles?.avatar_url || `https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face`}
+                                alt={displayName}
+                                className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                            <div className="absolute -top-1 -right-1">
+                              <Badge className={`text-xs px-2 py-1 font-medium ${getBadgeStyle(rating, totalReviews)}`}>
+                                {getBadgeText(rating, totalReviews)}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex-1">
-                          <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-techblue-600 transition-colors">
-                            {displayName}
-                          </h3>
-                          <p className="text-xs sm:text-sm text-gray-600 mb-1">{trainer.title}</p>
-                          <p className="text-xs sm:text-sm font-semibold text-techblue-600">{trainer.specialization}</p>
+                          
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-1">
+                              {displayName}
+                            </h3>
+                            <p className="text-sm text-slate-600 mb-2">{trainer.title}</p>
+                            <p className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                              {trainer.specialization}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Rating & Location */}
-                      <div className="flex items-center justify-between mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
+                      {/* Rating Section */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-2">
                           {rating > 0 ? (
                             <>
-                              <div className="flex items-center">
+                              <div className="flex items-center space-x-1">
                                 {renderStars(rating)}
+                                <span className="font-bold text-slate-900 ml-1">{rating.toFixed(1)}</span>
                               </div>
-                              <span className="font-semibold text-gray-900">{rating.toFixed(1)}</span>
-                              <span className="hidden sm:inline">({totalReviews} reviews)</span>
-                              <span className="sm:hidden">({totalReviews})</span>
+                              <span className="text-slate-500">({totalReviews} reviews)</span>
                             </>
                           ) : (
-                            <span className="text-gray-500">New trainer</span>
+                            <span className="text-slate-500 italic">New trainer</span>
                           )}
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                          <span className="truncate">{trainer.location || 'Remote'}</span>
+                        <div className="flex items-center space-x-1 text-slate-500">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span className="text-xs">{trainer.location || 'Remote'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Skills */}
-                    <div className="px-4 sm:px-6 pb-3 sm:pb-4">
-                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                    {/* Skills Section */}
+                    <div className="px-6 pb-4">
+                      <div className="flex flex-wrap gap-2">
                         {trainer.skills?.slice(0, 3).map((skill) => (
-                          <Badge key={skill} variant="secondary" className="text-xs">
+                          <Badge key={skill} variant="secondary" className="text-xs bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition-colors">
                             {skill}
                           </Badge>
                         ))}
                         {trainer.skills?.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs border-slate-300 text-slate-600">
                             +{trainer.skills.length - 3} more
                           </Badge>
                         )}
                       </div>
                     </div>
 
-                    {/* Stats */}
-                    <div className="px-4 sm:px-6 pb-3 sm:pb-4 grid grid-cols-3 gap-2 sm:gap-4 text-center text-xs sm:text-sm">
-                      <div>
-                        <div className="font-bold text-gray-900">{trainer.experience_years || 0}+ years</div>
-                        <div className="text-gray-500">Experience</div>
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900">{totalReviews}</div>
-                        <div className="text-gray-500">Reviews</div>
-                      </div>
-                      <div>
-                        <div className="font-bold text-techblue-600">${trainer.hourly_rate || 0}/hr</div>
-                        <div className="text-gray-500">Starting</div>
+                    {/* Stats Section */}
+                    <div className="px-6 pb-4">
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                          <div className="font-bold text-slate-900 text-sm">{trainer.experience_years || 0}+</div>
+                          <div className="text-xs text-slate-600">Years Exp.</div>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                          <div className="font-bold text-slate-900 text-sm">{totalReviews}</div>
+                          <div className="text-xs text-slate-600">Reviews</div>
+                        </div>
+                        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100">
+                          <div className="font-bold text-blue-700 text-sm">${trainer.hourly_rate || 0}</div>
+                          <div className="text-xs text-blue-600">per hour</div>
+                        </div>
                       </div>
                     </div>
 
                     {/* Action Button */}
-                    <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                    <div className="px-6 pb-6">
                       <Button 
                         onClick={() => handleViewProfile(trainer.id)}
-                        className="w-full bg-techblue-600 hover:bg-techblue-700 text-white font-semibold py-2 sm:py-2.5 text-sm sm:text-base transition-all duration-300 transform group-hover:scale-105"
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-[1.02]"
                       >
                         View Profile
                       </Button>
@@ -208,17 +225,19 @@ const FeaturedTrainers = () => {
             })}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No featured trainers available at the moment.</p>
+          <div className="text-center py-16">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-8 max-w-md mx-auto">
+              <p className="text-slate-500">No featured trainers available at the moment.</p>
+            </div>
           </div>
         )}
 
-        <div className="text-center mt-8 sm:mt-12">
+        <div className="text-center mt-12">
           <Button 
             onClick={handleViewAllTrainers}
             size="lg" 
             variant="outline" 
-            className="px-6 sm:px-8 py-2 sm:py-3 font-semibold border-techblue-600 text-techblue-600 hover:bg-techblue-600 hover:text-white transition-all duration-300 text-sm sm:text-base"
+            className="px-8 py-3 font-semibold border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
           >
             View All Trainers
           </Button>
