@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -51,7 +50,9 @@ const SearchResults = () => {
       trainer.location,
       ...(trainer.skills || []),
       ...(trainer.tags || []),
-      // Add certification-related keywords
+      // Add profile name if available
+      trainer.profiles?.full_name,
+      // Add common tech keywords
       'aws', 'solution', 'architect', 'cloud', 'computing'
     ].filter(Boolean);
     
@@ -65,7 +66,6 @@ const SearchResults = () => {
     const searchableText = createSearchableText(trainer);
     const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word.length > 0);
     
-    // Check if ANY search word matches ANY part of the searchable text
     return searchWords.some(word => {
       // Direct substring match
       if (searchableText.includes(word)) return true;
@@ -82,7 +82,7 @@ const SearchResults = () => {
     
     // Common tech abbreviations and variations
     const techMappings: { [key: string]: string[] } = {
-      'aws': ['amazon web services', 'amazon', 'cloud'],
+      'aws': ['amazon web services', 'amazon', 'cloud', 'solution architect'],
       'gcp': ['google cloud platform', 'google cloud'],
       'azure': ['microsoft azure', 'microsoft cloud'],
       'k8s': ['kubernetes'],
@@ -109,7 +109,7 @@ const SearchResults = () => {
         searchTerm, locationFilter, categoryFilter, sortBy, minPrice, maxPrice, experienceFilter 
       });
       
-      // First, get trainers with basic filters
+      // Query trainers with proper foreign key reference - accessible to all users
       let query = supabase
         .from('trainers')
         .select(`
@@ -172,10 +172,10 @@ const SearchResults = () => {
         return [];
       }
 
-      // Get trainer IDs for fetching reviews and feedback
+      // Get trainer IDs for fetching reviews and feedback - public data accessible to all
       const trainerIds = filteredTrainers.map(t => t.id);
       
-      // Fetch reviews and feedback in parallel
+      // Fetch reviews and feedback in parallel - both accessible to public
       const [reviewsResult, feedbackResult] = await Promise.all([
         supabase
           .from('reviews')

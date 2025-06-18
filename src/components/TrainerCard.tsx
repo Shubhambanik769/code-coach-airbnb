@@ -57,6 +57,8 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
     }
     
     const rating = trainer.rating || 0;
+    const totalReviews = trainer.total_reviews || 0;
+    if (totalReviews === 0) return 'New';
     if (rating >= 4.8) return 'Top Rated';
     if (rating >= 4.5) return 'Expert';
     if (rating >= 4.0) return 'Pro';
@@ -69,6 +71,8 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
     }
     
     const rating = trainer.rating || 0;
+    const totalReviews = trainer.total_reviews || 0;
+    if (totalReviews === 0) return 'bg-gray-500 text-white';
     if (rating >= 4.8) return 'bg-green-500 text-white';
     if (rating >= 4.5) return 'bg-blue-500 text-white';
     if (rating >= 4.0) return 'bg-purple-500 text-white';
@@ -92,7 +96,7 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
     }
   };
 
-  // Create proper avatar URL - now accessible to all users
+  // Create proper avatar URL - accessible to all users
   const avatarUrl = trainer.profiles?.avatar_url 
     ? (trainer.profiles.avatar_url.startsWith('http') 
         ? trainer.profiles.avatar_url 
@@ -129,30 +133,20 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
               </div>
               <p className="text-gray-600 text-sm mb-2 truncate">{trainer.title}</p>
               
-              {/* Rating and Reviews - now visible to all users */}
-              {trainer.rating && trainer.rating > 0 ? (
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex items-center gap-1">
-                    {renderStars(trainer.rating)}
-                    <span className="text-sm font-medium text-gray-700">
-                      {trainer.rating.toFixed(1)}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews'})
+              {/* Rating and Reviews - Always visible to all users */}
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-1">
+                  {renderStars(trainer.rating || 0)}
+                  <span className="text-sm font-medium text-gray-700">
+                    {trainer.rating ? trainer.rating.toFixed(1) : '0.0'}
                   </span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex items-center gap-1">
-                    {renderStars(0)}
-                    <span className="text-sm font-medium text-gray-500">New trainer</span>
-                  </div>
-                  <span className="text-xs text-gray-500">(No reviews yet)</span>
-                </div>
-              )}
+                <span className="text-xs text-gray-500">
+                  ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
 
-              {/* Recommendation Rate */}
+              {/* Recommendation Rate - Always visible if there are reviews */}
               {trainer.total_reviews && trainer.total_reviews > 0 && trainer.rating && trainer.rating > 0 && (
                 <div className="flex items-center gap-1 mb-2">
                   <TrendingUp className="h-3 w-3 text-green-600" />
