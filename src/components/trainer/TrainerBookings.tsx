@@ -33,7 +33,7 @@ interface BookingWithProfile {
   special_requirements: string | null;
   meeting_link: string | null;
   notes: string | null;
-  student_profile?: {
+  client_profile?: {
     id: string;
     full_name: string | null;
     email: string | null;
@@ -90,27 +90,33 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.warn('Feedback links query error:', feedbackError);
       }
 
-      // Get student profiles
-      const studentIds = [...new Set(bookingsData.map(booking => booking.student_id))];
-      const { data: profilesData, error: profilesError } = await supabase
+      // Get client profiles for the students (clients)
+      const clientIds = [...new Set(bookingsData.map(booking => booking.student_id))];
+      console.log('Client IDs to fetch:', clientIds);
+      
+      const { data: clientProfilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
-        .in('id', studentIds);
+        .in('id', clientIds);
+
+      console.log('Client profiles data:', clientProfilesData);
 
       if (profilesError) {
-        console.warn('Profiles query error:', profilesError);
+        console.warn('Client profiles query error:', profilesError);
       }
 
       const bookingsWithProfiles: BookingWithProfile[] = bookingsData.map(booking => {
         const feedbackLinks = feedbackData?.filter(link => link.booking_id === booking.id) || [];
-        const studentProfile = profilesData?.find(profile => profile.id === booking.student_id);
+        const clientProfile = clientProfilesData?.find(profile => profile.id === booking.student_id);
+
+        console.log('Mapping booking:', booking.id, 'client_id:', booking.student_id, 'found profile:', clientProfile);
 
         return {
           ...booking,
-          student_profile: studentProfile ? {
-            id: studentProfile.id,
-            full_name: studentProfile.full_name,
-            email: studentProfile.email
+          client_profile: clientProfile ? {
+            id: clientProfile.id,
+            full_name: clientProfile.full_name,
+            email: clientProfile.email
           } : undefined,
           feedback_links: feedbackLinks.map(link => ({
             id: link.id,
@@ -120,7 +126,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         };
       });
 
-      console.log('Final bookings with profiles:', bookingsWithProfiles);
+      console.log('Final bookings with client profiles:', bookingsWithProfiles);
       return bookingsWithProfiles;
     },
     enabled: !!trainerId
@@ -260,8 +266,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking =>
-    booking.student_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.student_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.client_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.client_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -282,7 +288,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search students or topics..."
+              placeholder="Search clients or topics..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -307,7 +313,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Student</TableHead>
+                <TableHead>Client</TableHead>
                 <TableHead>Training Topic</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead>Duration</TableHead>
@@ -336,8 +342,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-400" />
                         <div>
-                          <p className="font-medium">{booking.student_profile?.full_name || 'N/A'}</p>
-                          <p className="text-sm text-gray-500">{booking.student_profile?.email || 'N/A'}</p>
+                          <p className="font-medium">{booking.client_profile?.full_name || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{booking.client_profile?.email || 'N/A'}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -392,12 +398,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               <div className="space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">STUDENT</h4>
+                                    <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
                                     <div className="flex items-center gap-2">
                                       <User className="h-4 w-4 text-gray-400" />
                                       <div>
-                                        <p className="font-medium">{selectedBooking.student_profile?.full_name || 'N/A'}</p>
-                                        <p className="text-sm text-gray-500">{selectedBooking.student_profile?.email || 'N/A'}</p>
+                                        <p className="font-medium">{selectedBooking.client_profile?.full_name || 'N/A'}</p>
+                                        <p className="text-sm text-gray-500">{selectedBooking.client_profile?.email || 'N/A'}</p>
                                       </div>
                                     </div>
                                   </div>
