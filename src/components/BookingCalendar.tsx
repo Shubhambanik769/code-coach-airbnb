@@ -325,7 +325,11 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
-                disabled={(date) => date < new Date()}
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today;
+                }}
                 className="mx-auto border-0 bg-transparent"
               />
             </div>
