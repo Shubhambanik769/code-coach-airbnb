@@ -8,31 +8,32 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, user, userRole, loading: authLoading } = useAuth();
+  const { signIn, signUp, user, userRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && userRole && !authLoading) {
-      console.log('Auth redirect - User:', user.email, 'Role:', userRole);
-      
-      const dashboardMap: Record<string, string> = {
-        'admin': '/admin',
-        'trainer': '/trainer-dashboard',
-        'user': '/dashboard'
-      };
-      
-      const redirectPath = dashboardMap[userRole] || '/dashboard';
-      navigate(redirectPath);
+    // Redirect authenticated users to appropriate dashboard
+    if (user && userRole) {
+      switch (userRole) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'trainer':
+          navigate('/trainer');
+          break;
+        default:
+          navigate('/dashboard');
+          break;
+      }
     }
-  }, [user, userRole, authLoading, navigate]);
+  }, [user, userRole, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,12 +49,12 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await signUp(email, password, fullName);
-      if (!error) {
-        toast({
-          title: "Success!",
-          description: "Account created successfully. Please check your email to confirm your account."
-        });
-      }
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Account created successfully. Please check your email to confirm your account."
+      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -71,13 +72,9 @@ const Auth = () => {
 
     try {
       const { error } = await signIn(email, password);
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
+      if (error) throw error;
+      
+      // Navigation will be handled by useEffect after auth state change
     } catch (error: any) {
       toast({
         title: "Error",
@@ -88,14 +85,6 @@ const Auth = () => {
       setLoading(false);
     }
   };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading..." />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
