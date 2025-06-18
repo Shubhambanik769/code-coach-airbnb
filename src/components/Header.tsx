@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ const Header = () => {
 
   const handleBecomeTrainer = () => {
     if (userRole === 'trainer') {
-      navigate('/trainer');
+      navigate('/trainer-dashboard');
     } else if (user) {
       navigate('/trainer-status');
     } else {
