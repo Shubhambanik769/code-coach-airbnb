@@ -176,7 +176,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     }
   });
 
-  // Optimized feedback link creation
+  // Fixed feedback link creation with standard base64 encoding
   const createFeedbackLinkOptimized = async (bookingId: string) => {
     try {
       console.log('Creating optimized feedback link for booking:', bookingId);
@@ -199,12 +199,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return existingLink;
       }
 
-      // Generate optimized token using crypto API
-      const tokenArray = new Uint8Array(24); // Reduced from 32 for better performance
+      // Generate token using standard base64 and make it URL-safe
+      const tokenArray = new Uint8Array(24);
       crypto.getRandomValues(tokenArray);
       const token = btoa(String.fromCharCode(...tokenArray))
-        .replace(/[+/=]/g, '') // Remove URL-unsafe characters
-        .substring(0, 24); // Ensure consistent length
+        .replace(/\+/g, '-')  // Replace + with -
+        .replace(/\//g, '_')  // Replace / with _
+        .replace(/=/g, '')    // Remove padding
+        .substring(0, 24);    // Ensure consistent length
       
       console.log('Generated token:', token);
 
