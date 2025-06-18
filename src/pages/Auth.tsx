@@ -23,17 +23,14 @@ const Auth = () => {
     if (user && userRole && !authLoading) {
       console.log('Auth redirect - User:', user.email, 'Role:', userRole);
       
-      switch (userRole) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'trainer':
-          navigate('/trainer-dashboard');
-          break;
-        default:
-          navigate('/dashboard');
-          break;
-      }
+      const dashboardMap: Record<string, string> = {
+        'admin': '/admin',
+        'trainer': '/trainer-dashboard',
+        'user': '/dashboard'
+      };
+      
+      const redirectPath = dashboardMap[userRole] || '/dashboard';
+      navigate(redirectPath);
     }
   }, [user, userRole, authLoading, navigate]);
 
@@ -51,12 +48,12 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await signUp(email, password, fullName);
-      if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: "Account created successfully. Please check your email to confirm your account."
-      });
+      if (!error) {
+        toast({
+          title: "Success!",
+          description: "Account created successfully. Please check your email to confirm your account."
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -74,13 +71,20 @@ const Auth = () => {
 
     try {
       const { error } = await signIn(email, password);
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive"
       });
+    } finally {
       setLoading(false);
     }
   };

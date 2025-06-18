@@ -29,18 +29,15 @@ const ProtectedRoute = ({
       }
 
       if (requiredRole && userRole && userRole !== requiredRole) {
-        console.log('Role mismatch, redirecting based on user role');
-        switch (userRole) {
-          case 'admin':
-            navigate('/admin');
-            break;
-          case 'trainer':
-            navigate('/trainer-dashboard');
-            break;
-          default:
-            navigate('/dashboard');
-            break;
-        }
+        console.log(`Role mismatch - has: ${userRole}, needs: ${requiredRole}`);
+        // Redirect based on actual user role
+        const dashboardMap: Record<string, string> = {
+          'admin': '/admin',
+          'trainer': '/trainer-dashboard',
+          'user': '/dashboard'
+        };
+        const redirectPath = dashboardMap[userRole] || '/dashboard';
+        navigate(redirectPath);
       }
     }
   }, [user, userRole, loading, navigate, requiredRole, redirectTo]);
