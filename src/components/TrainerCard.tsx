@@ -103,6 +103,17 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
         : `https://rnovcrcvhaeuudqkymiw.supabase.co/storage/v1/object/public/avatars/${trainer.profiles.avatar_url}`)
     : null;
 
+  // Get display values - ensure they're always numbers for display
+  const displayRating = trainer.rating || 0;
+  const displayReviews = trainer.total_reviews || 0;
+
+  console.log('TrainerCard - Trainer data:', {
+    id: trainer.id,
+    name: trainer.name,
+    rating: displayRating,
+    total_reviews: displayReviews
+  });
+
   return (
     <Card className="hover:shadow-lg transition-shadow cursor-pointer">
       <CardContent className="p-6">
@@ -127,27 +138,27 @@ const TrainerCard = ({ trainer, onSelect }: TrainerCardProps) => {
                 <h3 className="text-lg font-semibold text-gray-900 truncate">
                   {trainer.profiles?.full_name || trainer.name}
                 </h3>
-                <Badge className={getBadgeText() === 'New' ? '' : getBadgeColor()}>
+                <Badge className={getBadgeText() === 'New' ? 'bg-gray-500 text-white' : getBadgeColor()}>
                   {getBadgeText()}
                 </Badge>
               </div>
               <p className="text-gray-600 text-sm mb-2 truncate">{trainer.title}</p>
               
-              {/* Rating and Reviews - Always visible to all users */}
+              {/* Rating and Reviews - Always visible */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-1">
-                  {renderStars(trainer.rating || 0)}
+                  {renderStars(displayRating)}
                   <span className="text-sm font-medium text-gray-700">
-                    {trainer.rating ? trainer.rating.toFixed(1) : '0.0'}
+                    {displayRating.toFixed(1)}
                   </span>
                 </div>
                 <span className="text-xs text-gray-500">
-                  ({trainer.total_reviews || 0} {trainer.total_reviews === 1 ? 'review' : 'reviews'})
+                  ({displayReviews} {displayReviews === 1 ? 'review' : 'reviews'})
                 </span>
               </div>
 
-              {/* Recommendation Rate - Always visible if there are reviews */}
-              {trainer.total_reviews && trainer.total_reviews > 0 && trainer.rating && trainer.rating > 0 && (
+              {/* Recommendation Rate - Show if there are reviews */}
+              {displayReviews > 0 && displayRating > 0 && (
                 <div className="flex items-center gap-1 mb-2">
                   <TrendingUp className="h-3 w-3 text-green-600" />
                   <span className="text-xs text-green-600 font-medium">

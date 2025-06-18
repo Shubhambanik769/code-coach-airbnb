@@ -201,6 +201,9 @@ const SearchResults = () => {
         console.error('Error fetching feedback:', feedbackResult.error);
       }
 
+      console.log('Reviews data:', reviewsResult.data?.length || 0);
+      console.log('Feedback data:', feedbackResult.data?.length || 0);
+
       // Process trainers with comprehensive rating data
       const processedTrainers = filteredTrainers.map((trainer) => {
         const trainerReviews = reviewsResult.data?.filter(r => r.trainer_id === trainer.id) || [];
@@ -225,6 +228,8 @@ const SearchResults = () => {
         const profileData = Array.isArray(trainer.profiles) 
           ? trainer.profiles[0] 
           : trainer.profiles;
+
+        console.log(`Trainer ${trainer.name} - Rating: ${avgRating}, Reviews: ${totalReviews}`);
 
         return {
           ...trainer,
