@@ -56,7 +56,7 @@ const FeaturedTrainers = () => {
   };
 
   const handleViewAllTrainers = () => {
-    navigate('/search');
+    navigate('/trainers');
   };
 
   const renderStars = (rating: number) => {

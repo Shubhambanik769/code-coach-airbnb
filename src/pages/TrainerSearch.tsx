@@ -101,6 +101,8 @@ const TrainerSearch = () => {
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ['trainers-search', searchQuery, selectedSpecialization, selectedExperience, priceRange, selectedSkills],
     queryFn: async () => {
+      console.log('Fetching all trainers with filters:', { searchQuery, selectedSpecialization, selectedExperience, priceRange, selectedSkills });
+      
       // Fix the foreign key reference
       let query = supabase
         .from('trainers')
@@ -132,11 +134,18 @@ const TrainerSearch = () => {
 
       const { data, error } = await query.order('rating', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trainers:', error);
+        throw error;
+      }
+
+      console.log('Raw trainers data:', data?.length || 0);
 
       // Apply search query filtering client-side for better keyword matching
       if (searchQuery && data) {
-        return data.filter(trainer => matchesSearchTerm(trainer, searchQuery));
+        const filtered = data.filter(trainer => matchesSearchTerm(trainer, searchQuery));
+        console.log(`After search filtering: ${filtered.length} trainers`);
+        return filtered;
       }
 
       return data || [];
