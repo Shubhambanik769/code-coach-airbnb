@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User, LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -18,24 +19,9 @@ import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
-  const { user, userRole, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Redirect if user is not a trainer
-  useEffect(() => {
-    if (user && userRole && userRole !== 'trainer') {
-      console.log('User is not a trainer, redirecting based on role:', userRole);
-      switch (userRole) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        default:
-          navigate('/dashboard');
-          break;
-      }
-    }
-  }, [user, userRole, navigate]);
 
   const handleSignOut = async () => {
     try {
@@ -72,12 +58,12 @@ const TrainerDashboard = () => {
       console.log('Trainer data:', data);
       return data;
     },
-    enabled: !!user?.id && userRole === 'trainer'
+    enabled: !!user?.id
   });
 
   // Redirect to trainer status page if no trainer record exists or if not approved
   useEffect(() => {
-    if (!trainerLoading && user?.id && userRole === 'trainer') {
+    if (!trainerLoading && user?.id) {
       if (!trainer) {
         console.log('No trainer record found, redirecting to trainer status');
         navigate('/trainer-status');
@@ -86,7 +72,7 @@ const TrainerDashboard = () => {
         navigate('/trainer-status');
       }
     }
-  }, [trainer, trainerLoading, user?.id, userRole, navigate]);
+  }, [trainer, trainerLoading, user?.id, navigate]);
 
   const trainerId = trainer?.id;
 
@@ -140,8 +126,8 @@ const TrainerDashboard = () => {
     }
   };
 
-  // Don't render the full dashboard until we know the trainer status and user role
-  if (trainerLoading || !trainer || trainer.status !== 'approved' || userRole !== 'trainer') {
+  // Don't render the full dashboard until we know the trainer status
+  if (trainerLoading || !trainer || trainer.status !== 'approved') {
     return null;
   }
 
