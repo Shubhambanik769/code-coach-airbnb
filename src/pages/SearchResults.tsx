@@ -201,8 +201,8 @@ const SearchResults = () => {
         console.error('Error fetching feedback:', feedbackResult.error);
       }
 
-      console.log('Reviews data:', reviewsResult.data?.length || 0);
-      console.log('Feedback data:', feedbackResult.data?.length || 0);
+      console.log('Reviews fetched:', reviewsResult.data?.length || 0);
+      console.log('Feedback responses fetched:', feedbackResult.data?.length || 0);
 
       // Process trainers with comprehensive rating data
       const processedTrainers = filteredTrainers.map((trainer) => {
@@ -211,11 +211,10 @@ const SearchResults = () => {
           fr => fr.feedback_links?.bookings?.trainer_id === trainer.id
         ) || [];
 
-        // Combine all ratings
-        const allRatings = [
-          ...trainerReviews.map(r => r.rating).filter(r => r != null),
-          ...trainerFeedback.map(f => f.rating).filter(r => r != null)
-        ];
+        // Combine all ratings - ensure we have valid numbers
+        const reviewRatings = trainerReviews.map(r => Number(r.rating)).filter(r => !isNaN(r) && r > 0);
+        const feedbackRatings = trainerFeedback.map(f => Number(f.rating)).filter(r => !isNaN(r) && r > 0);
+        const allRatings = [...reviewRatings, ...feedbackRatings];
 
         // Calculate comprehensive stats
         const avgRating = allRatings.length > 0 
@@ -224,12 +223,16 @@ const SearchResults = () => {
 
         const totalReviews = allRatings.length;
 
-        // Fix the profiles structure
-        const profileData = Array.isArray(trainer.profiles) 
-          ? trainer.profiles[0] 
-          : trainer.profiles;
+        // Fix the profiles structure - ensure we get the actual profile data
+        const profileData = trainer.profiles ? (Array.isArray(trainer.profiles) ? trainer.profiles[0] : trainer.profiles) : null;
 
-        console.log(`Trainer ${trainer.name} - Rating: ${avgRating}, Reviews: ${totalReviews}`);
+        console.log(`Processing trainer ${trainer.name}:`, {
+          reviewRatings: reviewRatings.length,
+          feedbackRatings: feedbackRatings.length,
+          totalRatings: allRatings.length,
+          avgRating: avgRating.toFixed(1),
+          totalReviews
+        });
 
         return {
           ...trainer,
