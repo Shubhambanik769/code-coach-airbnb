@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,74 +56,46 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     queryFn: async () => {
       console.log('Fetching bookings for trainer:', trainerId);
       
-      // First get all bookings for this trainer
-      let bookingsQuery = supabase
+      // Build the query with proper joins
+      let query = supabase
         .from('bookings')
-        .select('*')
+        .select(`
+          *,
+          client_profile:profiles!bookings_student_id_fkey(
+            id,
+            full_name,
+            email
+          ),
+          feedback_links(
+            id,
+            token,
+            is_active
+          )
+        `)
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
       if (statusFilter !== 'all') {
-        bookingsQuery = bookingsQuery.eq('status', statusFilter);
+        query = query.eq('status', statusFilter);
       }
 
-      const { data: bookingsData, error: bookingsError } = await bookingsQuery;
+      const { data, error } = await query;
       
-      console.log('Bookings query result:', { bookingsData, bookingsError });
+      console.log('Bookings query result:', { data, error });
       
-      if (bookingsError) throw bookingsError;
-
-      if (!bookingsData || bookingsData.length === 0) {
-        console.log('No bookings found for trainer');
-        return [];
+      if (error) {
+        console.error('Error fetching bookings:', error);
+        throw error;
       }
 
-      // Get feedback links for these bookings
-      const bookingIds = bookingsData.map(booking => booking.id);
-      const { data: feedbackData, error: feedbackError } = await supabase
-        .from('feedback_links')
-        .select('id, token, is_active, booking_id')
-        .in('booking_id', bookingIds);
-
-      if (feedbackError) {
-        console.warn('Feedback links query error:', feedbackError);
-      }
-
-      // Get client profiles for the students (clients)
-      const clientIds = [...new Set(bookingsData.map(booking => booking.student_id))];
-      console.log('Client IDs to fetch:', clientIds);
-      
-      const { data: clientProfilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', clientIds);
-
-      console.log('Client profiles data:', clientProfilesData);
-
-      if (profilesError) {
-        console.warn('Client profiles query error:', profilesError);
-      }
-
-      const bookingsWithProfiles: BookingWithProfile[] = bookingsData.map(booking => {
-        const feedbackLinks = feedbackData?.filter(link => link.booking_id === booking.id) || [];
-        const clientProfile = clientProfilesData?.find(profile => profile.id === booking.student_id);
-
-        console.log('Mapping booking:', booking.id, 'client_id:', booking.student_id, 'found profile:', clientProfile);
-
-        return {
-          ...booking,
-          client_profile: clientProfile ? {
-            id: clientProfile.id,
-            full_name: clientProfile.full_name,
-            email: clientProfile.email
-          } : undefined,
-          feedback_links: feedbackLinks.map(link => ({
-            id: link.id,
-            token: link.token,
-            is_active: link.is_active
-          }))
-        };
-      });
+      // Transform the data to match our interface
+      const bookingsWithProfiles: BookingWithProfile[] = (data || []).map(booking => ({
+        ...booking,
+        client_profile: Array.isArray(booking.client_profile) 
+          ? booking.client_profile[0] 
+          : booking.client_profile,
+        feedback_links: booking.feedback_links || []
+      }));
 
       console.log('Final bookings with client profiles:', bookingsWithProfiles);
       return bookingsWithProfiles;
@@ -268,7 +239,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const filteredBookings = bookings?.filter(booking =>
     booking.client_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.client_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase())
+    booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.organization_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   console.log('Current bookings:', bookings);
@@ -342,8 +314,17 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-400" />
                         <div>
-                          <p className="font-medium">{booking.client_profile?.full_name || 'N/A'}</p>
-                          <p className="text-sm text-gray-500">{booking.client_profile?.email || 'N/A'}</p>
+                          <p className="font-medium">
+                            {booking.client_profile?.full_name || 'Unknown Client'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {booking.client_profile?.email || 'No email'}
+                          </p>
+                          {booking.organization_name && (
+                            <p className="text-xs text-blue-600">
+                              {booking.organization_name}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -402,8 +383,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                                     <div className="flex items-center gap-2">
                                       <User className="h-4 w-4 text-gray-400" />
                                       <div>
-                                        <p className="font-medium">{selectedBooking.client_profile?.full_name || 'N/A'}</p>
-                                        <p className="text-sm text-gray-500">{selectedBooking.client_profile?.email || 'N/A'}</p>
+                                        <p className="font-medium">
+                                          {selectedBooking.client_profile?.full_name || 'Unknown Client'}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                          {selectedBooking.client_profile?.email || 'No email'}
+                                        </p>
                                       </div>
                                     </div>
                                   </div>
