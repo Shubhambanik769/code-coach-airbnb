@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -19,7 +20,6 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only redirect if we have both user and role loaded
     if (user && userRole && !authLoading) {
       console.log('Auth redirect - User:', user.email, 'Role:', userRole);
       
@@ -75,27 +75,20 @@ const Auth = () => {
     try {
       const { error } = await signIn(email, password);
       if (error) throw error;
-      
-      // Navigation will be handled by useEffect after auth state change
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive"
       });
-    } finally {
       setLoading(false);
     }
   };
 
-  // Show loading if auth is still initializing
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-techblue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
@@ -149,7 +142,7 @@ const Auth = () => {
                       placeholder="Enter your password"
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading || authLoading}>
+                  <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
                 </form>
@@ -191,7 +184,7 @@ const Auth = () => {
                       minLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading || authLoading}>
+                  <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Creating Account...' : 'Sign Up'}
                   </Button>
                 </form>

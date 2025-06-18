@@ -1,9 +1,9 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { handleApiError, showErrorToast } from '@/lib/errorHandler';
-import config from '@/lib/config';
 
 interface AuthContextType {
   user: User | null;
@@ -36,68 +36,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    let mounted = true;
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        console.log('Auth state changed:', event, session?.user?.email);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user role immediately when user is authenticated
-          await fetchUserRole(session.user.id);
-        } else {
-          setUserRole(null);
-        }
-        
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    );
-
-    // Check for existing session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          handleApiError(error, 'Auth initialization');
-        }
-        
-        if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          if (session?.user) {
-            await fetchUserRole(session.user.id);
-          }
-          
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initializeAuth();
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
   const fetchUserRole = async (userId: string) => {
     try {
       console.log('Fetching role for user:', userId);
@@ -108,9 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching user role:', error);
-        handleApiError(error, 'Fetch user role');
         setUserRole('user'); // Default fallback
         return;
       }
@@ -124,6 +61,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  useEffect(() => {
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            await fetchUserRole(session.user.id);
+          } else {
+            setUserRole(null);
+          }
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchUserRole(session.user.id);
+        } else {
+          setUserRole(null);
+        }
+        
+        if (mounted && event !== 'INITIAL_SESSION') {
+          setLoading(false);
+        }
+      }
+    );
+
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -135,15 +134,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         showErrorToast(error, 'Sign in');
+        setLoading(false);
       }
       
       return { error };
     } catch (error) {
       const apiError = handleApiError(error, 'Sign in');
       showErrorToast(apiError);
+      setLoading(false);
       return { error: apiError };
-    } finally {
-      // Don't set loading to false here - let the auth state change handler do it
     }
   };
 
@@ -208,31 +207,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       
-      // Clear local state first to ensure UI updates immediately
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.warn('Sign out warning:', error);
+      }
+      
+      // Clear state
       setUser(null);
       setSession(null);
       setUserRole(null);
       
-      // Clear any cached data
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token');
-      }
-      
-      // Try to sign out from Supabase, but don't fail if session is already gone
-      const { error } = await supabase.auth.signOut();
-      
-      // Only show error if it's not a session-related error
-      if (error && !error.message?.includes('session') && !error.message?.includes('Session')) {
-        console.warn('Sign out warning:', error);
-        showErrorToast(error, 'Sign out');
-      }
-      
     } catch (error: any) {
-      // Don't show errors for session-related issues during logout
-      if (!error.message?.includes('session') && !error.message?.includes('Session')) {
-        console.error('Sign out error:', error);
-        showErrorToast(error, 'Sign out');
-      }
+      console.error('Sign out error:', error);
     } finally {
       setLoading(false);
     }
