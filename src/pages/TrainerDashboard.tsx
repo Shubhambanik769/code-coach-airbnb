@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import TrainerProfile from '@/components/trainer/TrainerProfile';
@@ -36,8 +35,8 @@ const TrainerDashboard = () => {
     }
   };
 
-  // Get trainer ID for the current user
-  const { data: trainer, isLoading: trainerLoading, error } = useQuery({
+  // Get trainer ID for the current user - simplified query
+  const { data: trainer, isLoading: trainerLoading } = useQuery({
     queryKey: ['trainer', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -46,13 +45,13 @@ const TrainerDashboard = () => {
       
       const { data, error } = await supabase
         .from('trainers')
-        .select('id, status')
+        .select('id, status, name, title')
         .eq('user_id', user.id)
         .maybeSingle();
       
       if (error) {
         console.error('Error fetching trainer:', error);
-        throw error;
+        return null;
       }
       
       console.log('Trainer data:', data);
@@ -60,19 +59,6 @@ const TrainerDashboard = () => {
     },
     enabled: !!user?.id
   });
-
-  // Redirect to trainer status page if no trainer record exists or if not approved
-  useEffect(() => {
-    if (!trainerLoading && user?.id) {
-      if (!trainer) {
-        console.log('No trainer record found, redirecting to trainer status');
-        navigate('/trainer-status');
-      } else if (trainer.status !== 'approved') {
-        console.log('Trainer not approved, redirecting to trainer status');
-        navigate('/trainer-status');
-      }
-    }
-  }, [trainer, trainerLoading, user?.id, navigate]);
 
   const trainerId = trainer?.id;
 
@@ -91,14 +77,12 @@ const TrainerDashboard = () => {
     if (!trainerId) {
       return (
         <div className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <p className="text-gray-500 mb-4">Trainer profile not found</p>
-            <button 
-              onClick={() => navigate('/trainer-status')}
-              className="text-techblue-600 hover:text-techblue-700 underline"
-            >
-              Check your application status
-            </button>
+          <div className="text-center bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-yellow-800 mb-2">Trainer Profile Not Found</h3>
+            <p className="text-yellow-700 mb-4">You need to complete your trainer registration first.</p>
+            <Button onClick={() => navigate('/auth')} variant="outline">
+              Go to Registration
+            </Button>
           </div>
         </div>
       );
@@ -126,20 +110,22 @@ const TrainerDashboard = () => {
     }
   };
 
-  // Don't render the full dashboard until we know the trainer status
-  if (trainerLoading || !trainer || trainer.status !== 'approved') {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Trainer Dashboard
-            </h1>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Trainer Dashboard
+              </h1>
+              {trainer && (
+                <p className="text-gray-600 mt-1">
+                  Welcome back, {trainer.name || 'Trainer'}
+                </p>
+              )}
+            </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">

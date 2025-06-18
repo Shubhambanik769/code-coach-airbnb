@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,7 @@ interface TrainerBookingsProps {
   trainerId: string;
 }
 
-interface BookingWithProfile {
+interface BookingData {
   id: string;
   created_at: string | null;
   end_time: string;
@@ -32,73 +33,85 @@ interface BookingWithProfile {
   special_requirements: string | null;
   meeting_link: string | null;
   notes: string | null;
-  client_profile?: {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  };
-  feedback_links?: {
-    id: string;
-    token: string;
-    is_active: boolean;
-  }[];
+  student_name?: string;
+  student_email?: string;
+  feedback_token?: string;
 }
 
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBooking, setSelectedBooking] = useState<BookingWithProfile | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Simplified query with proper error handling
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
       console.log('Fetching bookings for trainer:', trainerId);
       
-      // Build the query with proper joins
-      let query = supabase
+      // Build the main bookings query
+      let bookingsQuery = supabase
         .from('bookings')
-        .select(`
-          *,
-          client_profile:profiles!bookings_student_id_fkey(
-            id,
-            full_name,
-            email
-          ),
-          feedback_links(
-            id,
-            token,
-            is_active
-          )
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        bookingsQuery = bookingsQuery.eq('status', statusFilter);
       }
 
-      const { data, error } = await query;
+      const { data: bookingsData, error: bookingsError } = await bookingsQuery;
       
-      console.log('Bookings query result:', { data, error });
-      
-      if (error) {
-        console.error('Error fetching bookings:', error);
-        throw error;
+      if (bookingsError) {
+        console.error('Error fetching bookings:', bookingsError);
+        throw bookingsError;
       }
 
-      // Transform the data to match our interface
-      const bookingsWithProfiles: BookingWithProfile[] = (data || []).map(booking => ({
-        ...booking,
-        client_profile: Array.isArray(booking.client_profile) 
-          ? booking.client_profile[0] 
-          : booking.client_profile,
-        feedback_links: booking.feedback_links || []
-      }));
+      if (!bookingsData || bookingsData.length === 0) {
+        console.log('No bookings found for trainer:', trainerId);
+        return [];
+      }
 
-      console.log('Final bookings with client profiles:', bookingsWithProfiles);
-      return bookingsWithProfiles;
+      // Get student details
+      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
+      const { data: studentsData, error: studentsError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', studentIds);
+
+      if (studentsError) {
+        console.error('Error fetching student profiles:', studentsError);
+      }
+
+      // Get feedback links
+      const bookingIds = bookingsData.map(b => b.id);
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from('feedback_links')
+        .select('booking_id, token, is_active')
+        .in('booking_id', bookingIds)
+        .eq('is_active', true);
+
+      if (feedbackError) {
+        console.error('Error fetching feedback links:', feedbackError);
+      }
+
+      // Combine all data
+      const enrichedBookings = bookingsData.map(booking => {
+        const studentProfile = studentsData?.find(s => s.id === booking.student_id);
+        const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
+        
+        return {
+          ...booking,
+          student_name: studentProfile?.full_name || 'Unknown Client',
+          student_email: studentProfile?.email || 'No email',
+          feedback_token: feedbackLink?.token || null
+        };
+      });
+
+      console.log('Enriched bookings:', enrichedBookings);
+      return enrichedBookings;
     },
     enabled: !!trainerId
   });
@@ -114,7 +127,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
       if (error) throw error;
 
-      // If marking as completed, create feedback link immediately
+      // If marking as completed, create feedback link
       if (status === 'completed') {
         await createFeedbackLink(bookingId);
       }
@@ -139,15 +152,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     }
   });
 
-  const updateBookingStatus = (bookingId: string, status: string) => {
-    updateBookingStatusMutation.mutate({ bookingId, status });
-  };
-
   const createFeedbackLinkMutation = useMutation({
     mutationFn: async (bookingId: string) => {
       console.log('Creating feedback link for booking:', bookingId);
       
-      // Check if feedback link already exists for this booking
+      // Check if feedback link already exists
       const { data: existingLink, error: checkError } = await supabase
         .from('feedback_links')
         .select('id, token')
@@ -156,16 +165,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Error checking existing feedback link:', checkError);
         throw checkError;
       }
 
       if (existingLink) {
-        console.log('Feedback link already exists for this booking');
         return existingLink;
       }
 
-      // Generate a unique token using crypto API for better randomness
+      // Generate unique token
       const array = new Uint8Array(32);
       crypto.getRandomValues(array);
       const token = btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '').substring(0, 32);
@@ -176,17 +183,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           booking_id: bookingId,
           token: token,
           is_active: true,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         })
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating feedback link:', error);
-        throw error;
-      }
-
-      console.log('Feedback link created successfully');
+      if (error) throw error;
       return data;
     },
     onSuccess: () => {
@@ -197,21 +199,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       refetch();
     },
     onError: (error: any) => {
-      console.error('Error in createFeedbackLink:', error);
-      if (error.message.includes('already exists')) {
-        toast({
-          title: "Info",
-          description: "Feedback link already exists for this booking"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to create feedback link",
-          variant: "destructive"
-        });
-      }
+      console.error('Error creating feedback link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create feedback link",
+        variant: "destructive"
+      });
     }
   });
+
+  const updateBookingStatus = (bookingId: string, status: string) => {
+    updateBookingStatusMutation.mutate({ bookingId, status });
+  };
 
   const createFeedbackLink = (bookingId: string) => {
     createFeedbackLinkMutation.mutate(bookingId);
@@ -222,7 +221,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     navigator.clipboard.writeText(feedbackUrl);
     toast({
       title: "Link Copied!",
-      description: "Feedback link has been copied to clipboard. Multiple team members can use this link to submit feedback."
+      description: "Feedback link has been copied to clipboard."
     });
   };
 
@@ -237,14 +236,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking =>
-    booking.client_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.client_profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.student_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.organization_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  console.log('Current bookings:', bookings);
-  console.log('Filtered bookings:', filteredBookings);
 
   return (
     <Card>
@@ -285,7 +281,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Client</TableHead>
+                <TableHead>Client Details</TableHead>
                 <TableHead>Training Topic</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead>Duration</TableHead>
@@ -314,16 +310,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-400" />
                         <div>
-                          <p className="font-medium">
-                            {booking.client_profile?.full_name || 'Unknown Client'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {booking.client_profile?.email || 'No email'}
-                          </p>
+                          <p className="font-medium">{booking.student_name}</p>
+                          <p className="text-sm text-gray-500">{booking.student_email}</p>
                           {booking.organization_name && (
-                            <p className="text-xs text-blue-600">
-                              {booking.organization_name}
-                            </p>
+                            <p className="text-xs text-blue-600">{booking.organization_name}</p>
                           )}
                         </div>
                       </div>
@@ -344,9 +334,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {booking.duration_hours}h
-                    </TableCell>
+                    <TableCell>{booking.duration_hours}h</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4 text-green-600" />
@@ -368,7 +356,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               onClick={() => setSelectedBooking(booking)}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              View Details
+                              View
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
@@ -376,108 +364,36 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               <DialogTitle>Booking Details</DialogTitle>
                             </DialogHeader>
                             {selectedBooking && (
-                              <div className="space-y-6">
+                              <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
+                                  <div>
                                     <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
-                                    <div className="flex items-center gap-2">
-                                      <User className="h-4 w-4 text-gray-400" />
-                                      <div>
-                                        <p className="font-medium">
-                                          {selectedBooking.client_profile?.full_name || 'Unknown Client'}
-                                        </p>
-                                        <p className="text-sm text-gray-500">
-                                          {selectedBooking.client_profile?.email || 'No email'}
-                                        </p>
-                                      </div>
-                                    </div>
+                                    <p className="font-medium">{selectedBooking.student_name}</p>
+                                    <p className="text-sm text-gray-500">{selectedBooking.student_email}</p>
                                   </div>
-                                  <div className="space-y-2">
+                                  <div>
                                     <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
                                     <Badge className={getStatusColor(selectedBooking.status || 'pending')}>
                                       {selectedBooking.status || 'pending'}
                                     </Badge>
                                   </div>
                                 </div>
-
-                                <div className="space-y-2">
+                                <div>
                                   <h4 className="font-semibold text-sm text-gray-600">TRAINING TOPIC</h4>
-                                  <p className="text-sm">{selectedBooking.training_topic}</p>
+                                  <p>{selectedBooking.training_topic}</p>
                                 </div>
-
                                 {selectedBooking.organization_name && (
-                                  <div className="space-y-2">
+                                  <div>
                                     <h4 className="font-semibold text-sm text-gray-600">ORGANIZATION</h4>
-                                    <div className="flex items-center gap-2">
-                                      <MapPin className="h-4 w-4 text-gray-400" />
-                                      <p className="text-sm">{selectedBooking.organization_name}</p>
-                                    </div>
+                                    <p>{selectedBooking.organization_name}</p>
                                   </div>
                                 )}
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">DATE & TIME</h4>
-                                    <div className="flex items-center gap-2">
-                                      <Clock className="h-4 w-4 text-gray-400" />
-                                      <div>
-                                        <p className="text-sm font-medium">
-                                          {format(new Date(selectedBooking.start_time), 'MMM dd, yyyy')}
-                                        </p>
-                                        <p className="text-sm text-gray-500">
-                                          {format(new Date(selectedBooking.start_time), 'HH:mm')} - {format(new Date(selectedBooking.end_time), 'HH:mm')}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">DURATION & AMOUNT</h4>
-                                    <div>
-                                      <p className="text-sm">{selectedBooking.duration_hours} hours</p>
-                                      <div className="flex items-center gap-1">
-                                        <DollarSign className="h-4 w-4 text-green-600" />
-                                        <p className="text-sm font-medium">${selectedBooking.total_amount}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
                                 {selectedBooking.special_requirements && (
-                                  <div className="space-y-2">
+                                  <div>
                                     <h4 className="font-semibold text-sm text-gray-600">SPECIAL REQUIREMENTS</h4>
-                                    <div className="flex items-start gap-2">
-                                      <FileText className="h-4 w-4 text-gray-400 mt-1" />
-                                      <p className="text-sm bg-gray-50 p-3 rounded-md">{selectedBooking.special_requirements}</p>
-                                    </div>
+                                    <p className="bg-gray-50 p-3 rounded-md">{selectedBooking.special_requirements}</p>
                                   </div>
                                 )}
-
-                                {selectedBooking.meeting_link && (
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">MEETING LINK</h4>
-                                    <a 
-                                      href={selectedBooking.meeting_link} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 underline text-sm"
-                                    >
-                                      {selectedBooking.meeting_link}
-                                    </a>
-                                  </div>
-                                )}
-
-                                {selectedBooking.notes && (
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">NOTES</h4>
-                                    <p className="text-sm bg-gray-50 p-3 rounded-md">{selectedBooking.notes}</p>
-                                  </div>
-                                )}
-
-                                <div className="pt-4 border-t">
-                                  <p className="text-xs text-gray-500">
-                                    Booking created: {selectedBooking.created_at ? format(new Date(selectedBooking.created_at), 'MMM dd, yyyy HH:mm') : 'N/A'}
-                                  </p>
-                                </div>
                               </div>
                             )}
                           </DialogContent>
@@ -490,7 +406,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               size="sm"
                               onClick={() => updateBookingStatus(booking.id, 'confirmed')}
                               disabled={updateBookingStatusMutation.isPending}
-                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                              className="bg-green-50 text-green-700 border-green-200"
                             >
                               Accept
                             </Button>
@@ -499,7 +415,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               size="sm"
                               onClick={() => updateBookingStatus(booking.id, 'cancelled')}
                               disabled={updateBookingStatusMutation.isPending}
-                              className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                              className="bg-red-50 text-red-700 border-red-200"
                             >
                               Decline
                             </Button>
@@ -511,36 +427,33 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             size="sm"
                             onClick={() => updateBookingStatus(booking.id, 'completed')}
                             disabled={updateBookingStatusMutation.isPending}
-                            className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                            className="bg-blue-50 text-blue-700 border-blue-200"
                           >
                             Mark Complete
                           </Button>
                         )}
-                        {booking.status === 'completed' && booking.feedback_links && booking.feedback_links.length > 0 && (
+                        {booking.status === 'completed' && booking.feedback_token && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyFeedbackLink(booking.feedback_links![0].token)}
-                            className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                            onClick={() => copyFeedbackLink(booking.feedback_token!)}
+                            className="bg-purple-50 text-purple-700 border-purple-200"
                           >
                             <Copy className="h-4 w-4 mr-1" />
                             Copy Feedback Link
                           </Button>
                         )}
-                        {booking.status === 'completed' && (!booking.feedback_links || booking.feedback_links.length === 0) && (
+                        {booking.status === 'completed' && !booking.feedback_token && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => createFeedbackLink(booking.id)}
                             disabled={createFeedbackLinkMutation.isPending}
-                            className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                            className="bg-purple-50 text-purple-700 border-purple-200"
                           >
                             <Link className="h-4 w-4 mr-1" />
                             Generate Link
                           </Button>
-                        )}
-                        {booking.status === 'cancelled' && (
-                          <span className="text-sm text-red-500">Cancelled</span>
                         )}
                       </div>
                     </TableCell>
