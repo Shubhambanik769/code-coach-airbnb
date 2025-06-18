@@ -56,6 +56,31 @@ const TrainerSearch = () => {
     if (experience) setSelectedExperience(experience);
   }, [searchParams]);
 
+  // Helper function to create search keywords from trainer data
+  const createSearchableText = (trainer: any) => {
+    const searchableFields = [
+      trainer.name,
+      trainer.title,
+      trainer.specialization,
+      trainer.bio,
+      trainer.location,
+      ...(trainer.skills || []),
+      ...(trainer.tags || [])
+    ].filter(Boolean);
+    
+    return searchableFields.join(' ').toLowerCase();
+  };
+
+  // Helper function to check if search term matches trainer data
+  const matchesSearchTerm = (trainer: any, searchTerm: string) => {
+    if (!searchTerm) return true;
+    
+    const searchableText = createSearchableText(trainer);
+    const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word.length > 0);
+    
+    return searchWords.some(word => searchableText.includes(word));
+  };
+
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ['trainers-search', searchQuery, selectedSpecialization, selectedExperience, priceRange, selectedSkills],
     queryFn: async () => {
@@ -69,10 +94,6 @@ const TrainerSearch = () => {
           )
         `)
         .eq('status', 'approved');
-
-      if (searchQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%,specialization.ilike.%${searchQuery}%,bio.ilike.%${searchQuery}%`);
-      }
 
       if (selectedSpecialization) {
         query = query.ilike('specialization', `%${selectedSpecialization}%`);
@@ -94,7 +115,13 @@ const TrainerSearch = () => {
       const { data, error } = await query.order('rating', { ascending: false });
       
       if (error) throw error;
-      return data;
+
+      // Apply search query filtering client-side for better keyword matching
+      if (searchQuery && data) {
+        return data.filter(trainer => matchesSearchTerm(trainer, searchQuery));
+      }
+
+      return data || [];
     }
   });
 
@@ -167,6 +194,15 @@ const TrainerSearch = () => {
     updateURL();
   };
 
+  const getSuggestedKeywords = () => {
+    const keywords = new Set<string>();
+    trainers.forEach(trainer => {
+      if (trainer.skills) trainer.skills.forEach((skill: string) => keywords.add(skill));
+      if (trainer.specialization) keywords.add(trainer.specialization);
+    });
+    return Array.from(keywords).slice(0, 8);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -181,7 +217,7 @@ const TrainerSearch = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <Input
                 type="text"
-                placeholder="Search by expertise, skills, or specialization..."
+                placeholder="Search by expertise, skills, or technology..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-12"
@@ -200,6 +236,25 @@ const TrainerSearch = () => {
             </Collapsible>
           </form>
 
+          {/* Suggested Keywords */}
+          {!searchQuery && getSuggestedKeywords().length > 0 && (
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-2">Popular skills:</p>
+              <div className="flex flex-wrap gap-2">
+                {getSuggestedKeywords().map((keyword) => (
+                  <Badge
+                    key={keyword}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-blue-50 hover:border-blue-300"
+                    onClick={() => setSearchQuery(keyword)}
+                  >
+                    {keyword}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Advanced Filters */}
           <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
             <CollapsibleContent>
@@ -217,7 +272,6 @@ const TrainerSearch = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Specialization Filter */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Specialization
@@ -237,7 +291,6 @@ const TrainerSearch = () => {
                       </Select>
                     </div>
 
-                    {/* Experience Filter */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Minimum Experience
@@ -256,7 +309,6 @@ const TrainerSearch = () => {
                       </Select>
                     </div>
 
-                    {/* Price Range Filter */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Hourly Rate: ${priceRange[0]} - ${priceRange[1]}
@@ -271,7 +323,6 @@ const TrainerSearch = () => {
                       />
                     </div>
 
-                    {/* Skills Filter */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Skills

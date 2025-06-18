@@ -41,6 +41,32 @@ const SearchResults = () => {
     if (maxPriceParam) setMaxPrice(parseInt(maxPriceParam));
   }, [location.search]);
 
+  // Helper function to create search keywords from trainer data
+  const createSearchableText = (trainer: any) => {
+    const searchableFields = [
+      trainer.name,
+      trainer.title,
+      trainer.specialization,
+      trainer.bio,
+      trainer.location,
+      ...(trainer.skills || []),
+      ...(trainer.tags || [])
+    ].filter(Boolean);
+    
+    return searchableFields.join(' ').toLowerCase();
+  };
+
+  // Helper function to check if search term matches trainer data
+  const matchesSearchTerm = (trainer: any, searchTerm: string) => {
+    if (!searchTerm) return true;
+    
+    const searchableText = createSearchableText(trainer);
+    const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word.length > 0);
+    
+    // Check if any search word matches any part of the searchable text
+    return searchWords.some(word => searchableText.includes(word));
+  };
+
   const { data: trainers, isLoading, error } = useQuery({
     queryKey: ['search-trainers', searchTerm, locationFilter, categoryFilter, sortBy, minPrice, maxPrice, experienceFilter],
     queryFn: async () => {
@@ -60,16 +86,13 @@ const SearchResults = () => {
         `)
         .eq('status', 'approved');
 
-      // Apply search filter
-      if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,skills.cs.{${searchTerm}},bio.ilike.%${searchTerm}%`);
-      }
-
-      // Apply location filter
-      if (locationFilter && locationFilter !== 'any' && locationFilter !== 'Remote') {
-        query = query.or(`location.ilike.%${locationFilter}%,location.ilike.%Remote%`);
-      } else if (locationFilter === 'Remote') {
-        query = query.ilike('location', '%Remote%');
+      // Apply location filter first
+      if (locationFilter && locationFilter !== 'any') {
+        if (locationFilter === 'Remote') {
+          query = query.ilike('location', '%Remote%');
+        } else {
+          query = query.or(`location.ilike.%${locationFilter}%,location.ilike.%Remote%`);
+        }
       }
 
       // Apply category filter
@@ -96,14 +119,25 @@ const SearchResults = () => {
         throw error;
       }
 
-      console.log('Found trainers:', trainersData?.length);
+      console.log('Raw trainers data:', trainersData?.length || 0);
 
       if (!trainersData || trainersData.length === 0) {
         return [];
       }
 
+      // Apply search term filtering client-side for better keyword matching
+      let filteredTrainers = trainersData;
+      if (searchTerm) {
+        filteredTrainers = trainersData.filter(trainer => matchesSearchTerm(trainer, searchTerm));
+        console.log(`After search term filtering: ${filteredTrainers.length} trainers`);
+      }
+
+      if (filteredTrainers.length === 0) {
+        return [];
+      }
+
       // Get trainer IDs for fetching reviews and feedback
-      const trainerIds = trainersData.map(t => t.id);
+      const trainerIds = filteredTrainers.map(t => t.id);
       
       // Fetch reviews and feedback in parallel
       const [reviewsResult, feedbackResult] = await Promise.all([
@@ -132,7 +166,7 @@ const SearchResults = () => {
       }
 
       // Process trainers with comprehensive rating data
-      const processedTrainers = trainersData.map((trainer) => {
+      const processedTrainers = filteredTrainers.map((trainer) => {
         const trainerReviews = reviewsResult.data?.filter(r => r.trainer_id === trainer.id) || [];
         const trainerFeedback = feedbackResult.data?.filter(
           fr => fr.feedback_links?.bookings?.trainer_id === trainer.id
@@ -151,9 +185,7 @@ const SearchResults = () => {
 
         const totalReviews = allRatings.length;
 
-        console.log(`Trainer ${trainer.name}: ${totalReviews} reviews, avg rating: ${avgRating.toFixed(1)}`);
-
-        // Fix the profiles structure - take the first profile if it's an array, or use the object directly
+        // Fix the profiles structure
         const profileData = Array.isArray(trainer.profiles) 
           ? trainer.profiles[0] 
           : trainer.profiles;
@@ -162,15 +194,12 @@ const SearchResults = () => {
           ...trainer,
           rating: Number(avgRating.toFixed(1)),
           total_reviews: totalReviews,
-          // Ensure the profile data is properly structured for TrainerCard
           profiles: profileData ? {
             avatar_url: profileData.avatar_url,
             full_name: profileData.full_name
           } : undefined
         };
       });
-
-      console.log('Processed trainers with ratings:', processedTrainers);
 
       // Apply sorting
       return processedTrainers.sort((a, b) => {
@@ -215,6 +244,20 @@ const SearchResults = () => {
     return `Results for: ${filters.join(', ')}`;
   };
 
+  const getSuggestedKeywords = () => {
+    if (!trainers || trainers.length === 0) return [];
+    
+    // Extract popular keywords from all trainers
+    const keywords = new Set<string>();
+    trainers.forEach(trainer => {
+      if (trainer.skills) trainer.skills.forEach((skill: string) => keywords.add(skill));
+      if (trainer.specialization) keywords.add(trainer.specialization);
+      if (trainer.tags) trainer.tags.forEach((tag: string) => keywords.add(tag));
+    });
+    
+    return Array.from(keywords).slice(0, 8);
+  };
+
   if (error) {
     console.error('Search error:', error);
   }
@@ -231,7 +274,7 @@ const SearchResults = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Refine your search..."
+              placeholder="Search by skills, expertise, name, or technology..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
@@ -283,6 +326,25 @@ const SearchResults = () => {
             </Select>
           </div>
         </div>
+
+        {/* Suggested Keywords */}
+        {!searchTerm && getSuggestedKeywords().length > 0 && (
+          <div className="mb-6">
+            <p className="text-sm text-gray-600 mb-2">Popular skills:</p>
+            <div className="flex flex-wrap gap-2">
+              {getSuggestedKeywords().map((keyword) => (
+                <Badge
+                  key={keyword}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-blue-50 hover:border-blue-300"
+                  onClick={() => handleSearch(keyword)}
+                >
+                  {keyword}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Active Filters */}
         {(searchTerm || (locationFilter && locationFilter !== 'any') || (categoryFilter && categoryFilter !== 'any') || (experienceFilter && experienceFilter !== 'any') || minPrice > 0 || maxPrice < 200) && (
@@ -350,9 +412,34 @@ const SearchResults = () => {
             <CardTitle>No Trainers Found</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 text-center py-8">
-              No trainers found matching your criteria. Try adjusting your search terms or filters.
-            </p>
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">
+                No trainers found matching your criteria. Try:
+              </p>
+              <ul className="text-gray-500 text-sm space-y-1 mb-6">
+                <li>• Using different keywords</li>
+                <li>• Removing some filters</li>
+                <li>• Checking spelling</li>
+                <li>• Using broader search terms</li>
+              </ul>
+              {getSuggestedKeywords().length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Try searching for:</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {getSuggestedKeywords().slice(0, 5).map((keyword) => (
+                      <Badge
+                        key={keyword}
+                        variant="outline"
+                        className="cursor-pointer hover:bg-blue-50"
+                        onClick={() => handleSearch(keyword)}
+                      >
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
