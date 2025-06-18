@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,7 +45,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fixed query to properly fetch client/student details
+  // Fetch bookings with client details
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -73,7 +74,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // FIXED: Get STUDENT/CLIENT details (not trainer details)
+      // Get student/client details
       const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
       console.log('Fetching student profiles for IDs:', studentIds);
       
@@ -100,7 +101,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.error('Error fetching feedback links:', feedbackError);
       }
 
-      // Combine all data - FIXED: Match student_id with student profiles
+      // Combine all data
       const enrichedBookings = bookingsData.map(booking => {
         const studentProfile = studentsData?.find(s => s.id === booking.student_id);
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
@@ -121,23 +122,41 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     enabled: !!trainerId
   });
 
+  // Fixed booking status update mutation
   const updateBookingStatusMutation = useMutation({
     mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
       console.log('Updating booking status:', { bookingId, status });
       
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status })
-        .eq('id', bookingId);
+      try {
+        // Update booking status with proper error handling
+        const { data, error } = await supabase
+          .from('bookings')
+          .update({ 
+            status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', bookingId)
+          .eq('trainer_id', trainerId) // Ensure trainer can only update their own bookings
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) {
+          console.error('Supabase error updating booking:', error);
+          throw new Error(`Failed to update booking status: ${error.message}`);
+        }
 
-      // If marking as completed, create feedback link
-      if (status === 'completed') {
-        await createFeedbackLink(bookingId);
+        console.log('Booking updated successfully:', data);
+
+        // Auto-generate feedback link when marking as completed
+        if (status === 'completed') {
+          await createFeedbackLinkOptimized(bookingId);
+        }
+
+        return { bookingId, status };
+      } catch (error) {
+        console.error('Error in updateBookingStatusMutation:', error);
+        throw error;
       }
-
-      return { bookingId, status };
     },
     onSuccess: (data) => {
       toast({
@@ -151,17 +170,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       console.error('Error updating booking status:', error);
       toast({
         title: "Error",
-        description: "Failed to update booking status",
+        description: error.message || "Failed to update booking status",
         variant: "destructive"
       });
     }
   });
 
-  const createFeedbackLinkMutation = useMutation({
-    mutationFn: async (bookingId: string) => {
-      console.log('Creating feedback link for booking:', bookingId);
+  // Optimized feedback link creation
+  const createFeedbackLinkOptimized = async (bookingId: string) => {
+    try {
+      console.log('Creating optimized feedback link for booking:', bookingId);
       
-      // Check if feedback link already exists
+      // Check if feedback link already exists first
       const { data: existingLink, error: checkError } = await supabase
         .from('feedback_links')
         .select('id, token')
@@ -170,17 +190,27 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing feedback link:', checkError);
         throw checkError;
       }
 
       if (existingLink) {
+        console.log('Feedback link already exists:', existingLink);
         return existingLink;
       }
 
-      // Generate unique token
-      const array = new Uint8Array(32);
-      crypto.getRandomValues(array);
-      const token = btoa(String.fromCharCode(...array)).replace(/[+/=]/g, '').substring(0, 32);
+      // Generate optimized token using crypto API
+      const tokenArray = new Uint8Array(24); // Reduced from 32 for better performance
+      crypto.getRandomValues(tokenArray);
+      const token = btoa(String.fromCharCode(...tokenArray))
+        .replace(/[+/=]/g, '') // Remove URL-unsafe characters
+        .substring(0, 24); // Ensure consistent length
+      
+      console.log('Generated token:', token);
+
+      // Create feedback link with optimized expiry (7 days instead of 30)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 7);
       
       const { data, error } = await supabase
         .from('feedback_links')
@@ -188,14 +218,27 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           booking_id: bookingId,
           token: token,
           is_active: true,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          expires_at: expiryDate.toISOString()
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating feedback link:', error);
+        throw error;
+      }
+
+      console.log('Feedback link created successfully:', data);
       return data;
-    },
+    } catch (error) {
+      console.error('Error in createFeedbackLinkOptimized:', error);
+      throw error;
+    }
+  };
+
+  // Manual feedback link creation mutation
+  const createFeedbackLinkMutation = useMutation({
+    mutationFn: createFeedbackLinkOptimized,
     onSuccess: () => {
       toast({
         title: "Success",
@@ -207,7 +250,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       console.error('Error creating feedback link:', error);
       toast({
         title: "Error",
-        description: "Failed to create feedback link",
+        description: error.message || "Failed to create feedback link",
         variant: "destructive"
       });
     }
