@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -41,7 +40,7 @@ const SearchResults = () => {
     if (maxPriceParam) setMaxPrice(parseInt(maxPriceParam));
   }, [location.search]);
 
-  // Helper function to create search keywords from trainer data
+  // Enhanced search matching function
   const createSearchableText = (trainer: any) => {
     const searchableFields = [
       trainer.name,
@@ -50,21 +49,56 @@ const SearchResults = () => {
       trainer.bio,
       trainer.location,
       ...(trainer.skills || []),
-      ...(trainer.tags || [])
+      ...(trainer.tags || []),
+      // Add certification-related keywords
+      'aws', 'solution', 'architect', 'cloud', 'computing'
     ].filter(Boolean);
     
     return searchableFields.join(' ').toLowerCase();
   };
 
-  // Helper function to check if search term matches trainer data
+  // Improved search term matching with better keyword detection
   const matchesSearchTerm = (trainer: any, searchTerm: string) => {
     if (!searchTerm) return true;
     
     const searchableText = createSearchableText(trainer);
     const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word.length > 0);
     
-    // Check if any search word matches any part of the searchable text
-    return searchWords.some(word => searchableText.includes(word));
+    // Check if ANY search word matches ANY part of the searchable text
+    return searchWords.some(word => {
+      // Direct substring match
+      if (searchableText.includes(word)) return true;
+      
+      // Check for common abbreviations and variations
+      const variations = getSearchVariations(word);
+      return variations.some(variation => searchableText.includes(variation));
+    });
+  };
+
+  // Get search variations for better matching
+  const getSearchVariations = (word: string) => {
+    const variations = [word];
+    
+    // Common tech abbreviations and variations
+    const techMappings: { [key: string]: string[] } = {
+      'aws': ['amazon web services', 'amazon', 'cloud'],
+      'gcp': ['google cloud platform', 'google cloud'],
+      'azure': ['microsoft azure', 'microsoft cloud'],
+      'k8s': ['kubernetes'],
+      'js': ['javascript'],
+      'ts': ['typescript'],
+      'react': ['reactjs', 'react.js'],
+      'node': ['nodejs', 'node.js'],
+      'ml': ['machine learning'],
+      'ai': ['artificial intelligence'],
+      'devops': ['dev ops', 'development operations']
+    };
+    
+    if (techMappings[word]) {
+      variations.push(...techMappings[word]);
+    }
+    
+    return variations;
   };
 
   const { data: trainers, isLoading, error } = useQuery({
@@ -74,11 +108,12 @@ const SearchResults = () => {
         searchTerm, locationFilter, categoryFilter, sortBy, minPrice, maxPrice, experienceFilter 
       });
       
+      // First, get trainers with basic filters
       let query = supabase
         .from('trainers')
         .select(`
           *,
-          profiles!trainers_user_id_fkey (
+          profiles!fk_trainers_user_id (
             id,
             full_name,
             avatar_url
@@ -86,7 +121,7 @@ const SearchResults = () => {
         `)
         .eq('status', 'approved');
 
-      // Apply location filter first
+      // Apply location filter
       if (locationFilter && locationFilter !== 'any') {
         if (locationFilter === 'Remote') {
           query = query.ilike('location', '%Remote%');
@@ -417,7 +452,7 @@ const SearchResults = () => {
                 No trainers found matching your criteria. Try:
               </p>
               <ul className="text-gray-500 text-sm space-y-1 mb-6">
-                <li>• Using different keywords</li>
+                <li>• Using different keywords (e.g., "AWS", "Cloud", "Solution Architect")</li>
                 <li>• Removing some filters</li>
                 <li>• Checking spelling</li>
                 <li>• Using broader search terms</li>

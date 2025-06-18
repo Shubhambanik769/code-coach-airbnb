@@ -56,7 +56,7 @@ const TrainerSearch = () => {
     if (experience) setSelectedExperience(experience);
   }, [searchParams]);
 
-  // Helper function to create search keywords from trainer data
+  // Enhanced search matching function
   const createSearchableText = (trainer: any) => {
     const searchableFields = [
       trainer.name,
@@ -71,19 +71,37 @@ const TrainerSearch = () => {
     return searchableFields.join(' ').toLowerCase();
   };
 
-  // Helper function to check if search term matches trainer data
+  // Improved search term matching with AWS-specific keywords
   const matchesSearchTerm = (trainer: any, searchTerm: string) => {
     if (!searchTerm) return true;
     
     const searchableText = createSearchableText(trainer);
     const searchWords = searchTerm.toLowerCase().split(' ').filter(word => word.length > 0);
     
-    return searchWords.some(word => searchableText.includes(word));
+    return searchWords.some(word => {
+      // Direct match
+      if (searchableText.includes(word)) return true;
+      
+      // Handle common tech abbreviations
+      const techMappings: { [key: string]: string[] } = {
+        'aws': ['amazon web services', 'amazon', 'cloud', 'solution architect'],
+        'gcp': ['google cloud platform', 'google cloud'],
+        'azure': ['microsoft azure', 'microsoft cloud'],
+        'devops': ['dev ops', 'development operations']
+      };
+      
+      if (techMappings[word]) {
+        return techMappings[word].some(variation => searchableText.includes(variation));
+      }
+      
+      return false;
+    });
   };
 
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ['trainers-search', searchQuery, selectedSpecialization, selectedExperience, priceRange, selectedSkills],
     queryFn: async () => {
+      // Fix the foreign key reference
       let query = supabase
         .from('trainers')
         .select(`
