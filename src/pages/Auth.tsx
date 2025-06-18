@@ -19,15 +19,17 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect authenticated users to appropriate dashboard
+    // Redirect authenticated users to their appropriate dashboard based on role
     if (user && userRole) {
+      console.log('User authenticated with role:', userRole);
       switch (userRole) {
         case 'admin':
           navigate('/admin');
           break;
         case 'trainer':
-          navigate('/trainer');
+          navigate('/trainer-dashboard');
           break;
+        case 'user':
         default:
           navigate('/dashboard');
           break;
@@ -85,6 +87,18 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  // Don't render auth form if user is already authenticated
+  if (user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-techblue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

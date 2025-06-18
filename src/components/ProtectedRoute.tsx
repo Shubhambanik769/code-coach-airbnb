@@ -19,34 +19,35 @@ const ProtectedRoute = ({
 
   useEffect(() => {
     if (!loading) {
+      // If user is not authenticated, redirect to auth page
       if (!user) {
         navigate(redirectTo);
         return;
       }
 
-      // Special handling for trainer role
-      if (requiredRole === 'trainer' && userRole === 'trainer') {
-        // Let the TrainerDashboard component handle the trainer status check
-        return;
-      }
-
+      // If a specific role is required and user doesn't have it, redirect to appropriate dashboard
       if (requiredRole && userRole !== requiredRole) {
-        // Redirect based on user role
+        console.log(`Access denied. Required: ${requiredRole}, User has: ${userRole}`);
+        
+        // Redirect users to their appropriate dashboard based on their role
         switch (userRole) {
           case 'admin':
             navigate('/admin');
             break;
           case 'trainer':
-            navigate('/trainer');
+            navigate('/trainer-dashboard');
             break;
+          case 'user':
           default:
             navigate('/dashboard');
             break;
         }
+        return;
       }
     }
   }, [user, userRole, loading, navigate, requiredRole, redirectTo]);
 
+  // Show loading spinner while checking authentication
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -58,10 +59,12 @@ const ProtectedRoute = ({
     );
   }
 
+  // If user is not authenticated, don't render anything (redirect will happen)
   if (!user) {
     return null;
   }
 
+  // If specific role is required and user doesn't have it, don't render anything (redirect will happen)
   if (requiredRole && userRole !== requiredRole) {
     return null;
   }
