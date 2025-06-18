@@ -19,8 +19,17 @@ const ProtectedRoute = ({
 
   useEffect(() => {
     if (!loading) {
+      console.log('ProtectedRoute check - User:', user?.email, 'Role:', userRole, 'Required:', requiredRole);
+      
       if (!user) {
+        console.log('No user, redirecting to auth');
         navigate(redirectTo);
+        return;
+      }
+
+      // Wait for role to be loaded before making redirection decisions
+      if (userRole === null) {
+        console.log('Role still loading, waiting...');
         return;
       }
 
@@ -31,13 +40,14 @@ const ProtectedRoute = ({
       }
 
       if (requiredRole && userRole !== requiredRole) {
+        console.log('Role mismatch, redirecting based on user role');
         // Redirect based on user role
         switch (userRole) {
           case 'admin':
             navigate('/admin');
             break;
           case 'trainer':
-            navigate('/trainer');
+            navigate('/trainer-dashboard');
             break;
           default:
             navigate('/dashboard');
@@ -60,6 +70,18 @@ const ProtectedRoute = ({
 
   if (!user) {
     return null;
+  }
+
+  // Don't render if role is still loading
+  if (userRole === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-techblue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    );
   }
 
   if (requiredRole && userRole !== requiredRole) {

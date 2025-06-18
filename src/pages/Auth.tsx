@@ -14,26 +14,28 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, user, userRole } = useAuth();
+  const { signIn, signUp, user, userRole, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect authenticated users to appropriate dashboard
-    if (user && userRole) {
+    // Only redirect if we have both user and role loaded
+    if (user && userRole && !authLoading) {
+      console.log('Auth redirect - User:', user.email, 'Role:', userRole);
+      
       switch (userRole) {
         case 'admin':
           navigate('/admin');
           break;
         case 'trainer':
-          navigate('/trainer');
+          navigate('/trainer-dashboard');
           break;
         default:
           navigate('/dashboard');
           break;
       }
     }
-  }, [user, userRole, navigate]);
+  }, [user, userRole, authLoading, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +88,18 @@ const Auth = () => {
     }
   };
 
+  // Show loading if auth is still initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-techblue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -135,7 +149,7 @@ const Auth = () => {
                       placeholder="Enter your password"
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading || authLoading}>
                     {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
                 </form>
@@ -177,7 +191,7 @@ const Auth = () => {
                       minLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading || authLoading}>
                     {loading ? 'Creating Account...' : 'Sign Up'}
                   </Button>
                 </form>
