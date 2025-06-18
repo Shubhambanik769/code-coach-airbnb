@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,12 +51,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer the role fetch to avoid blocking the auth state change
-          setTimeout(async () => {
-            if (mounted) {
-              await fetchUserRole(session.user.id);
-            }
-          }, 0);
+          // Immediately fetch user role when session is established
+          await fetchUserRole(session.user.id);
         } else {
           setUserRole(null);
         }
@@ -104,6 +101,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserRole = async (userId: string) => {
     try {
+      console.log('Fetching role for user:', userId);
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
@@ -113,13 +112,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching user role:', error);
         handleApiError(error, 'Fetch user role');
+        setUserRole('user'); // Default fallback
         return;
       }
 
-      setUserRole(profile?.role || 'user');
+      const role = profile?.role || 'user';
+      console.log('User role fetched:', role);
+      setUserRole(role);
     } catch (error) {
       console.error('Error fetching user role:', error);
-      setUserRole('user');
+      setUserRole('user'); // Default fallback
     }
   };
 

@@ -19,30 +19,29 @@ const ProtectedRoute = ({
 
   useEffect(() => {
     if (!loading) {
+      console.log('ProtectedRoute check - User:', user?.email, 'Role:', userRole, 'Required:', requiredRole);
+      
       if (!user) {
+        console.log('No user, redirecting to auth');
         navigate(redirectTo);
         return;
       }
 
-      // Special handling for trainer role
-      if (requiredRole === 'trainer' && userRole === 'trainer') {
-        // Let the TrainerDashboard component handle the trainer status check
-        return;
-      }
-
       if (requiredRole && userRole !== requiredRole) {
-        // Redirect based on user role
+        console.log('Role mismatch, redirecting based on actual role');
+        // Redirect based on actual user role
         switch (userRole) {
           case 'admin':
             navigate('/admin');
             break;
           case 'trainer':
-            navigate('/trainer');
+            navigate('/trainer-dashboard');
             break;
           default:
             navigate('/dashboard');
             break;
         }
+        return;
       }
     }
   }, [user, userRole, loading, navigate, requiredRole, redirectTo]);
