@@ -1,11 +1,11 @@
 
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
   requiredRole?: string;
   redirectTo?: string;
 }
@@ -28,12 +28,7 @@ const ProtectedRoute = ({
         return;
       }
 
-      if (userRole === null) {
-        console.log('Role still loading, waiting...');
-        return;
-      }
-
-      if (requiredRole && userRole !== requiredRole) {
+      if (requiredRole && userRole && userRole !== requiredRole) {
         console.log('Role mismatch, redirecting based on user role');
         switch (userRole) {
           case 'admin':
@@ -50,7 +45,7 @@ const ProtectedRoute = ({
     }
   }, [user, userRole, loading, navigate, requiredRole, redirectTo]);
 
-  if (loading || userRole === null) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading..." />

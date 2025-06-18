@@ -66,6 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
+        
         // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -74,6 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         if (mounted) {
+          console.log('Setting initial session:', session?.user?.email);
           setSession(session);
           setUser(session?.user ?? null);
           
@@ -103,13 +106,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
+        if (session?.user && event !== 'TOKEN_REFRESHED') {
           await fetchUserRole(session.user.id);
-        } else {
+        } else if (!session?.user) {
           setUserRole(null);
         }
         
-        if (mounted && event !== 'INITIAL_SESSION') {
+        if (mounted) {
           setLoading(false);
         }
       }
@@ -134,15 +137,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         showErrorToast(error, 'Sign in');
-        setLoading(false);
       }
       
       return { error };
     } catch (error) {
       const apiError = handleApiError(error, 'Sign in');
       showErrorToast(apiError);
-      setLoading(false);
       return { error: apiError };
+    } finally {
+      setLoading(false);
     }
   };
 
