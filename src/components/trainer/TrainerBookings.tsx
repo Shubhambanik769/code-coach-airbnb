@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,16 +57,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     queryFn: async () => {
       console.log('Fetching bookings for trainer:', trainerId);
       
+      // First get all bookings for this trainer
       let bookingsQuery = supabase
         .from('bookings')
-        .select(`
-          *,
-          feedback_links (
-            id,
-            token,
-            is_active
-          )
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
@@ -79,27 +74,54 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       
       if (bookingsError) throw bookingsError;
 
-      if (bookingsData && bookingsData.length > 0) {
-        const studentIds = bookingsData.map(booking => booking.student_id);
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', studentIds);
-
-        if (profilesError) {
-          console.warn('Profiles query error:', profilesError);
-        }
-
-        const bookingsWithProfiles: BookingWithProfile[] = bookingsData.map(booking => ({
-          ...booking,
-          student_profile: profilesData?.find(profile => profile.id === booking.student_id)
-        }));
-
-        console.log('Final bookings with profiles:', bookingsWithProfiles);
-        return bookingsWithProfiles;
+      if (!bookingsData || bookingsData.length === 0) {
+        console.log('No bookings found for trainer');
+        return [];
       }
 
-      return bookingsData as BookingWithProfile[] || [];
+      // Get feedback links for these bookings
+      const bookingIds = bookingsData.map(booking => booking.id);
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from('feedback_links')
+        .select('id, token, is_active, booking_id')
+        .in('booking_id', bookingIds);
+
+      if (feedbackError) {
+        console.warn('Feedback links query error:', feedbackError);
+      }
+
+      // Get student profiles
+      const studentIds = [...new Set(bookingsData.map(booking => booking.student_id))];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', studentIds);
+
+      if (profilesError) {
+        console.warn('Profiles query error:', profilesError);
+      }
+
+      const bookingsWithProfiles: BookingWithProfile[] = bookingsData.map(booking => {
+        const feedbackLinks = feedbackData?.filter(link => link.booking_id === booking.id) || [];
+        const studentProfile = profilesData?.find(profile => profile.id === booking.student_id);
+
+        return {
+          ...booking,
+          student_profile: studentProfile ? {
+            id: studentProfile.id,
+            full_name: studentProfile.full_name,
+            email: studentProfile.email
+          } : undefined,
+          feedback_links: feedbackLinks.map(link => ({
+            id: link.id,
+            token: link.token,
+            is_active: link.is_active
+          }))
+        };
+      });
+
+      console.log('Final bookings with profiles:', bookingsWithProfiles);
+      return bookingsWithProfiles;
     },
     enabled: !!trainerId
   });

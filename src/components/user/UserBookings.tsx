@@ -38,22 +38,20 @@ const UserBookings = () => {
   const { user } = useAuth();
   const [selectedBooking, setSelectedBooking] = useState<BookingWithTrainer | null>(null);
 
-  const { data: bookings, isLoading } = useQuery({
+  const { data: bookings, isLoading, error } = useQuery({
     queryKey: ['user-bookings', user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) {
+        console.log('No user ID available');
+        return [];
+      }
       
       console.log('Fetching bookings for user:', user.id);
       
+      // First, get all bookings for this student
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select(`
-          *,
-          trainers!inner(
-            id,
-            user_id
-          )
-        `)
+        .select('*')
         .eq('student_id', user.id)
         .order('start_time', { ascending: false });
 
@@ -62,29 +60,65 @@ const UserBookings = () => {
         throw bookingsError;
       }
 
-      console.log('User bookings data:', bookingsData);
+      console.log('Raw bookings data:', bookingsData);
 
-      if (bookingsData && bookingsData.length > 0) {
-        const trainerUserIds = bookingsData.map(booking => booking.trainers.user_id);
-        const { data: profilesData, error: profilesError } = await supabase
+      if (!bookingsData || bookingsData.length === 0) {
+        console.log('No bookings found for user');
+        return [];
+      }
+
+      // Get trainer IDs from bookings
+      const trainerIds = [...new Set(bookingsData.map(booking => booking.trainer_id))];
+      console.log('Trainer IDs:', trainerIds);
+
+      // Get trainer user IDs
+      const { data: trainersData, error: trainersError } = await supabase
+        .from('trainers')
+        .select('id, user_id')
+        .in('id', trainerIds);
+
+      if (trainersError) {
+        console.error('Error fetching trainers:', trainersError);
+        // Continue without trainer data
+      }
+
+      console.log('Trainers data:', trainersData);
+
+      // Get trainer profiles if we have trainer data
+      let profilesData = [];
+      if (trainersData && trainersData.length > 0) {
+        const trainerUserIds = trainersData.map(trainer => trainer.user_id);
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, email')
           .in('id', trainerUserIds);
 
         if (profilesError) {
-          console.warn('Profiles query error:', profilesError);
+          console.error('Error fetching profiles:', profilesError);
+        } else {
+          profilesData = profiles || [];
         }
-
-        const bookingsWithTrainers: BookingWithTrainer[] = bookingsData.map(booking => ({
-          ...booking,
-          trainer_profile: profilesData?.find(profile => profile.id === booking.trainers.user_id)
-        }));
-
-        console.log('Final bookings with trainers:', bookingsWithTrainers);
-        return bookingsWithTrainers;
       }
 
-      return bookingsData as BookingWithTrainer[] || [];
+      console.log('Profiles data:', profilesData);
+
+      // Combine data
+      const bookingsWithTrainers: BookingWithTrainer[] = bookingsData.map(booking => {
+        const trainer = trainersData?.find(t => t.id === booking.trainer_id);
+        const profile = trainer ? profilesData.find(p => p.id === trainer.user_id) : null;
+        
+        return {
+          ...booking,
+          trainer_profile: profile ? {
+            id: profile.id,
+            full_name: profile.full_name,
+            email: profile.email
+          } : undefined
+        };
+      });
+
+      console.log('Final bookings with trainers:', bookingsWithTrainers);
+      return bookingsWithTrainers;
     },
     enabled: !!user?.id
   });
@@ -118,6 +152,22 @@ const UserBookings = () => {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <span className="ml-2">Loading your bookings...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Query error:', error);
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center py-8">
+              <p className="text-red-600">Error loading bookings. Please try again.</p>
             </div>
           </CardContent>
         </Card>
