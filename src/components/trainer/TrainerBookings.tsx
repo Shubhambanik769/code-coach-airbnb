@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,7 +44,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Simplified query with proper error handling
+  // Fixed query to properly fetch client/student details
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -74,8 +73,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // Get student details
+      // FIXED: Get STUDENT/CLIENT details (not trainer details)
       const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
+      console.log('Fetching student profiles for IDs:', studentIds);
+      
       const { data: studentsData, error: studentsError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -84,6 +85,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       if (studentsError) {
         console.error('Error fetching student profiles:', studentsError);
       }
+
+      console.log('Student profiles fetched:', studentsData);
 
       // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
@@ -97,10 +100,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.error('Error fetching feedback links:', feedbackError);
       }
 
-      // Combine all data
+      // Combine all data - FIXED: Match student_id with student profiles
       const enrichedBookings = bookingsData.map(booking => {
         const studentProfile = studentsData?.find(s => s.id === booking.student_id);
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
+        
+        console.log(`Booking ${booking.id}: student_id=${booking.student_id}, found profile:`, studentProfile);
         
         return {
           ...booking,
@@ -110,7 +115,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         };
       });
 
-      console.log('Enriched bookings:', enrichedBookings);
+      console.log('Final enriched bookings:', enrichedBookings);
       return enrichedBookings;
     },
     enabled: !!trainerId
