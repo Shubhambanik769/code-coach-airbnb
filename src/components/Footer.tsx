@@ -1,4 +1,3 @@
-
 import { Globe, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +9,7 @@ const Footer = () => {
       title: 'Skilloop.io',
       links: [
         { name: 'About us', path: '/about' },
-        { name: 'Careers', path: '#' },
+        { name: 'Careers', path: '/careers' },
         { name: 'Press', path: '#' },
         { name: 'Blog', path: '#' },
         { name: 'Help Center', path: '#' },
