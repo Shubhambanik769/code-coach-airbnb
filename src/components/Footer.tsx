@@ -1,51 +1,59 @@
 
 import { Globe, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Footer = () => {
+  const navigate = useNavigate();
+  
   const footerSections = [
     {
       title: 'Skilloop.io',
       links: [
-        'About us',
-        'Careers',
-        'Press',
-        'Blog',
-        'Help Center',
-        'Contact us'
+        { name: 'About us', path: '/about' },
+        { name: 'Careers', path: '#' },
+        { name: 'Press', path: '#' },
+        { name: 'Blog', path: '#' },
+        { name: 'Help Center', path: '#' },
+        { name: 'Contact us', path: '#' }
       ]
     },
     {
       title: 'For Trainers',
       links: [
-        'Become a trainer',
-        'Trainer resources',
-        'Community standards',
-        'Trainer protection',
-        'Success stories'
+        { name: 'Become a trainer', path: '/apply-trainer' },
+        { name: 'Trainer resources', path: '#' },
+        { name: 'Community standards', path: '#' },
+        { name: 'Trainer protection', path: '#' },
+        { name: 'Success stories', path: '#' }
       ]
     },
     {
       title: 'For Companies',
       links: [
-        'Enterprise solutions',
-        'Team training',
-        'Custom curricula',
-        'Volume discounts',
-        'API access'
+        { name: 'Enterprise solutions', path: '#' },
+        { name: 'Team training', path: '#' },
+        { name: 'Custom curricula', path: '#' },
+        { name: 'Volume discounts', path: '#' },
+        { name: 'API access', path: '#' }
       ]
     },
     {
       title: 'Technologies',
       links: [
-        'Web Development',
-        'Cloud Computing',
-        'Data Science',
-        'Cybersecurity',
-        'Mobile Development',
-        'DevOps'
+        { name: 'Web Development', path: '/technology/web-development' },
+        { name: 'Cloud Computing', path: '/technology/cloud-computing' },
+        { name: 'Data Science', path: '/technology/data-science' },
+        { name: 'Cybersecurity', path: '/technology/cybersecurity' },
+        { name: 'Mobile Development', path: '/technology/mobile-development' },
+        { name: 'DevOps', path: '/technology/devops' }
       ]
     }
   ];
+
+  const handleLinkClick = (path: string) => {
+    if (path === '#') return;
+    navigate(path);
+  };
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -54,7 +62,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8 mb-8 sm:mb-12">
           {/* Company Info */}
           <div className="lg:col-span-1 sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+            <div className="flex items-center space-x-2 mb-4 sm:mb-6 cursor-pointer" onClick={() => navigate('/')}>
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xs sm:text-sm">SL</span>
               </div>
@@ -77,13 +85,13 @@ const Footer = () => {
               <h3 className="font-semibold text-white mb-3 sm:mb-4 text-sm sm:text-base">{section.title}</h3>
               <ul className="space-y-2 sm:space-y-3">
                 {section.links.map((link) => (
-                  <li key={link}>
-                    <a 
-                      href="#" 
-                      className="text-gray-400 hover:text-white transition-colors text-xs sm:text-sm"
+                  <li key={link.name}>
+                    <button 
+                      onClick={() => handleLinkClick(link.path)}
+                      className="text-gray-400 hover:text-white transition-colors text-xs sm:text-sm text-left"
                     >
-                      {link}
-                    </a>
+                      {link.name}
+                    </button>
                   </li>
                 ))}
               </ul>
