@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, MapPin, Code, Users, TrendingUp, Award, ArrowLeft, ExternalLink, Cloud, Database, Shield } from 'lucide-react';
+import { Star, MapPin, Code, Users, TrendingUp, Award, ArrowLeft, ExternalLink, Cloud, Database, Shield, Smartphone, BarChart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -106,6 +106,54 @@ const technologyData = {
     ],
     gradient: 'from-red-600 to-orange-600',
     bgGradient: 'from-red-50 via-white to-orange-50'
+  },
+  'mobile-development': {
+    name: 'Mobile Development & App Creation',
+    icon: Smartphone,
+    description: 'Mobile Development is the process of creating applications for mobile devices including smartphones and tablets. It encompasses native iOS and Android development, cross-platform solutions, and mobile-first design principles to deliver exceptional user experiences on mobile platforms.',
+    subtitle: 'With billions of mobile users worldwide and mobile-first becoming the standard, mobile developers are essential for creating the apps that power our daily digital interactions and business operations.',
+    benefits: [
+      { icon: '📱', title: 'Mobile-First World', desc: 'Essential skills for the mobile-dominant digital landscape' },
+      { icon: '🚀', title: 'App Store Revenue', desc: 'Access to billion-dollar app marketplaces and monetization opportunities' },
+      { icon: '🌍', title: 'Global Reach', desc: 'Create apps that can reach millions of users worldwide instantly' },
+      { icon: '💡', title: 'Innovation Platform', desc: 'Leverage device capabilities like AR, camera, GPS, and sensors' }
+    ],
+    technologies: [
+      'iOS Development (Swift, SwiftUI, Objective-C)',
+      'Android Development (Kotlin, Java, Jetpack Compose)',
+      'React Native, Flutter, Xamarin',
+      'Mobile UI/UX Design Principles',
+      'App Store Optimization (ASO)',
+      'Mobile Backend Services (Firebase, AWS Amplify)',
+      'Push Notifications, In-App Purchases',
+      'Mobile Testing, Performance Optimization'
+    ],
+    gradient: 'from-indigo-600 to-purple-600',
+    bgGradient: 'from-indigo-50 via-white to-purple-50'
+  },
+  'devops': {
+    name: 'DevOps & Infrastructure Automation',
+    icon: BarChart,
+    description: 'DevOps is a set of practices that combines software development and IT operations to shorten the development lifecycle and deliver high-quality software continuously. It emphasizes automation, monitoring, and collaboration between development and operations teams.',
+    subtitle: 'DevOps has transformed how organizations deliver software, enabling faster deployments, improved reliability, and seamless collaboration between development and operations teams in modern software development.',
+    benefits: [
+      { icon: '⚡', title: 'Faster Deployment', desc: 'Accelerate software delivery with automated pipelines and processes' },
+      { icon: '🔄', title: 'Continuous Integration', desc: 'Enable seamless collaboration between development and operations' },
+      { icon: '📈', title: 'Career Growth', desc: 'High demand for DevOps engineers with competitive salaries' },
+      { icon: '🛠️', title: 'Automation Mastery', desc: 'Master tools and practices that eliminate manual processes' }
+    ],
+    technologies: [
+      'Docker, Kubernetes, Container Orchestration',
+      'CI/CD Pipelines (Jenkins, GitLab CI, GitHub Actions)',
+      'Infrastructure as Code (Terraform, Ansible, Puppet)',
+      'Cloud Platforms (AWS, Azure, GCP)',
+      'Monitoring & Logging (Prometheus, Grafana, ELK Stack)',
+      'Version Control (Git, GitFlow, Branching Strategies)',
+      'Configuration Management, Service Mesh',
+      'Microservices Architecture, API Management'
+    ],
+    gradient: 'from-yellow-600 to-orange-600',
+    bgGradient: 'from-yellow-50 via-white to-orange-50'
   }
 };
 
