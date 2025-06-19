@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, MapPin, Code, Users, TrendingUp, Award, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Star, MapPin, Code, Users, TrendingUp, Award, ArrowLeft, ExternalLink, Cloud } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,30 @@ const technologyData = {
     ],
     gradient: 'from-blue-600 to-cyan-600',
     bgGradient: 'from-blue-50 via-white to-cyan-50'
+  },
+  'cloud-computing': {
+    name: 'Cloud Computing & Infrastructure',
+    icon: Cloud,
+    description: 'Cloud Computing is the delivery of computing services including servers, storage, databases, networking, software, analytics, and intelligence over the Internet. It enables flexible resources, faster innovation, and economies of scale, allowing businesses to access technology services on-demand.',
+    subtitle: 'From startups to Fortune 500 companies, cloud computing has revolutionized how organizations deploy, scale, and manage their technology infrastructure with unprecedented efficiency and cost-effectiveness.',
+    benefits: [
+      { icon: '🚀', title: 'Scalability & Flexibility', desc: 'Scale resources up or down based on demand instantly' },
+      { icon: '💡', title: 'Innovation Enabler', desc: 'Access to cutting-edge services like AI, ML, and IoT' },
+      { icon: '📊', title: 'Cost Optimization', desc: 'Pay-as-you-use model reduces infrastructure costs' },
+      { icon: '🔒', title: 'Enterprise Security', desc: 'Advanced security features and compliance standards' }
+    ],
+    technologies: [
+      'Amazon Web Services (AWS)',
+      'Microsoft Azure, Google Cloud Platform',
+      'Docker, Kubernetes, Container Orchestration',
+      'Infrastructure as Code (Terraform, CloudFormation)',
+      'Serverless Computing (Lambda, Azure Functions)',
+      'Cloud Storage (S3, Blob Storage, Cloud Storage)',
+      'Cloud Databases (RDS, CosmosDB, BigQuery)',
+      'DevOps & CI/CD in Cloud Environments'
+    ],
+    gradient: 'from-purple-600 to-pink-600',
+    bgGradient: 'from-purple-50 via-white to-pink-50'
   }
 };
 
@@ -47,6 +71,13 @@ const TechnologyPage = () => {
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ['technology-trainers', slug],
     queryFn: async () => {
+      let searchTerm = '';
+      if (slug === 'web-development') {
+        searchTerm = 'web development';
+      } else if (slug === 'cloud-computing') {
+        searchTerm = 'cloud computing';
+      }
+
       const { data, error } = await supabase
         .from('trainers')
         .select(`
@@ -57,7 +88,7 @@ const TechnologyPage = () => {
           )
         `)
         .eq('status', 'approved')
-        .contains('skills', [slug?.replace('-', ' ')])
+        .or(`skills.cs.{${searchTerm}},specialization.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%`)
         .order('rating', { ascending: false })
         .order('total_reviews', { ascending: false })
         .limit(8);
@@ -152,19 +183,22 @@ const TechnologyPage = () => {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-start">
-            {/* Left Column - What is Web Development */}
+            {/* Left Column - What is Technology */}
             <div className="space-y-8">
               <div>
                 <h2 className="text-3xl font-bold text-slate-900 mb-6 flex items-center">
                   <span className="text-3xl mr-3">💡</span>
-                  What is Web Development?
+                  What is {slug === 'cloud-computing' ? 'Cloud Computing' : 'Web Development'}?
                 </h2>
                 <p className="text-lg text-slate-700 leading-relaxed mb-6">
                   {tech.description}
                 </p>
-                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100">
+                <div className={`bg-gradient-to-r ${tech.bgGradient} rounded-2xl p-6 border ${slug === 'cloud-computing' ? 'border-purple-100' : 'border-blue-100'}`}>
                   <p className="text-slate-700 italic text-lg leading-relaxed">
-                    "Web development is not just about writing code—it's about creating digital experiences that connect businesses with their customers and solve real-world problems."
+                    {slug === 'cloud-computing' 
+                      ? '"Cloud computing is not just about moving to the cloud—it\'s about transforming how organizations operate, innovate, and scale in the digital economy."'
+                      : '"Web development is not just about writing code—it\'s about creating digital experiences that connect businesses with their customers and solve real-world problems."'
+                    }
                   </p>
                 </div>
               </div>
@@ -192,11 +226,11 @@ const TechnologyPage = () => {
               <div className="sticky top-8">
                 <h2 className="text-3xl font-bold text-slate-900 mb-6 flex items-center">
                   <span className="text-3xl mr-3">📈</span>
-                  Why Learn Web Development?
+                  Why Learn {slug === 'cloud-computing' ? 'Cloud Computing' : 'Web Development'}?
                 </h2>
                 <div className="space-y-6">
                   {tech.benefits.map((benefit, index) => (
-                    <div key={index} className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-200">
+                    <div key={index} className={`bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 ${slug === 'cloud-computing' ? 'hover:border-purple-200' : 'hover:border-blue-200'}`}>
                       <div className="flex items-start space-x-4">
                         <div className="text-3xl flex-shrink-0">{benefit.icon}</div>
                         <div>
@@ -209,9 +243,9 @@ const TechnologyPage = () => {
                 </div>
 
                 {/* CTA Section */}
-                <div className="mt-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
+                <div className={`mt-8 bg-gradient-to-r ${tech.gradient} rounded-2xl p-8 text-white`}>
                   <h3 className="text-xl font-bold mb-4">Ready to Start Learning?</h3>
-                  <p className="mb-6 opacity-90">Connect with our expert trainers and accelerate your web development journey.</p>
+                  <p className="mb-6 opacity-90">Connect with our expert trainers and accelerate your {slug === 'cloud-computing' ? 'cloud computing' : 'web development'} journey.</p>
                   <Button 
                     onClick={() => navigate('/trainers')}
                     className="bg-white text-blue-600 hover:bg-gray-100 font-semibold"
@@ -227,12 +261,12 @@ const TechnologyPage = () => {
       </section>
 
       {/* Top Trainers Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
+      <section className={`py-20 bg-gradient-to-br ${slug === 'cloud-computing' ? 'from-slate-50 to-purple-50' : 'from-slate-50 to-blue-50'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4 flex items-center justify-center">
-              <Award className="w-10 h-10 mr-4 text-blue-600" />
-              Top Web Development Trainers
+              <Award className={`w-10 h-10 mr-4 ${slug === 'cloud-computing' ? 'text-purple-600' : 'text-blue-600'}`} />
+              Top {slug === 'cloud-computing' ? 'Cloud Computing' : 'Web Development'} Trainers
             </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               Learn from industry experts with proven track records and real-world experience
@@ -278,7 +312,7 @@ const TechnologyPage = () => {
                             }}
                           />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2">
+                        <h3 className={`text-xl font-bold text-slate-900 group-hover:${slug === 'cloud-computing' ? 'text-purple-700' : 'text-blue-700'} transition-colors mb-2`}>
                           {displayName}
                         </h3>
                         <p className="text-slate-600 mb-3">{trainer.title}</p>
@@ -307,14 +341,14 @@ const TechnologyPage = () => {
                         </div>
 
                         <div className="text-center">
-                          <div className="font-bold text-blue-600 text-2xl">
+                          <div className={`font-bold ${slug === 'cloud-computing' ? 'text-purple-600' : 'text-blue-600'} text-2xl`}>
                             ${trainer.hourly_rate || 0}/hr
                           </div>
                         </div>
 
                         <Button 
                           onClick={() => handleViewProfile(trainer.id)}
-                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                          className={`w-full bg-gradient-to-r ${tech.gradient} hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl`}
                         >
                           {user ? 'View Profile' : 'Login to View'}
                           <ExternalLink className="w-4 h-4 ml-2" />
@@ -340,7 +374,7 @@ const TechnologyPage = () => {
               onClick={() => navigate('/trainers')}
               size="lg" 
               variant="outline"
-              className="px-10 py-4 text-lg font-semibold border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
+              className={`px-10 py-4 text-lg font-semibold border-2 ${slug === 'cloud-computing' ? 'border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300' : 'border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300'} transition-all duration-300`}
             >
               Explore All Trainers
             </Button>
