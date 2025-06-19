@@ -11,7 +11,8 @@ import UserManagement from '@/components/admin/UserManagement';
 import TrainerManagement from '@/components/admin/TrainerManagement';
 import BookingManagement from '@/components/admin/BookingManagement';
 import TrainerFeedbackManagement from '@/components/admin/TrainerFeedbackManagement';
-import { Users, Calendar, Star, TrendingUp, MessageSquare, Award } from 'lucide-react';
+import JobManagement from '@/components/admin/JobManagement';
+import { Users, Calendar, Star, TrendingUp, MessageSquare, Award, Briefcase } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -65,12 +66,13 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-6 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="trainers">Trainers</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
+            <TabsTrigger value="jobs">Jobs</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -134,6 +136,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="feedback">
             <TrainerFeedbackManagement />
+          </TabsContent>
+
+          <TabsContent value="jobs">
+            <JobManagement />
           </TabsContent>
 
           <TabsContent value="analytics">
