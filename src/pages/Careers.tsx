@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Clock, Users, Briefcase, Heart, Zap, Coffee, Globe, ExternalLink } from 'lucide-react';
@@ -31,12 +30,12 @@ const Careers = () => {
     queryKey: ['jobs'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('jobs' as any)
+        .from('jobs')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Job[];
+      return (data || []) as Job[];
     }
   });
 

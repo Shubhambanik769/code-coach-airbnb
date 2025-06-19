@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, Trash2, ExternalLink, MapPin, Clock, Users } from 'lucide-react';
@@ -14,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Job {
-  id?: string;
+  id: string;
   title: string;
   department: string;
   location: string;
@@ -22,14 +21,14 @@ interface Job {
   description: string;
   requirements: string[];
   external_form_link?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const JobManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [formData, setFormData] = useState<Job>({
+  const [formData, setFormData] = useState<Omit<Job, 'id' | 'created_at' | 'updated_at'>>({
     title: '',
     department: '',
     location: '',
@@ -47,19 +46,19 @@ const JobManagement = () => {
     queryKey: ['admin-jobs'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('jobs' as any)
+        .from('jobs')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Job[];
+      return (data || []) as Job[];
     }
   });
 
   const createJobMutation = useMutation({
     mutationFn: async (jobData: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
-        .from('jobs' as any)
+        .from('jobs')
         .insert([jobData])
         .select()
         .single();
@@ -80,10 +79,11 @@ const JobManagement = () => {
   });
 
   const updateJobMutation = useMutation({
-    mutationFn: async ({ id, ...jobData }: Job) => {
+    mutationFn: async (jobData: Job) => {
+      const { id, created_at, updated_at, ...updateData } = jobData;
       const { data, error } = await supabase
-        .from('jobs' as any)
-        .update(jobData)
+        .from('jobs')
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -106,7 +106,7 @@ const JobManagement = () => {
   const deleteJobMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('jobs' as any)
+        .from('jobs')
         .delete()
         .eq('id', id);
       
@@ -145,16 +145,23 @@ const JobManagement = () => {
     }
 
     if (selectedJob?.id) {
-      updateJobMutation.mutate({ ...formData, id: selectedJob.id });
+      updateJobMutation.mutate({ ...formData, id: selectedJob.id, created_at: selectedJob.created_at, updated_at: selectedJob.updated_at });
     } else {
-      const { id, created_at, updated_at, ...jobDataToCreate } = formData;
-      createJobMutation.mutate(jobDataToCreate);
+      createJobMutation.mutate(formData);
     }
   };
 
   const handleEdit = (job: Job) => {
     setSelectedJob(job);
-    setFormData(job);
+    setFormData({
+      title: job.title,
+      department: job.department,
+      location: job.location,
+      type: job.type,
+      description: job.description,
+      requirements: job.requirements || [],
+      external_form_link: job.external_form_link || ''
+    });
     setIsDialogOpen(true);
   };
 
