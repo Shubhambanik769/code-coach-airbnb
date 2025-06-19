@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +9,23 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
-import { User, FileText, DollarSign, MapPin, Plus, X } from 'lucide-react';
+import { 
+  User, 
+  FileText, 
+  DollarSign, 
+  MapPin, 
+  Plus, 
+  X, 
+  Users, 
+  Building, 
+  Target,
+  Star,
+  Calendar,
+  MessageCircle,
+  TrendingUp,
+  Shield,
+  CheckCircle
+} from 'lucide-react';
 import Header from '@/components/Header';
 
 const ApplyTrainer = () => {
@@ -185,18 +200,152 @@ const ApplyTrainer = () => {
     });
   };
 
+  const benefits = [
+    {
+      icon: Users,
+      title: "Instant Access to High-Quality Clients",
+      items: ["Top universities and colleges", "Corporate L&D teams", "Training agencies & institutes"],
+      description: "You focus on training — we bring you the clients."
+    },
+    {
+      icon: Star,
+      title: "Build Your Personal Training Brand",
+      items: ["Professional profile with bio & certifications", "Ratings & reviews showcase", "Attract bookings without cold outreach"],
+      description: "Showcase your expertise and get discovered by the right clients."
+    },
+    {
+      icon: Target,
+      title: "Zero Marketing Needed",
+      items: ["Inbound leads delivered to you", "No ads or sales needed", "Just deliver great sessions"],
+      description: "We handle client acquisition, you handle the training."
+    },
+    {
+      icon: Calendar,
+      title: "Smart Booking Calendar",
+      items: ["Set availability once", "Automatic booking system", "No back-and-forth scheduling"],
+      description: "Streamlined scheduling that works around your availability."
+    },
+    {
+      icon: DollarSign,
+      title: "Transparent Payments with GST",
+      items: ["Set your own pricing", "Automatic GST invoicing", "Transparent commission structure"],
+      description: "Fair pay with all financial processes handled automatically."
+    },
+    {
+      icon: TrendingUp,
+      title: "Track Earnings & Growth",
+      items: ["Real-time dashboard", "Booking analytics", "Performance insights"],
+      description: "Monitor your success and optimize your training business."
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="py-8">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-techblue-600 to-purple-600 text-white py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            Become a Trainer on TrainerConnect
+          </h1>
+          <p className="text-xl md:text-2xl mb-8 opacity-90">
+            Share your expertise, reach quality clients, and build your training business — all in one platform
+          </p>
+          <div className="flex flex-wrap justify-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              <span>Verified Community</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              <span>Set Your Own Rates</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              <span>Quality Clients</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              <span>Zero Marketing</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Benefits Section */}
+      <div className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Why Trainers Choose TrainerConnect
+            </h2>
+            <p className="text-lg text-gray-600">
+              Join a professional network that puts your success first
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {benefits.map((benefit, index) => (
+              <Card key={index} className="border-2 hover:border-techblue-200 transition-colors">
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-techblue-100 rounded-lg">
+                      <benefit.icon className="h-6 w-6 text-techblue-600" />
+                    </div>
+                    <CardTitle className="text-lg">{benefit.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 mb-4">
+                    {benefit.items.map((item, itemIndex) => (
+                      <li key={itemIndex} className="flex items-start gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-gray-600">{benefit.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="py-12 bg-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-3xl font-bold text-techblue-600">500+</div>
+              <div className="text-sm text-gray-600">Active Trainers</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-techblue-600">95%</div>
+              <div className="text-sm text-gray-600">Client Satisfaction</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-techblue-600">₹50L+</div>
+              <div className="text-sm text-gray-600">Trainer Earnings</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-techblue-600">24/7</div>
+              <div className="text-sm text-gray-600">Platform Support</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Application Form Section */}
+      <div className="py-16">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Become a Trainer
-            </h1>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              {!user ? "Get Started Today" : "Complete Your Trainer Profile"}
+            </h2>
             <p className="text-lg text-gray-600">
-              Share your expertise and help others learn new skills
+              {!user ? "Create your account and join our community of professional trainers" : "You're one step away from connecting with quality clients"}
             </p>
           </div>
 
@@ -204,7 +353,7 @@ const ApplyTrainer = () => {
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>
-                  {isSignUp ? 'Create Your Account' : 'Sign In to Continue'}
+                  {isSignUp ? 'Create Your Trainer Account' : 'Sign In to Continue'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -251,7 +400,7 @@ const ApplyTrainer = () => {
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Processing...' : (isSignUp ? 'Create Account' : 'Sign In')}
+                    {loading ? 'Processing...' : (isSignUp ? 'Create Trainer Account' : 'Sign In')}
                   </Button>
                 </form>
                 
@@ -272,6 +421,9 @@ const ApplyTrainer = () => {
                   <User className="h-5 w-5" />
                   Complete Your Trainer Profile
                 </CardTitle>
+                <p className="text-sm text-gray-600 mt-2">
+                  Fill out your profile to start receiving bookings from quality clients
+                </p>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmitApplication} className="space-y-6">
@@ -327,15 +479,15 @@ const ApplyTrainer = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Hourly Rate ($)
+                        Hourly Rate (₹)
                       </label>
                       <Input
                         type="number"
                         value={formData.hourly_rate}
                         onChange={(e) => setFormData({ ...formData, hourly_rate: parseFloat(e.target.value) || 0 })}
                         min="0"
-                        step="0.01"
-                        placeholder="Your hourly rate"
+                        step="100"
+                        placeholder="Your hourly rate in INR"
                       />
                     </div>
 
@@ -346,7 +498,7 @@ const ApplyTrainer = () => {
                       <Input
                         value={formData.location}
                         onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        placeholder="City, State/Country or Remote"
+                        placeholder="City, State or Remote"
                       />
                     </div>
                   </div>
@@ -354,12 +506,12 @@ const ApplyTrainer = () => {
                   {/* Bio */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bio
+                      Professional Bio
                     </label>
                     <Textarea
                       value={formData.bio}
                       onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                      placeholder="Tell students about yourself, your experience, and training philosophy..."
+                      placeholder="Tell clients about your experience, training philosophy, and what makes you unique as a trainer..."
                       rows={4}
                     />
                   </div>
@@ -393,7 +545,7 @@ const ApplyTrainer = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-gradient-to-r from-techblue-600 to-purple-600 hover:from-techblue-700 hover:to-purple-700" 
                     disabled={submitApplicationMutation.isPending}
                   >
                     {submitApplicationMutation.isPending ? 'Creating Profile...' : 'Complete Setup & Start Training'}
@@ -402,6 +554,38 @@ const ApplyTrainer = () => {
               </CardContent>
             </Card>
           )}
+        </div>
+      </div>
+
+      {/* Trust Indicators */}
+      <div className="py-12 bg-gray-50 border-t">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Join a Professional, Quality-First Community
+            </h3>
+            <p className="text-gray-600">
+              We only onboard certified, verified trainers — join a respected network trusted by institutions and companies
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <Shield className="h-12 w-12 text-techblue-600 mx-auto mb-4" />
+              <h4 className="font-semibold mb-2">Verified Trainers Only</h4>
+              <p className="text-sm text-gray-600">All trainers are verified and background checked</p>
+            </div>
+            <div className="text-center">
+              <MessageCircle className="h-12 w-12 text-techblue-600 mx-auto mb-4" />
+              <h4 className="font-semibold mb-2">Secure Communication</h4>
+              <p className="text-sm text-gray-600">Built-in chat system for client communication</p>
+            </div>
+            <div className="text-center">
+              <Building className="h-12 w-12 text-techblue-600 mx-auto mb-4" />
+              <h4 className="font-semibold mb-2">Enterprise Clients</h4>
+              <p className="text-sm text-gray-600">Access to corporate and institutional clients</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
