@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, MapPin, Code, Users, TrendingUp, Award, ArrowLeft, ExternalLink, Cloud } from 'lucide-react';
+import { Star, MapPin, Code, Users, TrendingUp, Award, ArrowLeft, ExternalLink, Cloud, Database, Shield } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,54 @@ const technologyData = {
     ],
     gradient: 'from-purple-600 to-pink-600',
     bgGradient: 'from-purple-50 via-white to-pink-50'
+  },
+  'data-science': {
+    name: 'Data Science & Analytics',
+    icon: Database,
+    description: 'Data Science is the interdisciplinary field that combines statistical analysis, machine learning, data visualization, and domain expertise to extract meaningful insights from structured and unstructured data. It empowers organizations to make data-driven decisions and predict future trends.',
+    subtitle: 'In today\'s data-driven world, organizations rely on data scientists to unlock the value hidden in their data, from customer behavior analysis to predictive modeling and artificial intelligence applications.',
+    benefits: [
+      { icon: '📊', title: 'High Demand Career', desc: 'Consistently ranked among top jobs with excellent growth prospects' },
+      { icon: '🧠', title: 'AI & ML Integration', desc: 'Foundation for machine learning and artificial intelligence projects' },
+      { icon: '💼', title: 'Cross-Industry Value', desc: 'Essential in finance, healthcare, retail, tech, and manufacturing' },
+      { icon: '📈', title: 'Business Impact', desc: 'Drive strategic decisions through data-driven insights and predictions' }
+    ],
+    technologies: [
+      'Python, R, SQL for Data Analysis',
+      'Pandas, NumPy, Scikit-learn',
+      'TensorFlow, PyTorch, Keras',
+      'Jupyter Notebooks, Google Colab',
+      'Tableau, Power BI, Matplotlib, Seaborn',
+      'Apache Spark, Hadoop, Big Data Tools',
+      'Statistics, Probability, Linear Algebra',
+      'AWS SageMaker, Azure ML, Google AI Platform'
+    ],
+    gradient: 'from-green-600 to-teal-600',
+    bgGradient: 'from-green-50 via-white to-teal-50'
+  },
+  'cybersecurity': {
+    name: 'Cybersecurity & Information Security',
+    icon: Shield,
+    description: 'Cybersecurity involves protecting digital systems, networks, and data from cyber threats, unauthorized access, and malicious attacks. It encompasses risk assessment, threat detection, incident response, and the implementation of security measures to safeguard organizational and personal digital assets.',
+    subtitle: 'With cyber threats evolving rapidly and data breaches costing millions, cybersecurity professionals are the digital guardians protecting organizations from sophisticated attacks and ensuring business continuity.',
+    benefits: [
+      { icon: '🛡️', title: 'Critical Business Need', desc: 'Essential protection against growing cyber threats and data breaches' },
+      { icon: '💰', title: 'High Salary Potential', desc: 'Among the highest-paid technology roles with strong job security' },
+      { icon: '🌐', title: 'Remote Opportunities', desc: 'High demand for remote cybersecurity professionals worldwide' },
+      { icon: '🎯', title: 'Specialized Expertise', desc: 'Multiple specialization paths from ethical hacking to compliance' }
+    ],
+    technologies: [
+      'Network Security, Firewalls, VPNs',
+      'Ethical Hacking, Penetration Testing',
+      'SIEM Tools (Splunk, QRadar, ArcSight)',
+      'Vulnerability Assessment, Risk Management',
+      'Incident Response, Digital Forensics',
+      'Cloud Security (AWS, Azure, GCP)',
+      'Compliance Frameworks (ISO 27001, NIST, SOC 2)',
+      'Security Certifications (CISSP, CEH, CISM)'
+    ],
+    gradient: 'from-red-600 to-orange-600',
+    bgGradient: 'from-red-50 via-white to-orange-50'
   }
 };
 
@@ -76,6 +124,10 @@ const TechnologyPage = () => {
         searchTerm = 'web development';
       } else if (slug === 'cloud-computing') {
         searchTerm = 'cloud computing';
+      } else if (slug === 'data-science') {
+        searchTerm = 'data science';
+      } else if (slug === 'cybersecurity') {
+        searchTerm = 'cybersecurity';
       }
 
       const { data, error } = await supabase
@@ -128,6 +180,56 @@ const TechnologyPage = () => {
         }`}
       />
     ));
+  };
+
+  const getTechDisplayName = () => {
+    switch(slug) {
+      case 'data-science': return 'Data Science';
+      case 'cybersecurity': return 'Cybersecurity';
+      case 'cloud-computing': return 'Cloud Computing';
+      case 'web-development': return 'Web Development';
+      default: return 'Technology';
+    }
+  };
+
+  const getTechColorClass = () => {
+    switch(slug) {
+      case 'data-science': return 'text-green-600';
+      case 'cybersecurity': return 'text-red-600';
+      case 'cloud-computing': return 'text-purple-600';
+      case 'web-development': return 'text-blue-600';
+      default: return 'text-blue-600';
+    }
+  };
+
+  const getTechBorderClass = () => {
+    switch(slug) {
+      case 'data-science': return 'border-green-200 hover:border-green-300';
+      case 'cybersecurity': return 'border-red-200 hover:border-red-300';
+      case 'cloud-computing': return 'border-purple-200 hover:border-purple-300';
+      case 'web-development': return 'border-blue-200 hover:border-blue-300';
+      default: return 'border-blue-200 hover:border-blue-300';
+    }
+  };
+
+  const getTechBgClass = () => {
+    switch(slug) {
+      case 'data-science': return 'hover:bg-green-50';
+      case 'cybersecurity': return 'hover:bg-red-50';
+      case 'cloud-computing': return 'hover:bg-purple-50';
+      case 'web-development': return 'hover:bg-blue-50';
+      default: return 'hover:bg-blue-50';
+    }
+  };
+
+  const getTechGradientBg = () => {
+    switch(slug) {
+      case 'data-science': return 'from-slate-50 to-green-50';
+      case 'cybersecurity': return 'from-slate-50 to-red-50';
+      case 'cloud-computing': return 'from-slate-50 to-purple-50';
+      case 'web-development': return 'from-slate-50 to-blue-50';
+      default: return 'from-slate-50 to-blue-50';
+    }
   };
 
   return (
@@ -188,14 +290,18 @@ const TechnologyPage = () => {
               <div>
                 <h2 className="text-3xl font-bold text-slate-900 mb-6 flex items-center">
                   <span className="text-3xl mr-3">💡</span>
-                  What is {slug === 'cloud-computing' ? 'Cloud Computing' : 'Web Development'}?
+                  What is {getTechDisplayName()}?
                 </h2>
                 <p className="text-lg text-slate-700 leading-relaxed mb-6">
                   {tech.description}
                 </p>
-                <div className={`bg-gradient-to-r ${tech.bgGradient} rounded-2xl p-6 border ${slug === 'cloud-computing' ? 'border-purple-100' : 'border-blue-100'}`}>
+                <div className={`bg-gradient-to-r ${tech.bgGradient} rounded-2xl p-6 border ${getTechBorderClass().split(' ')[0]}`}>
                   <p className="text-slate-700 italic text-lg leading-relaxed">
-                    {slug === 'cloud-computing' 
+                    {slug === 'data-science' 
+                      ? '"Data science is not just about analyzing numbers—it\'s about transforming raw data into actionable insights that drive business strategy and innovation."'
+                      : slug === 'cybersecurity'
+                      ? '"Cybersecurity is not just about preventing attacks—it\'s about building resilient systems that protect what matters most in our digital world."'
+                      : slug === 'cloud-computing' 
                       ? '"Cloud computing is not just about moving to the cloud—it\'s about transforming how organizations operate, innovate, and scale in the digital economy."'
                       : '"Web development is not just about writing code—it\'s about creating digital experiences that connect businesses with their customers and solve real-world problems."'
                     }
@@ -226,11 +332,11 @@ const TechnologyPage = () => {
               <div className="sticky top-8">
                 <h2 className="text-3xl font-bold text-slate-900 mb-6 flex items-center">
                   <span className="text-3xl mr-3">📈</span>
-                  Why Learn {slug === 'cloud-computing' ? 'Cloud Computing' : 'Web Development'}?
+                  Why Learn {getTechDisplayName()}?
                 </h2>
                 <div className="space-y-6">
                   {tech.benefits.map((benefit, index) => (
-                    <div key={index} className={`bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 ${slug === 'cloud-computing' ? 'hover:border-purple-200' : 'hover:border-blue-200'}`}>
+                    <div key={index} className={`bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 ${getTechBorderClass()}`}>
                       <div className="flex items-start space-x-4">
                         <div className="text-3xl flex-shrink-0">{benefit.icon}</div>
                         <div>
@@ -245,7 +351,7 @@ const TechnologyPage = () => {
                 {/* CTA Section */}
                 <div className={`mt-8 bg-gradient-to-r ${tech.gradient} rounded-2xl p-8 text-white`}>
                   <h3 className="text-xl font-bold mb-4">Ready to Start Learning?</h3>
-                  <p className="mb-6 opacity-90">Connect with our expert trainers and accelerate your {slug === 'cloud-computing' ? 'cloud computing' : 'web development'} journey.</p>
+                  <p className="mb-6 opacity-90">Connect with our expert trainers and accelerate your {getTechDisplayName().toLowerCase()} journey.</p>
                   <Button 
                     onClick={() => navigate('/trainers')}
                     className="bg-white text-blue-600 hover:bg-gray-100 font-semibold"
@@ -261,12 +367,12 @@ const TechnologyPage = () => {
       </section>
 
       {/* Top Trainers Section */}
-      <section className={`py-20 bg-gradient-to-br ${slug === 'cloud-computing' ? 'from-slate-50 to-purple-50' : 'from-slate-50 to-blue-50'}`}>
+      <section className={`py-20 bg-gradient-to-br ${getTechGradientBg()}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4 flex items-center justify-center">
-              <Award className={`w-10 h-10 mr-4 ${slug === 'cloud-computing' ? 'text-purple-600' : 'text-blue-600'}`} />
-              Top {slug === 'cloud-computing' ? 'Cloud Computing' : 'Web Development'} Trainers
+              <Award className={`w-10 h-10 mr-4 ${getTechColorClass()}`} />
+              Top {getTechDisplayName()} Trainers
             </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               Learn from industry experts with proven track records and real-world experience
@@ -312,7 +418,7 @@ const TechnologyPage = () => {
                             }}
                           />
                         </div>
-                        <h3 className={`text-xl font-bold text-slate-900 group-hover:${slug === 'cloud-computing' ? 'text-purple-700' : 'text-blue-700'} transition-colors mb-2`}>
+                        <h3 className={`text-xl font-bold text-slate-900 group-hover:${getTechColorClass()} transition-colors mb-2`}>
                           {displayName}
                         </h3>
                         <p className="text-slate-600 mb-3">{trainer.title}</p>
@@ -341,7 +447,7 @@ const TechnologyPage = () => {
                         </div>
 
                         <div className="text-center">
-                          <div className={`font-bold ${slug === 'cloud-computing' ? 'text-purple-600' : 'text-blue-600'} text-2xl`}>
+                          <div className={`font-bold ${getTechColorClass()} text-2xl`}>
                             ${trainer.hourly_rate || 0}/hr
                           </div>
                         </div>
@@ -374,7 +480,7 @@ const TechnologyPage = () => {
               onClick={() => navigate('/trainers')}
               size="lg" 
               variant="outline"
-              className={`px-10 py-4 text-lg font-semibold border-2 ${slug === 'cloud-computing' ? 'border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300' : 'border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300'} transition-all duration-300`}
+              className={`px-10 py-4 text-lg font-semibold border-2 ${getTechBorderClass()} ${getTechColorClass()} ${getTechBgClass()} transition-all duration-300`}
             >
               Explore All Trainers
             </Button>
