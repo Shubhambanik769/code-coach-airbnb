@@ -18,60 +18,60 @@ const AboutUs = () => {
     {
       icon: Target,
       title: 'Excellence First',
-      description: 'We maintain the highest standards in trainer vetting and quality assurance to ensure exceptional learning experiences.',
+      description: 'Rigorously vetted trainers ensuring exceptional learning experiences.',
       color: 'from-blue-500 to-blue-600'
     },
     {
       icon: Heart,
       title: 'Human Connection',
-      description: 'Technology is powerful, but human expertise and mentorship make the difference between learning and mastering.',
+      description: 'Personal mentorship that makes the difference between learning and mastering.',
       color: 'from-pink-500 to-pink-600'
     },
     {
       icon: Globe,
-      title: 'Global Impact',
-      description: 'Breaking down geographical barriers to connect world-class expertise with learners everywhere.',
+      title: 'Global Access',
+      description: 'Breaking barriers to connect world-class expertise with learners everywhere.',
       color: 'from-green-500 to-green-600'
     },
     {
       icon: Shield,
       title: 'Trust & Security',
-      description: 'Building secure, reliable platforms where learners and trainers can focus on what matters most - growth.',
+      description: 'Secure platforms where learning and growth are the only focus.',
       color: 'from-purple-500 to-purple-600'
     }
   ];
 
   const stats = [
-    { number: '10,000+', label: 'Students Trained', icon: Users, color: 'text-blue-600' },
-    { number: '2,500+', label: 'Expert Trainers', icon: BookOpen, color: 'text-green-600' },
+    { number: '10K+', label: 'Students Trained', icon: Users, color: 'text-blue-600' },
+    { number: '2.5K+', label: 'Expert Trainers', icon: BookOpen, color: 'text-green-600' },
     { number: '98%', label: 'Success Rate', icon: Star, color: 'text-yellow-600' },
-    { number: '75+', label: 'Countries Reached', icon: Globe, color: 'text-purple-600' }
+    { number: '75+', label: 'Countries', icon: Globe, color: 'text-purple-600' }
   ];
 
   const features = [
     {
       icon: Zap,
-      title: 'Lightning Fast Learning',
-      description: 'Accelerate your career with hands-on, practical training from industry experts.',
-      highlight: 'Learn 3x faster'
+      title: 'Fast Learning',
+      description: 'Accelerate your career with hands-on training from industry experts.',
+      highlight: '3x faster'
     },
     {
       icon: CheckCircle,
-      title: 'Verified Expertise',
-      description: 'Every trainer is thoroughly vetted and has proven industry experience.',
+      title: 'Verified Experts',
+      description: 'Every trainer is thoroughly vetted with proven industry experience.',
       highlight: '100% verified'
     },
     {
       icon: Clock,
-      title: 'Flexible Scheduling',
+      title: 'Flexible Schedule',
       description: 'Book sessions that fit your schedule, from anywhere in the world.',
-      highlight: '24/7 availability'
+      highlight: '24/7 available'
     },
     {
       icon: TrendingUp,
       title: 'Career Growth',
-      description: 'Track your progress and see measurable improvements in your skills.',
-      highlight: 'Guaranteed progress'
+      description: 'Track progress and see measurable improvements in your skills.',
+      highlight: 'Guaranteed results'
     }
   ];
 
@@ -79,19 +79,19 @@ const AboutUs = () => {
     {
       step: '01',
       title: 'Choose Your Path',
-      description: 'Browse our curated selection of expert trainers and technologies.',
+      description: 'Browse expert trainers and technologies.',
       icon: Target
     },
     {
       step: '02',
       title: 'Connect & Learn',
-      description: 'Book personalized sessions with world-class industry professionals.',
+      description: 'Book personalized sessions with industry professionals.',
       icon: Users
     },
     {
       step: '03',
-      title: 'Transform Your Career',
-      description: 'Apply your new skills and advance in your chosen field.',
+      title: 'Transform Career',
+      description: 'Apply new skills and advance in your field.',
       icon: Rocket
     }
   ];
@@ -100,7 +100,7 @@ const AboutUs = () => {
     <div className="min-h-screen bg-white">
       <Header />
       
-      {/* Enhanced Hero Section */}
+      {/* Hero Section */}
       <section className="relative pt-20 pb-24 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full opacity-10 animate-float"></div>
@@ -120,9 +120,8 @@ const AboutUs = () => {
               Meets
               <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text text-transparent"> Ambition</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto mb-12 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              We're democratizing access to world-class technology training by connecting passionate learners 
-              with seasoned industry experts who've mastered their craft.
+            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              Connecting passionate learners with seasoned industry experts for transformative tech education.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <Button 
@@ -146,7 +145,7 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Enhanced Stats Section */}
+      {/* Stats Section */}
       <section className="py-20 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -166,7 +165,7 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Enhanced Story Section */}
+      {/* Story Section */}
       <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-100 to-purple-100"></div>
@@ -183,22 +182,16 @@ const AboutUs = () => {
                 Born from Real-World 
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Frustration</span>
               </h2>
-              <div className="space-y-6 text-lg text-gray-700 leading-relaxed">
+              <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
                 <p className="text-xl font-medium text-gray-800">
-                  The traditional education system wasn't keeping pace with the rapidly evolving tech landscape.
+                  Traditional education wasn't keeping pace with rapidly evolving tech.
                 </p>
                 <p>
-                  As seasoned tech professionals, we witnessed countless talented individuals struggle to bridge 
-                  the gap between theoretical knowledge and practical, industry-ready skills. Generic online 
-                  courses and outdated curriculums were failing to prepare learners for real-world challenges.
-                </p>
-                <p>
-                  We realized that the most transformative learning happens when experienced practitioners 
-                  share their battle-tested insights directly with eager learners—not through pre-recorded 
-                  videos, but through personalized, interactive mentorship.
+                  We witnessed talented individuals struggle to bridge the gap between theory and practice. 
+                  Generic courses and outdated curriculums failed to prepare learners for real challenges.
                 </p>
                 <p className="text-xl font-semibold text-blue-600">
-                  That's how Skilloop.io was born—where expertise meets ambition, and learning becomes transformation.
+                  Skilloop.io was born—where expertise meets ambition, and learning becomes transformation.
                 </p>
               </div>
             </div>
@@ -215,7 +208,7 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Enhanced Features Section */}
+      {/* Features Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -228,7 +221,7 @@ const AboutUs = () => {
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"> Tech Learning</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Experience personalized, expert-led training that adapts to your schedule and accelerates your career growth
+              Personalized, expert-led training that accelerates your career growth
             </p>
           </div>
 
@@ -254,7 +247,7 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Enhanced Values Section */}
+      {/* Values Section */}
       <section className="py-24 bg-gradient-to-br from-slate-50 to-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -266,9 +259,6 @@ const AboutUs = () => {
               What Drives Us 
               <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Forward</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              These principles guide every decision we make and every relationship we build
-            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -290,7 +280,7 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Learning Journey Section */}
+      {/* Journey Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -327,7 +317,7 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Enhanced Mission Section */}
+      {/* Mission Section */}
       <section className="py-24 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-gradient-to-r from-blue-800 to-purple-800"></div>
@@ -339,11 +329,11 @@ const AboutUs = () => {
             Our Mission
           </div>
           <h2 className="text-4xl md:text-6xl font-bold mb-8 animate-fade-in">Transforming Careers Through Connection</h2>
-          <p className="text-2xl md:text-3xl font-light leading-relaxed mb-12 animate-fade-in opacity-90" style={{ animationDelay: '0.2s' }}>
-            "To bridge the gap between technological innovation and human potential by creating 
-            meaningful connections between expert practitioners and passionate learners worldwide."
+          <p className="text-xl md:text-2xl font-light leading-relaxed mb-12 animate-fade-in opacity-90" style={{ animationDelay: '0.2s' }}>
+            Bridge the gap between technological innovation and human potential by creating 
+            meaningful connections between expert practitioners and passionate learners worldwide.
           </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <Button 
               size="lg" 
               onClick={() => navigate('/auth')}
@@ -356,13 +346,12 @@ const AboutUs = () => {
         </div>
       </section>
 
-      {/* Enhanced CTA Section */}
+      {/* CTA Section */}
       <section className="py-20 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Ready to Transform Your Career?</h2>
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Join thousands of professionals who are already accelerating their careers with personalized, 
-            expert-led training that delivers real results.
+            Join thousands accelerating their careers with personalized, expert-led training that delivers real results.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Button 
