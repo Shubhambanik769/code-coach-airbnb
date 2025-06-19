@@ -14,26 +14,26 @@ const technologyData = {
   'web-development': {
     name: 'Web Development & Related Technologies',
     icon: Code,
-    description: 'Web Development is the process of building and maintaining websites and web applications. It includes front-end (what users see), back-end (server logic, databases), and full-stack development.',
-    subtitle: 'Whether you\'re building a landing page, an e-commerce platform, or a SaaS app — web development is the foundation of everything on the internet.',
+    description: 'Web Development is the process of building and maintaining websites and web applications. It encompasses front-end development (user interfaces and experiences), back-end development (server logic and databases), and full-stack development that combines both disciplines.',
+    subtitle: 'Whether you\'re building a simple landing page, a complex e-commerce platform, or a sophisticated SaaS application — web development is the foundation of everything on the internet.',
     benefits: [
-      { icon: '🌍', title: 'Universal Demand', desc: 'Needed across all industries' },
-      { icon: '💻', title: 'Essential for Teams', desc: 'Product teams, startups, digital agencies' },
-      { icon: '💰', title: 'High ROI Skill', desc: 'Enables freelancing, jobs, and entrepreneurship' },
-      { icon: '🔧', title: 'Internal Tools', desc: 'Build dashboards, portals, and custom tools' }
+      { icon: '🌍', title: 'Universal Market Demand', desc: 'Required across all industries and business sectors' },
+      { icon: '💻', title: 'Team Integration', desc: 'Essential for product teams, startups, and digital agencies' },
+      { icon: '💰', title: 'High ROI Investment', desc: 'Enables freelancing, employment, and entrepreneurship' },
+      { icon: '🔧', title: 'Internal Capability', desc: 'Build custom tools, dashboards, and portals in-house' }
     ],
     technologies: [
-      'HTML5, CSS3, JavaScript',
+      'HTML5, CSS3, JavaScript ES6+',
       'React.js, Angular, Vue.js',
-      'Node.js, Express.js',
-      'Git & GitHub, CI/CD',
+      'Node.js, Express.js, Python Django',
+      'Git, GitHub, CI/CD Pipelines',
       'MongoDB, MySQL, PostgreSQL',
-      'Bootstrap, Tailwind CSS',
-      'REST APIs, GraphQL',
-      'Vercel, Netlify, Firebase, AWS'
+      'Bootstrap, Tailwind CSS, Sass',
+      'REST APIs, GraphQL, Microservices',
+      'AWS, Vercel, Netlify, Firebase'
     ],
-    gradient: 'from-blue-500 to-cyan-500',
-    bgGradient: 'from-blue-50 via-cyan-50 to-indigo-50'
+    gradient: 'from-blue-600 to-cyan-600',
+    bgGradient: 'from-blue-50 via-white to-cyan-50'
   }
 };
 
@@ -92,7 +92,7 @@ const TechnologyPage = () => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-3.5 w-3.5 ${
+        className={`h-4 w-4 ${
           i < Math.floor(rating) ? 'text-amber-400 fill-current' : 'text-slate-300'
         }`}
       />
@@ -100,14 +100,15 @@ const TechnologyPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen bg-white">
       <Header />
       
       {/* Hero Section */}
-      <section className={`py-16 lg:py-24 bg-gradient-to-br ${tech.bgGradient} relative overflow-hidden`}>
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-300 rounded-full animate-float"></div>
-          <div className="absolute bottom-20 right-20 w-20 h-20 bg-cyan-300 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
+      <section className={`py-20 lg:py-32 bg-gradient-to-br ${tech.bgGradient} relative overflow-hidden`}>
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-400 rounded-full animate-float"></div>
+          <div className="absolute bottom-20 right-20 w-20 h-20 bg-cyan-400 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-indigo-300 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -115,119 +116,139 @@ const TechnologyPage = () => {
             <Button 
               variant="ghost" 
               onClick={() => navigate('/')}
-              className="mr-4 hover:bg-white/20"
+              className="group hover:bg-white/20 transition-all duration-200"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Home
             </Button>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="animate-fade-in">
-              <div className="flex items-center mb-6">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${tech.gradient} flex items-center justify-center mr-4 shadow-xl`}>
-                  <IconComponent className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-2">
-                    {tech.name}
-                  </h1>
-                  <Badge className="bg-blue-100 text-blue-700 px-3 py-1">
-                    {trainers.length}+ Expert Trainers
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900 mb-3 flex items-center">
-                    <span className="text-2xl mr-2">💡</span>
-                    What is Web Development?
-                  </h2>
-                  <p className="text-lg text-slate-700 leading-relaxed">
-                    {tech.description}
-                  </p>
-                </div>
-
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <p className="text-slate-600 italic text-lg">
-                    {tech.subtitle}
-                  </p>
-                </div>
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="flex items-center justify-center mb-8">
+              <div className={`w-20 h-20 rounded-3xl bg-gradient-to-r ${tech.gradient} flex items-center justify-center shadow-2xl`}>
+                <IconComponent className="w-10 h-10 text-white" />
               </div>
             </div>
 
-            <div className="animate-scale-in">
-              <Card className="bg-white/80 backdrop-blur-sm shadow-2xl border-0">
-                <CardContent className="p-8">
-                  <h3 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
-                    <span className="text-2xl mr-2">📈</span>
-                    Why Learn Web Development?
-                  </h3>
-                  <div className="space-y-4">
-                    {tech.benefits.map((benefit, index) => (
-                      <div key={index} className="flex items-start space-x-3">
-                        <span className="text-2xl">{benefit.icon}</span>
-                        <div>
-                          <div className="font-semibold text-slate-900">{benefit.title}</div>
-                          <div className="text-slate-600 text-sm">{benefit.desc}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+              {tech.name}
+            </h1>
+            
+            <div className="flex items-center justify-center mb-8">
+              <Badge className="bg-blue-100 text-blue-800 px-4 py-2 text-sm font-medium">
+                <Users className="w-4 h-4 mr-2" />
+                {trainers.length}+ Expert Trainers Available
+              </Badge>
             </div>
+
+            <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-3xl mx-auto">
+              {tech.subtitle}
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Technologies Section */}
-      <section className="py-16 bg-white">
+      {/* Content Section */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4 flex items-center justify-center">
-              <span className="text-3xl mr-2">🛠️</span>
-              Related Skills & Technologies
-            </h2>
-            <p className="text-lg text-slate-600">Master these essential technologies and frameworks</p>
-          </div>
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            {/* Left Column - What is Web Development */}
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-6 flex items-center">
+                  <span className="text-3xl mr-3">💡</span>
+                  What is Web Development?
+                </h2>
+                <p className="text-lg text-slate-700 leading-relaxed mb-6">
+                  {tech.description}
+                </p>
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100">
+                  <p className="text-slate-700 italic text-lg leading-relaxed">
+                    "Web development is not just about writing code—it's about creating digital experiences that connect businesses with their customers and solve real-world problems."
+                  </p>
+                </div>
+              </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {tech.technologies.map((techGroup, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-slate-700 leading-relaxed">
-                    {techGroup}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+              {/* Technologies Grid */}
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">🛠️</span>
+                  Core Technologies & Skills
+                </h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {tech.technologies.map((techGroup, index) => (
+                    <div key={index} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="font-medium text-slate-800 leading-relaxed">
+                        {techGroup}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Why Learn */}
+            <div className="lg:pl-8">
+              <div className="sticky top-8">
+                <h2 className="text-3xl font-bold text-slate-900 mb-6 flex items-center">
+                  <span className="text-3xl mr-3">📈</span>
+                  Why Learn Web Development?
+                </h2>
+                <div className="space-y-6">
+                  {tech.benefits.map((benefit, index) => (
+                    <div key={index} className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-200">
+                      <div className="flex items-start space-x-4">
+                        <div className="text-3xl flex-shrink-0">{benefit.icon}</div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-lg mb-2">{benefit.title}</h4>
+                          <p className="text-slate-600 leading-relaxed">{benefit.desc}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA Section */}
+                <div className="mt-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
+                  <h3 className="text-xl font-bold mb-4">Ready to Start Learning?</h3>
+                  <p className="mb-6 opacity-90">Connect with our expert trainers and accelerate your web development journey.</p>
+                  <Button 
+                    onClick={() => navigate('/trainers')}
+                    className="bg-white text-blue-600 hover:bg-gray-100 font-semibold"
+                  >
+                    Find Your Trainer
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Top Trainers Section */}
-      <section className="py-16 bg-gradient-to-br from-slate-50 to-blue-50">
+      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4 flex items-center justify-center">
-              <Award className="w-8 h-8 mr-3 text-blue-600" />
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4 flex items-center justify-center">
+              <Award className="w-10 h-10 mr-4 text-blue-600" />
               Top Web Development Trainers
             </h2>
-            <p className="text-lg text-slate-600">Learn from industry experts with proven expertise</p>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Learn from industry experts with proven track records and real-world experience
+            </p>
           </div>
 
           {isLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="bg-white rounded-xl h-80 shadow-lg"></div>
+                  <div className="bg-white rounded-2xl h-96 shadow-lg"></div>
                 </div>
               ))}
             </div>
           ) : trainers.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {trainers.map((trainer, index) => {
                 const displayName = trainer.name || trainer.profiles?.full_name || 'Professional Trainer';
                 const rating = trainer.rating || 0;
@@ -242,12 +263,12 @@ const TechnologyPage = () => {
                 return (
                   <Card 
                     key={trainer.id}
-                    className="group cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white animate-fade-in"
+                    className="group cursor-pointer hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 bg-white border-0 shadow-lg animate-fade-in"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <CardContent className="p-6">
-                      <div className="text-center mb-4">
-                        <div className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden shadow-lg">
+                    <CardContent className="p-8">
+                      <div className="text-center mb-6">
+                        <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden shadow-xl ring-4 ring-white">
                           <img
                             src={avatarUrl}
                             alt={displayName}
@@ -257,21 +278,21 @@ const TechnologyPage = () => {
                             }}
                           />
                         </div>
-                        <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2">
                           {displayName}
                         </h3>
-                        <p className="text-sm text-slate-600 mb-2">{trainer.title}</p>
+                        <p className="text-slate-600 mb-3">{trainer.title}</p>
                         <Badge variant="secondary" className="text-xs">
                           {trainer.specialization}
                         </Badge>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center justify-center space-x-1">
                           {rating > 0 ? (
                             <>
                               {renderStars(rating)}
-                              <span className="text-sm font-medium text-slate-700 ml-1">
+                              <span className="text-sm font-medium text-slate-700 ml-2">
                                 {rating.toFixed(1)} ({totalReviews})
                               </span>
                             </>
@@ -281,23 +302,22 @@ const TechnologyPage = () => {
                         </div>
 
                         <div className="flex items-center justify-center text-sm text-slate-600">
-                          <MapPin className="w-3 h-3 mr-1" />
+                          <MapPin className="w-4 h-4 mr-1" />
                           {trainer.location || 'Remote'}
                         </div>
 
                         <div className="text-center">
-                          <div className="font-bold text-blue-600 text-lg">
+                          <div className="font-bold text-blue-600 text-2xl">
                             ${trainer.hourly_rate || 0}/hr
                           </div>
                         </div>
 
                         <Button 
                           onClick={() => handleViewProfile(trainer.id)}
-                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 transition-all duration-300"
-                          size="sm"
+                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl"
                         >
                           {user ? 'View Profile' : 'Login to View'}
-                          <ExternalLink className="w-3 h-3 ml-2" />
+                          <ExternalLink className="w-4 h-4 ml-2" />
                         </Button>
                       </div>
                     </CardContent>
@@ -306,21 +326,23 @@ const TechnologyPage = () => {
               })}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <div className="bg-white rounded-xl shadow-lg p-8 max-w-md mx-auto">
-                <p className="text-slate-500">No trainers found for this technology yet.</p>
+            <div className="text-center py-16">
+              <div className="bg-white rounded-2xl shadow-lg p-12 max-w-md mx-auto">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">No Trainers Found</h3>
+                <p className="text-slate-500">We're working on adding more trainers for this technology soon.</p>
               </div>
             </div>
           )}
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-16">
             <Button 
               onClick={() => navigate('/trainers')}
               size="lg" 
               variant="outline"
-              className="px-8 py-3 font-semibold border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+              className="px-10 py-4 text-lg font-semibold border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300"
             >
-              View All Trainers
+              Explore All Trainers
             </Button>
           </div>
         </div>
