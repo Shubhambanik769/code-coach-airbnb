@@ -50,7 +50,8 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await signUp(email, password, fullName);
+      // Default role for normal signup is 'user'
+      const { error } = await signUp(email, password, fullName, 'user');
       if (error) throw error;
 
       toast({
@@ -107,10 +108,10 @@ const Auth = () => {
         <div className="text-center">
           <div className="flex justify-center">
             <div className="w-12 h-12 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">TC</span>
+              <span className="text-white font-bold text-lg">SL</span>
             </div>
           </div>
-          <h2 className="mt-4 text-3xl font-bold text-gray-900">TrainerConnect</h2>
+          <h2 className="mt-4 text-3xl font-bold text-gray-900">Skilloop.io</h2>
           <p className="mt-2 text-sm text-gray-600">Connect with professional trainers</p>
         </div>
 

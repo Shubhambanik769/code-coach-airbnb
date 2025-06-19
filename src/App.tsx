@@ -8,6 +8,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ApplyTrainer from "./pages/ApplyTrainer";
 import UserDashboard from "./pages/UserDashboard";
 import TrainerDashboard from "./pages/TrainerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -19,6 +20,7 @@ import FeedbackSuccess from "./pages/FeedbackSuccess";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
+import TrainerOnboardingStatus from "./components/trainer/TrainerOnboardingStatus";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,8 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/apply-trainer" element={<ApplyTrainer />} />
+                <Route path="/trainer-status" element={<TrainerOnboardingStatus />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/trainers" element={<TrainerSearch />} />
                 <Route path="/trainer/:id" element={<TrainerProfile />} />
