@@ -1,6 +1,7 @@
 
 import { Code, Cloud, Database, Shield, Smartphone, BarChart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
 
 const categories = [
   {
@@ -10,7 +11,8 @@ const categories = [
     count: '500+ trainers',
     color: 'from-blue-500 to-cyan-500',
     bgGradient: 'from-slate-50 to-blue-50',
-    borderColor: 'border-blue-100'
+    borderColor: 'border-blue-100',
+    slug: 'web-development'
   },
   {
     icon: Cloud,
@@ -19,7 +21,8 @@ const categories = [
     count: '300+ trainers',
     color: 'from-purple-500 to-pink-500',
     bgGradient: 'from-slate-50 to-purple-50',
-    borderColor: 'border-purple-100'
+    borderColor: 'border-purple-100',
+    slug: 'cloud-computing'
   },
   {
     icon: Database,
@@ -28,7 +31,8 @@ const categories = [
     count: '250+ trainers',
     color: 'from-green-500 to-teal-500',
     bgGradient: 'from-slate-50 to-emerald-50',
-    borderColor: 'border-emerald-100'
+    borderColor: 'border-emerald-100',
+    slug: 'data-science'
   },
   {
     icon: Shield,
@@ -37,7 +41,8 @@ const categories = [
     count: '180+ trainers',
     color: 'from-red-500 to-orange-500',
     bgGradient: 'from-slate-50 to-red-50',
-    borderColor: 'border-red-100'
+    borderColor: 'border-red-100',
+    slug: 'cybersecurity'
   },
   {
     icon: Smartphone,
@@ -46,7 +51,8 @@ const categories = [
     count: '220+ trainers',
     color: 'from-indigo-500 to-purple-500',
     bgGradient: 'from-slate-50 to-indigo-50',
-    borderColor: 'border-indigo-100'
+    borderColor: 'border-indigo-100',
+    slug: 'mobile-development'
   },
   {
     icon: BarChart,
@@ -55,11 +61,18 @@ const categories = [
     count: '160+ trainers',
     color: 'from-yellow-500 to-orange-500',
     bgGradient: 'from-slate-50 to-amber-50',
-    borderColor: 'border-amber-100'
+    borderColor: 'border-amber-100',
+    slug: 'devops'
   }
 ];
 
 const CategoryCards = () => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (slug: string) => {
+    navigate(`/technology/${slug}`);
+  };
+
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,6 +93,7 @@ const CategoryCards = () => {
                 key={category.title} 
                 className={`group cursor-pointer card-hover border ${category.borderColor} shadow-lg bg-gradient-to-br ${category.bgGradient} hover:shadow-xl transition-all duration-300 animate-fade-in backdrop-blur-sm`}
                 style={{ animationDelay: `${index * 0.1}s` }}
+                onClick={() => handleCategoryClick(category.slug)}
               >
                 <CardContent className="p-6 sm:p-8 relative overflow-hidden">
                   {/* Subtle background pattern */}

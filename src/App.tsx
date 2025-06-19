@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import TrainerProfile from "./pages/TrainerProfile";
 import SearchResults from "./pages/SearchResults";
 import TrainerSearch from "./pages/TrainerSearch";
+import TechnologyPage from "./pages/TechnologyPage";
 import FeedbackForm from "./pages/FeedbackForm";
 import FeedbackSuccess from "./pages/FeedbackSuccess";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="/trainer-status" element={<TrainerOnboardingStatus />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/trainers" element={<TrainerSearch />} />
+                <Route path="/technology/:slug" element={<TechnologyPage />} />
                 <Route path="/trainer/:id" element={<TrainerProfile />} />
                 <Route path="/feedback/:token" element={<FeedbackForm />} />
                 <Route path="/feedback/success" element={<FeedbackSuccess />} />
