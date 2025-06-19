@@ -234,6 +234,45 @@ export type Database = {
           },
         ]
       }
+      jobs: {
+        Row: {
+          created_at: string
+          department: string
+          description: string
+          external_form_link: string | null
+          id: string
+          location: string
+          requirements: string[] | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          description: string
+          external_form_link?: string | null
+          id?: string
+          location: string
+          requirements?: string[] | null
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          description?: string
+          external_form_link?: string | null
+          id?: string
+          location?: string
+          requirements?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           booking_id: string | null

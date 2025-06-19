@@ -31,7 +31,7 @@ const Careers = () => {
     queryKey: ['jobs'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('jobs')
+        .from('jobs' as any)
         .select('*')
         .order('created_at', { ascending: false });
       

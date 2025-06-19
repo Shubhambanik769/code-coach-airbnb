@@ -22,6 +22,8 @@ interface Job {
   description: string;
   requirements: string[];
   external_form_link?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const JobManagement = () => {
@@ -45,19 +47,19 @@ const JobManagement = () => {
     queryKey: ['admin-jobs'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('jobs')
+        .from('jobs' as any)
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as Job[];
     }
   });
 
   const createJobMutation = useMutation({
-    mutationFn: async (jobData: Omit<Job, 'id'>) => {
+    mutationFn: async (jobData: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
-        .from('jobs')
+        .from('jobs' as any)
         .insert([jobData])
         .select()
         .single();
@@ -80,7 +82,7 @@ const JobManagement = () => {
   const updateJobMutation = useMutation({
     mutationFn: async ({ id, ...jobData }: Job) => {
       const { data, error } = await supabase
-        .from('jobs')
+        .from('jobs' as any)
         .update(jobData)
         .eq('id', id)
         .select()
@@ -104,7 +106,7 @@ const JobManagement = () => {
   const deleteJobMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('jobs')
+        .from('jobs' as any)
         .delete()
         .eq('id', id);
       
@@ -145,11 +147,12 @@ const JobManagement = () => {
     if (selectedJob?.id) {
       updateJobMutation.mutate({ ...formData, id: selectedJob.id });
     } else {
-      createJobMutation.mutate(formData);
+      const { id, created_at, updated_at, ...jobDataToCreate } = formData;
+      createJobMutation.mutate(jobDataToCreate);
     }
   };
 
-  const handleEdit = (job: any) => {
+  const handleEdit = (job: Job) => {
     setSelectedJob(job);
     setFormData(job);
     setIsDialogOpen(true);
@@ -324,7 +327,7 @@ const JobManagement = () => {
             </CardContent>
           </Card>
         ) : (
-          jobs.map((job: any) => (
+          jobs.map((job: Job) => (
             <Card key={job.id}>
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
@@ -348,7 +351,7 @@ const JobManagement = () => {
                     <Button variant="outline" size="sm" onClick={() => handleEdit(job)}>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(job.id)}>
+                    <Button variant="outline" size="sm" onClick={() => handleDelete(job.id!)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
