@@ -20,7 +20,7 @@ export const currencies: Currency[] = [
 
 interface CurrencyContextType {
   selectedCurrency: Currency;
-  setCurrency: (currency: Currency) => void;
+  setCurrency: (currency: Currency, isManual?: boolean) => void;
   convertPrice: (price: number) => number;
   formatPrice: (price: number) => string;
 }
@@ -41,9 +41,14 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const setCurrency = (currency: Currency) => {
+  const setCurrency = (currency: Currency, isManual: boolean = false) => {
     setSelectedCurrency(currency);
     localStorage.setItem('selectedCurrency', currency.code);
+    
+    // Track if this was a manual selection
+    if (isManual) {
+      localStorage.setItem('manualCurrencySelection', 'true');
+    }
   };
 
   const convertPrice = (price: number): number => {
