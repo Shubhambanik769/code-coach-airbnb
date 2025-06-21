@@ -84,23 +84,23 @@ const TrainerSearch = () => {
       // Apply sorting
       switch (sortBy) {
         case 'rating':
-          query = query.order('rating', { ascending: false, nullsLast: true });
+          query = query.order('rating', { ascending: false, nullsFirst: false });
           break;
         case 'price_low':
-          query = query.order('hourly_rate', { ascending: true, nullsLast: true });
+          query = query.order('hourly_rate', { ascending: true, nullsFirst: false });
           break;
         case 'price_high':
-          query = query.order('hourly_rate', { ascending: false, nullsLast: true });
+          query = query.order('hourly_rate', { ascending: false, nullsFirst: false });
           break;
         case 'experience':
-          query = query.order('experience_years', { ascending: false, nullsLast: true });
+          query = query.order('experience_years', { ascending: false, nullsFirst: false });
           break;
         case 'newest':
           query = query.order('created_at', { ascending: false });
           break;
         default:
           // Featured trainers first, then by rating
-          query = query.order('rating', { ascending: false, nullsLast: true }).order('total_reviews', { ascending: false, nullsLast: true });
+          query = query.order('rating', { ascending: false, nullsFirst: false }).order('total_reviews', { ascending: false, nullsFirst: false });
       }
 
       const { data, error } = await query;
