@@ -12,11 +12,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard = () => {
-  const { user, profile } = useAuth();
+  const { user, userRole } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Redirect if not admin
-  if (!user || profile?.role !== 'admin') {
+  if (!user || userRole !== 'admin') {
     return <Navigate to="/" replace />;
   }
 

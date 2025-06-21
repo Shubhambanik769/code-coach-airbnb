@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,8 +47,8 @@ const FeaturedTrainers = () => {
 
       // Sort: Featured trainers first, then by rating
       const sortedTrainers = validTrainers.sort((a, b) => {
-        const aFeatured = a.tags?.includes('Featured') ? 1 : 0;
-        const bFeatured = b.tags?.includes('Featured') ? 1 : 0;
+        const aFeatured = Array.isArray(a.tags) && a.tags.includes('Featured') ? 1 : 0;
+        const bFeatured = Array.isArray(b.tags) && b.tags.includes('Featured') ? 1 : 0;
         
         if (aFeatured !== bFeatured) {
           return bFeatured - aFeatured; // Featured first
@@ -96,7 +95,7 @@ const FeaturedTrainers = () => {
   };
 
   const getBadgeText = (trainer: any) => {
-    if (trainer.tags?.includes('Featured')) return 'Featured';
+    if (Array.isArray(trainer.tags) && trainer.tags.includes('Featured')) return 'Featured';
     if (trainer.total_reviews === 0) return 'New';
     if (trainer.rating >= 4.8) return 'Top Rated';
     if (trainer.rating >= 4.5) return 'Expert';
@@ -104,7 +103,7 @@ const FeaturedTrainers = () => {
   };
 
   const getBadgeStyle = (trainer: any) => {
-    if (trainer.tags?.includes('Featured')) return 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm';
+    if (Array.isArray(trainer.tags) && trainer.tags.includes('Featured')) return 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-sm';
     if (trainer.total_reviews === 0) return 'bg-slate-100 text-slate-600 border border-slate-200';
     if (trainer.rating >= 4.8) return 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm';
     if (trainer.rating >= 4.5) return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm';
