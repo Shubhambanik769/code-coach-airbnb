@@ -17,8 +17,8 @@ const TrainerSearch = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'featured');
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
-  const [specializationFilter, setSpecializationFilter] = useState(searchParams.get('specialization') || '');
-  const [ratingFilter, setRatingFilter] = useState(searchParams.get('rating') || '');
+  const [specializationFilter, setSpecializationFilter] = useState(searchParams.get('specialization') || 'all');
+  const [ratingFilter, setRatingFilter] = useState(searchParams.get('rating') || 'all');
   const [priceRange, setPriceRange] = useState<number[]>([0, 500]);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
@@ -26,8 +26,8 @@ const TrainerSearch = () => {
     const params = new URLSearchParams();
     if (sortBy && sortBy !== 'featured') params.set('sort', sortBy);
     if (locationFilter) params.set('location', locationFilter);
-    if (specializationFilter) params.set('specialization', specializationFilter);
-    if (ratingFilter) params.set('rating', ratingFilter);
+    if (specializationFilter && specializationFilter !== 'all') params.set('specialization', specializationFilter);
+    if (ratingFilter && ratingFilter !== 'all') params.set('rating', ratingFilter);
     if (searchTerm) params.set('search', searchTerm);
     setSearchParams(params);
   }, [sortBy, locationFilter, specializationFilter, ratingFilter, searchTerm, setSearchParams]);
@@ -66,12 +66,12 @@ const TrainerSearch = () => {
       }
 
       // Apply specialization filter
-      if (specializationFilter && specializationFilter.trim()) {
+      if (specializationFilter && specializationFilter !== 'all') {
         query = query.ilike('specialization', `%${specializationFilter}%`);
       }
 
       // Apply rating filter
-      if (ratingFilter && ratingFilter !== '') {
+      if (ratingFilter && ratingFilter !== 'all') {
         const minRating = parseFloat(ratingFilter);
         query = query.gte('rating', minRating);
       }
@@ -137,8 +137,8 @@ const TrainerSearch = () => {
   const clearAllFilters = () => {
     setSortBy('featured');
     setLocationFilter('');
-    setSpecializationFilter('');
-    setRatingFilter('');
+    setSpecializationFilter('all');
+    setRatingFilter('all');
     setPriceRange([0, 500]);
     setSearchTerm('');
   };
@@ -226,7 +226,7 @@ const TrainerSearch = () => {
                       <SelectValue placeholder="Any specialization" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any specialization</SelectItem>
+                      <SelectItem value="all">Any specialization</SelectItem>
                       <SelectItem value="Web Development">Web Development</SelectItem>
                       <SelectItem value="Data Science">Data Science</SelectItem>
                       <SelectItem value="Mobile Development">Mobile Development</SelectItem>
@@ -245,7 +245,7 @@ const TrainerSearch = () => {
                       <SelectValue placeholder="Any rating" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any rating</SelectItem>
+                      <SelectItem value="all">Any rating</SelectItem>
                       <SelectItem value="4.5">4.5 & Up</SelectItem>
                       <SelectItem value="4.0">4.0 & Up</SelectItem>
                       <SelectItem value="3.5">3.5 & Up</SelectItem>
