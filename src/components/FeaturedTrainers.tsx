@@ -28,7 +28,6 @@ const FeaturedTrainers = () => {
         `)
         .eq('status', 'approved')
         .not('tags', 'is', null)
-        .neq('tags', '[]')
         .order('rating', { ascending: false })
         .order('total_reviews', { ascending: false });
       
