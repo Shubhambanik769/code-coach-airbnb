@@ -1,50 +1,47 @@
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from "@/components/ui/slider"
-import { Star, MapPin, Search } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import TrainerCard from '@/components/TrainerCard';
 
 const TrainerSearch = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'featured');
-  const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || 'all');
-  const [specializationFilter, setSpecializationFilter] = useState(searchParams.get('specialization') || 'all');
-  const [ratingFilter, setRatingFilter] = useState(searchParams.get('rating') || 'all');
+  const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
+  const [specializationFilter, setSpecializationFilter] = useState(searchParams.get('specialization') || '');
+  const [ratingFilter, setRatingFilter] = useState(searchParams.get('rating') || '');
   const [priceRange, setPriceRange] = useState<number[]>([0, 500]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams();
     if (sortBy && sortBy !== 'featured') params.set('sort', sortBy);
-    else params.delete('sort');
-    if (locationFilter !== 'all') params.set('location', locationFilter);
-    else params.delete('location');
-    if (specializationFilter !== 'all') params.set('specialization', specializationFilter);
-    else params.delete('specialization');
-    if (ratingFilter !== 'all') params.set('rating', ratingFilter);
-    else params.delete('rating');
+    if (locationFilter) params.set('location', locationFilter);
+    if (specializationFilter) params.set('specialization', specializationFilter);
+    if (ratingFilter) params.set('rating', ratingFilter);
+    if (searchTerm) params.set('search', searchTerm);
     setSearchParams(params);
-  }, [sortBy, locationFilter, specializationFilter, ratingFilter, setSearchParams, searchParams]);
+  }, [sortBy, locationFilter, specializationFilter, ratingFilter, searchTerm, setSearchParams]);
 
   const { data: trainers = [], isLoading, error } = useQuery({
-    queryKey: ['trainers', searchParams, sortBy, locationFilter, specializationFilter, ratingFilter, priceRange],
+    queryKey: ['trainers', sortBy, locationFilter, specializationFilter, ratingFilter, priceRange, searchTerm],
     queryFn: async () => {
       console.log('Fetching trainers with filters:', { 
-        searchParams, 
         sortBy, 
         locationFilter, 
         specializationFilter, 
         ratingFilter, 
-        priceRange 
+        priceRange,
+        searchTerm
       });
 
       let query = supabase
@@ -56,26 +53,30 @@ const TrainerSearch = () => {
             avatar_url
           )
         `)
-        .eq('status', 'approved'); // Show all approved trainers regardless of tags
+        .eq('status', 'approved');
 
-      // Apply search filters
-      if (searchParams) {
-        query = query.or(`title.ilike.%${searchParams}%,specialization.ilike.%${searchParams}%,skills.cs.{${searchParams}}`);
+      // Apply search term filter
+      if (searchTerm && searchTerm.trim()) {
+        query = query.or(`title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`);
       }
 
-      if (locationFilter && locationFilter !== 'all') {
+      // Apply location filter
+      if (locationFilter && locationFilter.trim()) {
         query = query.ilike('location', `%${locationFilter}%`);
       }
 
-      if (specializationFilter && specializationFilter !== 'all') {
+      // Apply specialization filter
+      if (specializationFilter && specializationFilter.trim()) {
         query = query.ilike('specialization', `%${specializationFilter}%`);
       }
 
-      if (ratingFilter && ratingFilter !== 'all') {
+      // Apply rating filter
+      if (ratingFilter && ratingFilter !== '') {
         const minRating = parseFloat(ratingFilter);
         query = query.gte('rating', minRating);
       }
 
+      // Apply price range filter
       if (priceRange.length === 2) {
         query = query.gte('hourly_rate', priceRange[0]).lte('hourly_rate', priceRange[1]);
       }
@@ -83,23 +84,23 @@ const TrainerSearch = () => {
       // Apply sorting
       switch (sortBy) {
         case 'rating':
-          query = query.order('rating', { ascending: false });
+          query = query.order('rating', { ascending: false, nullsLast: true });
           break;
         case 'price_low':
-          query = query.order('hourly_rate', { ascending: true });
+          query = query.order('hourly_rate', { ascending: true, nullsLast: true });
           break;
         case 'price_high':
-          query = query.order('hourly_rate', { ascending: false });
+          query = query.order('hourly_rate', { ascending: false, nullsLast: true });
           break;
         case 'experience':
-          query = query.order('experience_years', { ascending: false });
+          query = query.order('experience_years', { ascending: false, nullsLast: true });
           break;
         case 'newest':
           query = query.order('created_at', { ascending: false });
           break;
         default:
           // Featured trainers first, then by rating
-          query = query.order('rating', { ascending: false }).order('total_reviews', { ascending: false });
+          query = query.order('rating', { ascending: false, nullsLast: true }).order('total_reviews', { ascending: false, nullsLast: true });
       }
 
       const { data, error } = await query;
@@ -111,11 +112,11 @@ const TrainerSearch = () => {
 
       console.log('Trainers data:', data);
 
-      // Sort to prioritize featured trainers if default sort
-      if (sortBy === 'featured' || !sortBy) {
+      // Post-query sorting for featured trainers
+      if (sortBy === 'featured') {
         return (data || []).sort((a, b) => {
-          const aFeatured = a.tags?.includes('Featured') ? 1 : 0;
-          const bFeatured = b.tags?.includes('Featured') ? 1 : 0;
+          const aFeatured = Array.isArray(a.tags) && a.tags.includes('Featured') ? 1 : 0;
+          const bFeatured = Array.isArray(b.tags) && b.tags.includes('Featured') ? 1 : 0;
           
           if (aFeatured !== bFeatured) {
             return bFeatured - aFeatured;
@@ -130,28 +131,16 @@ const TrainerSearch = () => {
   });
 
   const handleSearch = () => {
-    const params = new URLSearchParams(searchParams);
-    if (searchTerm) {
-      params.set('search', searchTerm);
-    } else {
-      params.delete('search');
-    }
-    setSearchParams(params);
+    // Search is now handled by the useEffect hook
   };
 
-  const handleViewProfile = (trainerId: string) => {
-    window.location.href = `/trainer/${trainerId}`;
-  };
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`h-3.5 w-3.5 ${
-          i < Math.floor(rating) ? 'text-amber-400 fill-current' : 'text-slate-300'
-        }`}
-      />
-    ));
+  const clearAllFilters = () => {
+    setSortBy('featured');
+    setLocationFilter('');
+    setSpecializationFilter('');
+    setRatingFilter('');
+    setPriceRange([0, 500]);
+    setSearchTerm('');
   };
 
   if (isLoading) {
@@ -163,22 +152,6 @@ const TrainerSearch = () => {
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">Find Your Perfect Trainer</h1>
               <p className="text-gray-500">Loading trainers...</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-1">
-                <Card>
-                  <CardContent>
-                    <p>Loading filters...</p>
-                  </CardContent>
-                </Card>
-              </div>
-              <div className="md:col-span-3">
-                <Card>
-                  <CardContent>
-                    <p>Loading trainers...</p>
-                  </CardContent>
-                </Card>
-              </div>
             </div>
           </div>
         </section>
@@ -209,155 +182,163 @@ const TrainerSearch = () => {
       <Header />
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header and Search */}
-          <div className="md:flex md:items-center md:justify-between mb-8">
-            <div className="mb-4 md:mb-0">
-              <h1 className="text-3xl font-bold text-gray-900">Find Your Perfect Trainer</h1>
-              <p className="text-gray-500">Explore our expert trainers and enhance your skills</p>
-            </div>
-            <div className="flex rounded-md shadow-sm">
-              <div className="relative flex-grow">
-                <Input
-                  type="text"
-                  placeholder="Search by title, specialization, or skills"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="rounded-r-none"
-                />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                </div>
-              </div>
-              <Button onClick={handleSearch} className="rounded-l-none">
-                Search
-              </Button>
-            </div>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Find Your Perfect Trainer</h1>
+            <p className="text-gray-500">Explore our expert trainers and enhance your skills</p>
           </div>
 
-          {/* Filters and Trainers Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Filters Section */}
-            <div className="md:col-span-1">
-              <Card>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Sort By</h2>
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Featured" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="featured">Featured</SelectItem>
-                        <SelectItem value="rating">Rating</SelectItem>
-                        <SelectItem value="price_low">Price (Low to High)</SelectItem>
-                        <SelectItem value="price_high">Price (High to Low)</SelectItem>
-                        <SelectItem value="experience">Experience</SelectItem>
-                        <SelectItem value="newest">Newest</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Location</h2>
+          {/* Vertical Filters */}
+          <Card className="mb-8">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                {/* Search */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                  <div className="relative">
                     <Input
                       type="text"
-                      placeholder="Enter location"
-                      value={locationFilter === 'all' ? '' : locationFilter}
-                      onChange={(e) => setLocationFilter(e.target.value)}
-                      className="mb-2"
+                      placeholder="Search by name, title, or specialization"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
                     />
-                    <Button variant="outline" onClick={() => setLocationFilter('all')} className="w-full">
-                      Clear Location
-                    </Button>
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
+                </div>
 
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Specialization</h2>
-                    <Select value={specializationFilter} onValueChange={setSpecializationFilter}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Specializations" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Specializations</SelectItem>
-                        <SelectItem value="Web Development">Web Development</SelectItem>
-                        <SelectItem value="Data Science">Data Science</SelectItem>
-                        <SelectItem value="Mobile Development">Mobile Development</SelectItem>
-                        {/* Add more specializations as needed */}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Location */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <Input
+                    type="text"
+                    placeholder="Any location"
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                  />
+                </div>
 
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Rating</h2>
-                    <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Ratings" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Ratings</SelectItem>
-                        <SelectItem value="4.5">4.5 & Up</SelectItem>
-                        <SelectItem value="4.0">4.0 & Up</SelectItem>
-                        <SelectItem value="3.5">3.5 & Up</SelectItem>
-                        {/* Add more rating options as needed */}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Specialization */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+                  <Select value={specializationFilter} onValueChange={setSpecializationFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any specialization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any specialization</SelectItem>
+                      <SelectItem value="Web Development">Web Development</SelectItem>
+                      <SelectItem value="Data Science">Data Science</SelectItem>
+                      <SelectItem value="Mobile Development">Mobile Development</SelectItem>
+                      <SelectItem value="Machine Learning">Machine Learning</SelectItem>
+                      <SelectItem value="DevOps">DevOps</SelectItem>
+                      <SelectItem value="UI/UX Design">UI/UX Design</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Price Range</h2>
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span>${priceRange[0]}</span>
-                      <span>${priceRange[1]}</span>
-                    </div>
-                    <Slider
-                      defaultValue={[0, 500]}
-                      max={1000}
-                      step={10}
-                      onValueChange={(value) => setPriceRange(value)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                {/* Rating */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Min Rating</label>
+                  <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any rating</SelectItem>
+                      <SelectItem value="4.5">4.5 & Up</SelectItem>
+                      <SelectItem value="4.0">4.0 & Up</SelectItem>
+                      <SelectItem value="3.5">3.5 & Up</SelectItem>
+                      <SelectItem value="3.0">3.0 & Up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* Trainers Grid Section */}
-            <div className="md:col-span-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {trainers.map((trainer) => (
-                  <Card key={trainer.id} className="bg-white shadow-md rounded-lg overflow-hidden">
-                    <CardContent className="p-6">
-                      <div className="flex items-center mb-4">
-                        <Avatar className="w-12 h-12 rounded-full mr-4">
-                          {trainer.profiles?.avatar_url ? (
-                            <AvatarImage src={trainer.profiles.avatar_url} alt={trainer.profiles?.full_name || 'Trainer'} />
-                          ) : (
-                            <AvatarFallback>{trainer.profiles?.full_name?.substring(0, 2) || 'TR'}</AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{trainer.profiles?.full_name || 'N/A'}</h3>
-                          <p className="text-gray-600">{trainer.title}</p>
-                        </div>
-                      </div>
-                      <div className="mb-4">
-                        <p className="text-gray-700">{trainer.specialization}</p>
-                        <div className="flex items-center mt-2">
-                          {renderStars(trainer.rating || 0)}
-                          <span className="text-gray-500 ml-2">({trainer.total_reviews || 0})</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-2xl font-bold text-gray-900">${trainer.hourly_rate}/hr</span>
-                        </div>
-                        <Button onClick={() => handleViewProfile(trainer.id)}>View Profile</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                {/* Sort */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Featured" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="featured">Featured</SelectItem>
+                      <SelectItem value="rating">Rating</SelectItem>
+                      <SelectItem value="price_low">Price (Low to High)</SelectItem>
+                      <SelectItem value="price_high">Price (High to Low)</SelectItem>
+                      <SelectItem value="experience">Experience</SelectItem>
+                      <SelectItem value="newest">Newest</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+
+              {/* Price Range */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Price Range: ${priceRange[0]} - ${priceRange[1]} per hour
+                </label>
+                <Slider
+                  defaultValue={[0, 500]}
+                  max={1000}
+                  step={10}
+                  value={priceRange}
+                  onValueChange={(value) => setPriceRange(value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Clear Filters */}
+              <div className="mt-4 flex justify-end">
+                <Button variant="outline" onClick={clearAllFilters} className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Clear All Filters
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Results Summary */}
+          <div className="mb-6">
+            <p className="text-gray-600">
+              {trainers.length} trainer{trainers.length !== 1 ? 's' : ''} found
+            </p>
           </div>
+
+          {/* Trainers Grid */}
+          {trainers.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-500 text-lg">No trainers found matching your criteria.</p>
+                <Button onClick={clearAllFilters} className="mt-4">
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {trainers.map((trainer) => (
+                <TrainerCard
+                  key={trainer.id}
+                  trainer={{
+                    id: trainer.id,
+                    name: trainer.name,
+                    title: trainer.title,
+                    specialization: trainer.specialization,
+                    location: trainer.location,
+                    hourly_rate: trainer.hourly_rate,
+                    rating: trainer.rating,
+                    total_reviews: trainer.total_reviews,
+                    bio: trainer.bio,
+                    skills: trainer.skills,
+                    experience_years: trainer.experience_years,
+                    tags: trainer.tags,
+                    profiles: trainer.profiles
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
       <Footer />
