@@ -12,7 +12,7 @@ interface TrainerEarningsProps {
 const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
   const { data: earnings, isLoading } = useQuery({
     queryKey: ['trainer-earnings', trainerId],
-    queryFn: async () => {
+    queryF: async () => {
       const { data, error } = await supabase
         .from('bookings')
         .select('total_amount, start_time, status')
@@ -67,19 +67,19 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
   const earningCards = [
     {
       title: 'Total Earnings',
-      value: `$${earningsData.total.toFixed(2)}`,
+      value: `₹${earningsData.total.toFixed(2)}`,
       icon: DollarSign,
       description: 'All time earnings'
     },
     {
       title: 'This Month',
-      value: `$${earningsData.thisMonth.toFixed(2)}`,
+      value: `₹${earningsData.thisMonth.toFixed(2)}`,
       icon: Calendar,
       description: format(new Date(), 'MMMM yyyy')
     },
     {
       title: 'This Week',
-      value: `$${earningsData.thisWeek.toFixed(2)}`,
+      value: `₹${earningsData.thisWeek.toFixed(2)}`,
       icon: CreditCard,
       description: 'Current week'
     },
@@ -141,7 +141,7 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
             <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
               <span className="font-medium">Average per Session</span>
               <span className="text-lg font-bold">
-                ${earnings?.length ? (earningsData.total / earnings.length).toFixed(2) : '0.00'}
+                ₹{earnings?.length ? (earningsData.total / earnings.length).toFixed(2) : '0.00'}
               </span>
             </div>
           </div>

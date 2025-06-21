@@ -9,13 +9,13 @@ export interface Currency {
 }
 
 export const currencies: Currency[] = [
-  { code: 'USD', symbol: '$', name: 'US Dollar', rate: 1 },
-  { code: 'EUR', symbol: '€', name: 'Euro', rate: 0.85 },
-  { code: 'GBP', symbol: '£', name: 'British Pound', rate: 0.73 },
-  { code: 'INR', symbol: '₹', name: 'Indian Rupee', rate: 83.12 },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', rate: 1.25 },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', rate: 1.35 },
-  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', rate: 1.35 },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee', rate: 1 }, // INR as base currency
+  { code: 'USD', symbol: '$', name: 'US Dollar', rate: 0.012 },
+  { code: 'EUR', symbol: '€', name: 'Euro', rate: 0.010 },
+  { code: 'GBP', symbol: '£', name: 'British Pound', rate: 0.009 },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', rate: 0.015 },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', rate: 0.016 },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', rate: 0.016 },
 ];
 
 interface CurrencyContextType {
@@ -28,7 +28,7 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize with USD as default to avoid undefined state
+  // Initialize with INR as default
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currencies[0]);
 
   useEffect(() => {

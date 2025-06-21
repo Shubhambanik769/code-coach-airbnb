@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -253,7 +254,7 @@ const FeaturedTrainers = () => {
                         <div className="text-xs text-slate-600">Reviews</div>
                       </div>
                       <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100">
-                        <div className="font-bold text-blue-700 text-sm">${trainer.hourly_rate || 0}</div>
+                        <div className="font-bold text-blue-700 text-sm">₹{trainer.hourly_rate || 0}</div>
                         <div className="text-xs text-blue-600">per hour</div>
                       </div>
                     </div>

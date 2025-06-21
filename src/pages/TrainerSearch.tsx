@@ -19,7 +19,7 @@ const TrainerSearch = () => {
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '');
   const [specializationFilter, setSpecializationFilter] = useState(searchParams.get('specialization') || 'all');
   const [ratingFilter, setRatingFilter] = useState(searchParams.get('rating') || 'all');
-  const [priceRange, setPriceRange] = useState<number[]>([0, 500]);
+  const [priceRange, setPriceRange] = useState<number[]>([0, 10000]); // Updated for INR
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
 
   useEffect(() => {
@@ -55,29 +55,29 @@ const TrainerSearch = () => {
         `)
         .eq('status', 'approved');
 
-      // Apply search term filter
+      // Apply search term filter only if provided
       if (searchTerm && searchTerm.trim()) {
         query = query.or(`title.ilike.%${searchTerm}%,specialization.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`);
       }
 
-      // Apply location filter
+      // Apply location filter only if provided
       if (locationFilter && locationFilter.trim()) {
         query = query.ilike('location', `%${locationFilter}%`);
       }
 
-      // Apply specialization filter
+      // Apply specialization filter only if not 'all'
       if (specializationFilter && specializationFilter !== 'all') {
         query = query.ilike('specialization', `%${specializationFilter}%`);
       }
 
-      // Apply rating filter
+      // Apply rating filter only if not 'all'
       if (ratingFilter && ratingFilter !== 'all') {
         const minRating = parseFloat(ratingFilter);
         query = query.gte('rating', minRating);
       }
 
       // Apply price range filter
-      if (priceRange.length === 2) {
+      if (priceRange.length === 2 && priceRange[0] > 0) {
         query = query.gte('hourly_rate', priceRange[0]).lte('hourly_rate', priceRange[1]);
       }
 
@@ -139,7 +139,7 @@ const TrainerSearch = () => {
     setLocationFilter('');
     setSpecializationFilter('all');
     setRatingFilter('all');
-    setPriceRange([0, 500]);
+    setPriceRange([0, 10000]);
     setSearchTerm('');
   };
 
@@ -276,12 +276,12 @@ const TrainerSearch = () => {
               {/* Price Range */}
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price Range: ${priceRange[0]} - ${priceRange[1]} per hour
+                  Price Range: ₹{priceRange[0]} - ₹{priceRange[1]} per hour
                 </label>
                 <Slider
-                  defaultValue={[0, 500]}
-                  max={1000}
-                  step={10}
+                  defaultValue={[0, 10000]}
+                  max={20000}
+                  step={100}
                   value={priceRange}
                   onValueChange={(value) => setPriceRange(value)}
                   className="w-full"
