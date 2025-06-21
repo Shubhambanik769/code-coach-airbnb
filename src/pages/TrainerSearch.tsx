@@ -15,7 +15,7 @@ import Footer from '@/components/Footer';
 
 const TrainerSearch = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || '');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'featured');
   const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || 'all');
   const [specializationFilter, setSpecializationFilter] = useState(searchParams.get('specialization') || 'all');
   const [ratingFilter, setRatingFilter] = useState(searchParams.get('rating') || 'all');
@@ -24,7 +24,7 @@ const TrainerSearch = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams);
-    if (sortBy) params.set('sort', sortBy);
+    if (sortBy && sortBy !== 'featured') params.set('sort', sortBy);
     else params.delete('sort');
     if (locationFilter !== 'all') params.set('location', locationFilter);
     else params.delete('location');
@@ -247,7 +247,7 @@ const TrainerSearch = () => {
                         <SelectValue placeholder="Featured" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Featured</SelectItem>
+                        <SelectItem value="featured">Featured</SelectItem>
                         <SelectItem value="rating">Rating</SelectItem>
                         <SelectItem value="price_low">Price (Low to High)</SelectItem>
                         <SelectItem value="price_high">Price (High to Low)</SelectItem>
