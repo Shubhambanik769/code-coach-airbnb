@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User, LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -7,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import BackButton from '@/components/BackButton';
 import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
 import TrainerSchedule from '@/components/trainer/TrainerSchedule';
@@ -115,6 +115,7 @@ const TrainerDashboard = () => {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <BackButton to="/" label="Back to Home" />
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
