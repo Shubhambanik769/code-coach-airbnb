@@ -7,6 +7,7 @@ import FeaturedTrainers from '@/components/FeaturedTrainers';
 import HowItWorks from '@/components/HowItWorks';
 import TrustSection from '@/components/TrustSection';
 import Footer from '@/components/Footer';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 
 const Index = () => {
   useEffect(() => {
@@ -45,6 +46,9 @@ const Index = () => {
       
       {/* Footer */}
       <Footer />
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 };
