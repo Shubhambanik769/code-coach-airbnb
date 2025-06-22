@@ -9,10 +9,16 @@ interface TrainerEarningsProps {
   trainerId: string;
 }
 
+interface BookingData {
+  total_amount: number;
+  start_time: string;
+  status: string;
+}
+
 const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
   const { data: earnings, isLoading } = useQuery({
     queryKey: ['trainer-earnings', trainerId],
-    queryF: async () => {
+    queryFn: async (): Promise<BookingData[]> => {
       const { data, error } = await supabase
         .from('bookings')
         .select('total_amount, start_time, status')
@@ -20,13 +26,13 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
         .eq('status', 'completed');
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!trainerId
   });
 
   const calculateEarnings = () => {
-    if (!earnings) return { total: 0, thisMonth: 0, lastMonth: 0, thisWeek: 0 };
+    if (!earnings || !Array.isArray(earnings)) return { total: 0, thisMonth: 0, lastMonth: 0, thisWeek: 0 };
 
     const now = new Date();
     const thisMonth = startOfMonth(now);
@@ -141,7 +147,7 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
             <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
               <span className="font-medium">Average per Session</span>
               <span className="text-lg font-bold">
-                ₹{earnings?.length ? (earningsData.total / earnings.length).toFixed(2) : '0.00'}
+                ₹{earnings && earnings.length > 0 ? (earningsData.total / earnings.length).toFixed(2) : '0.00'}
               </span>
             </div>
           </div>
