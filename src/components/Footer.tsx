@@ -22,7 +22,7 @@ const Footer = () => {
         { name: 'Become a trainer', path: '/apply-trainer' },
         { name: 'Trainer resources', path: '/trainer-resources' },
         { name: 'Community standards', path: '/community-standards' },
-        { name: 'Trainer protection', path: '#' },
+        { name: 'Trainer protection', path: '/trainer-protection' },
         { name: 'Success stories', path: '#' }
       ]
     },
