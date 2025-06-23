@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { BarChart3, Users, GraduationCap, Calendar, TrendingUp, Settings, Star, Briefcase } from 'lucide-react';
-import AdminHeader from '@/components/AdminHeader';
+import AdminHeader from '@/components/admin/AdminHeader';
 import EnhancedBookingOverview from '@/components/admin/EnhancedBookingOverview';
 import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
 import EnhancedTrainerManagement from '@/components/admin/EnhancedTrainerManagement';
@@ -9,9 +10,11 @@ import Analytics from '@/components/admin/Analytics';
 import JobManagement from '@/components/admin/JobManagement';
 import SystemSettings from '@/components/admin/SystemSettings';
 import SuccessStoryManagement from '@/components/admin/SuccessStoryManagement';
+import { useAuth } from '@/hooks/useAuth';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -38,7 +41,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader />
+      <AdminHeader user={user} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
