@@ -20,8 +20,8 @@ const Footer = () => {
       title: 'For Trainers',
       links: [
         { name: 'Become a trainer', path: '/apply-trainer' },
-        { name: 'Trainer resources', path: '#' },
-        { name: 'Community standards', path: '#' },
+        { name: 'Trainer resources', path: '/trainer-resources' },
+        { name: 'Community standards', path: '/community-standards' },
         { name: 'Trainer protection', path: '#' },
         { name: 'Success stories', path: '#' }
       ]
