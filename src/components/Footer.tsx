@@ -10,6 +10,7 @@ const Footer = () => {
       links: [
         { name: 'About us', path: '/about' },
         { name: 'Careers', path: '/careers' },
+        { name: 'Success stories', path: '/success-stories' },
         { name: 'Press', path: '#' },
         { name: 'Blog', path: '#' },
         { name: 'Help Center', path: '#' },
@@ -23,7 +24,7 @@ const Footer = () => {
         { name: 'Trainer resources', path: '/trainer-resources' },
         { name: 'Community standards', path: '/community-standards' },
         { name: 'Trainer protection', path: '/trainer-protection' },
-        { name: 'Success stories', path: '#' }
+        { name: 'Success stories', path: '/success-stories' }
       ]
     },
     {

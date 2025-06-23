@@ -23,6 +23,7 @@ import Careers from "./pages/Careers";
 import TrainerResources from "./pages/TrainerResources";
 import CommunityStandards from "./pages/CommunityStandards";
 import TrainerProtection from "./pages/TrainerProtection";
+import SuccessStories from "./pages/SuccessStories";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -47,6 +48,7 @@ const App = () => (
                 <Route path="/trainer-resources" element={<TrainerResources />} />
                 <Route path="/community-standards" element={<CommunityStandards />} />
                 <Route path="/trainer-protection" element={<TrainerProtection />} />
+                <Route path="/success-stories" element={<SuccessStories />} />
                 <Route path="/apply-trainer" element={<ApplyTrainer />} />
                 <Route path="/trainer-status" element={<TrainerOnboardingStatus />} />
                 <Route path="/search" element={<SearchResults />} />

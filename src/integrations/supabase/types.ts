@@ -444,6 +444,51 @@ export type Database = {
           },
         ]
       }
+      success_stories: {
+        Row: {
+          client_avatar_url: string | null
+          client_company: string
+          client_name: string
+          client_position: string
+          company_logo_url: string | null
+          content: string
+          created_at: string
+          display_order: number | null
+          id: string
+          is_featured: boolean | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_avatar_url?: string | null
+          client_company: string
+          client_name: string
+          client_position: string
+          company_logo_url?: string | null
+          content: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_avatar_url?: string | null
+          client_company?: string
+          client_name?: string
+          client_position?: string
+          company_logo_url?: string | null
+          content?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trainer_availability: {
         Row: {
           created_at: string
