@@ -20,6 +20,7 @@ import FeedbackForm from "./pages/FeedbackForm";
 import FeedbackSuccess from "./pages/FeedbackSuccess";
 import AboutUs from "./pages/AboutUs";
 import Careers from "./pages/Careers";
+import TrainerResources from "./pages/TrainerResources";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/about" element={<AboutUs />} />
                 <Route path="/careers" element={<Careers />} />
+                <Route path="/trainer-resources" element={<TrainerResources />} />
                 <Route path="/apply-trainer" element={<ApplyTrainer />} />
                 <Route path="/trainer-status" element={<TrainerOnboardingStatus />} />
                 <Route path="/search" element={<SearchResults />} />

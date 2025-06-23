@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,13 @@ const Header = () => {
               <>
                 <Button 
                   variant="ghost" 
+                  onClick={() => navigate('/trainer-resources')}
+                  className="hidden md:inline-flex"
+                >
+                  For Trainers
+                </Button>
+                <Button 
+                  variant="ghost" 
                   onClick={handleBecomeTrainer}
                   className="hidden sm:inline-flex"
                 >
@@ -114,6 +122,13 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
             <nav className="flex flex-col space-y-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/trainer-resources')}
+                className="text-left justify-start py-2"
+              >
+                For Trainers
+              </Button>
               {user && (
                 <>
                   <Button 
