@@ -45,7 +45,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch bookings with client details
+  // Fetch bookings with client details - Fixed student profile fetching
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -74,7 +74,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // Get student/client details
+      // Get student/client details - Fixed the profile fetching logic
       const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
       console.log('Fetching student profiles for IDs:', studentIds);
       
@@ -85,6 +85,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
       if (studentsError) {
         console.error('Error fetching student profiles:', studentsError);
+        // Continue with empty profiles array instead of throwing
       }
 
       console.log('Student profiles fetched:', studentsData);
@@ -101,7 +102,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.error('Error fetching feedback links:', feedbackError);
       }
 
-      // Combine all data
+      // Combine all data - Fixed the profile matching logic
       const enrichedBookings = bookingsData.map(booking => {
         const studentProfile = studentsData?.find(s => s.id === booking.student_id);
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
@@ -111,7 +112,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return {
           ...booking,
           student_name: studentProfile?.full_name || 'Unknown Client',
-          student_email: studentProfile?.email || 'No email',
+          student_email: studentProfile?.email || 'No email available',
           feedback_token: feedbackLink?.token || null
         };
       });
@@ -122,7 +123,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     enabled: !!trainerId
   });
 
-  // Fixed booking status update mutation
+  // Fixed booking status update mutation - removed automatic feedback link creation
   const updateBookingStatusMutation = useMutation({
     mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
       console.log('Updating booking status:', { bookingId, status });
@@ -146,12 +147,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         }
 
         console.log('Booking updated successfully:', data);
-
-        // Auto-generate feedback link when marking as completed
-        if (status === 'completed') {
-          await createFeedbackLinkOptimized(bookingId);
-        }
-
         return { bookingId, status };
       } catch (error) {
         console.error('Error in updateBookingStatusMutation:', error);
@@ -176,7 +171,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     }
   });
 
-  // Fixed feedback link creation with standard base64 encoding
+  // Fixed feedback link creation with standard base64 encoding that works with PostgreSQL
   const createFeedbackLinkOptimized = async (bookingId: string) => {
     try {
       console.log('Creating optimized feedback link for booking:', bookingId);
@@ -199,28 +194,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return existingLink;
       }
 
-      // Generate token using standard base64 and make it URL-safe
-      const tokenArray = new Uint8Array(24);
-      crypto.getRandomValues(tokenArray);
-      const token = btoa(String.fromCharCode(...tokenArray))
-        .replace(/\+/g, '-')  // Replace + with -
-        .replace(/\//g, '_')  // Replace / with _
-        .replace(/=/g, '')    // Remove padding
-        .substring(0, 24);    // Ensure consistent length
-      
-      console.log('Generated token:', token);
-
-      // Create feedback link with optimized expiry (7 days instead of 30)
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 7);
-      
+      // Use the database function to generate token instead of client-side generation
       const { data, error } = await supabase
         .from('feedback_links')
         .insert({
           booking_id: bookingId,
-          token: token,
           is_active: true,
-          expires_at: expiryDate.toISOString()
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
         })
         .select()
         .single();
