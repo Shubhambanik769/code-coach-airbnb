@@ -171,7 +171,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     }
   });
 
-  // Fixed feedback link creation with standard base64 encoding that works with PostgreSQL
+  // Fixed feedback link creation using database function for token generation
   const createFeedbackLinkOptimized = async (bookingId: string) => {
     try {
       console.log('Creating optimized feedback link for booking:', bookingId);
@@ -194,11 +194,21 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return existingLink;
       }
 
-      // Use the database function to generate token instead of client-side generation
+      // Generate token using the database function
+      const { data: tokenData, error: tokenError } = await supabase
+        .rpc('generate_feedback_token');
+
+      if (tokenError) {
+        console.error('Error generating token:', tokenError);
+        throw tokenError;
+      }
+
+      // Create feedback link with generated token
       const { data, error } = await supabase
         .from('feedback_links')
         .insert({
           booking_id: bookingId,
+          token: tokenData,
           is_active: true,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
         })
