@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Calendar, BarChart3, DollarSign, Settings, LogOut, Star, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -66,7 +65,7 @@ const TrainerDashboard = () => {
       case 'training-requests':
         return <TrainerTrainingRequests />;
       case 'profile':
-        return <TrainerProfile trainer={trainer} />;
+        return <TrainerProfile trainerId={trainer.id} />;
       case 'earnings':
         return <TrainerEarnings trainerId={trainer.id} />;
       case 'reviews':
