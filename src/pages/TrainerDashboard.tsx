@@ -1,26 +1,42 @@
+
 import { useState } from 'react';
-import { BarChart3, Calendar, DollarSign, Settings, Star, TrendingUp, User, LogOut } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { Calendar, BarChart3, DollarSign, Settings, LogOut, Star, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import BackButton from '@/components/BackButton';
-import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
-import TrainerSchedule from '@/components/trainer/TrainerSchedule';
-import TrainerCalendar from '@/components/trainer/TrainerCalendar';
+import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerEarnings from '@/components/trainer/TrainerEarnings';
-import TrainerSettings from '@/components/trainer/TrainerSettings';
-import EnhancedTrainerReviews from '@/components/trainer/EnhancedTrainerReviews';
-import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
+import TrainerReviews from '@/components/trainer/TrainerReviews';
+import TrainerTrainingRequests from '@/components/trainer/TrainerTrainingRequests';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Get trainer data
+  const { data: trainer } = useQuery({
+    queryKey: ['trainer-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('trainers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
 
   const handleSignOut = async () => {
     try {
@@ -35,78 +51,30 @@ const TrainerDashboard = () => {
     }
   };
 
-  // Get trainer ID for the current user - simplified query
-  const { data: trainer, isLoading: trainerLoading } = useQuery({
-    queryKey: ['trainer', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      
-      console.log('Fetching trainer for user:', user.id);
-      
-      const { data, error } = await supabase
-        .from('trainers')
-        .select('id, status, name, title')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching trainer:', error);
-        return null;
-      }
-      
-      console.log('Trainer data:', data);
-      return data;
-    },
-    enabled: !!user?.id
-  });
-
-  const trainerId = trainer?.id;
-
   const renderContent = () => {
-    if (trainerLoading) {
+    if (!trainer) {
       return (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-techblue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading trainer data...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (!trainerId) {
-      return (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-center bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-yellow-800 mb-2">Trainer Profile Not Found</h3>
-            <p className="text-yellow-700 mb-4">You need to complete your trainer registration first.</p>
-            <Button onClick={() => navigate('/auth')} variant="outline">
-              Go to Registration
-            </Button>
-          </div>
+        <div className="text-center py-12">
+          <p className="text-gray-500 mb-4">Loading trainer profile...</p>
         </div>
       );
     }
 
     switch (activeTab) {
-      case 'analytics':
-        return <TrainerAnalytics />;
-      case 'profile':
-        return <TrainerProfile trainerId={trainerId} />;
       case 'bookings':
-        return <TrainerBookings trainerId={trainerId} />;
-      case 'schedule':
-        return <TrainerSchedule trainerId={trainerId} />;
-      case 'calendar':
-        return <TrainerCalendar trainerId={trainerId} />;
+        return <TrainerBookings trainerId={trainer.id} />;
+      case 'training-requests':
+        return <TrainerTrainingRequests />;
+      case 'profile':
+        return <TrainerProfile trainer={trainer} />;
       case 'earnings':
-        return <TrainerEarnings trainerId={trainerId} />;
+        return <TrainerEarnings trainerId={trainer.id} />;
       case 'reviews':
-        return <EnhancedTrainerReviews />;
+        return <TrainerReviews trainerId={trainer.id} />;
       case 'settings':
-        return <TrainerSettings trainerId={trainerId} />;
+        return <div className="p-6">Trainer settings coming soon...</div>;
       default:
-        return <TrainerBookings trainerId={trainerId} />;
+        return <TrainerBookings trainerId={trainer.id} />;
     }
   };
 
@@ -117,16 +85,9 @@ const TrainerDashboard = () => {
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <BackButton to="/" label="Back to Home" />
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Trainer Dashboard
-              </h1>
-              {trainer && (
-                <p className="text-gray-600 mt-1">
-                  Welcome back, {trainer.name || 'Trainer'}
-                </p>
-              )}
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Trainer Dashboard
+            </h1>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">{user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
@@ -143,13 +104,11 @@ const TrainerDashboard = () => {
           {/* Sidebar */}
           <div className="w-full lg:w-64 space-y-2">
             {[
-              { id: 'bookings', label: 'Bookings', icon: Calendar },
-              { id: 'schedule', label: 'Weekly Schedule', icon: Calendar },
-              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-              { id: 'reviews', label: 'Reviews & Ratings', icon: Star },
+              { id: 'bookings', label: 'My Bookings', icon: Calendar },
+              { id: 'training-requests', label: 'Training Requests', icon: FileText },
+              { id: 'profile', label: 'Profile', icon: Settings },
               { id: 'earnings', label: 'Earnings', icon: DollarSign },
-              { id: 'calendar', label: 'Calendar', icon: Calendar },
-              { id: 'profile', label: 'Profile', icon: User },
+              { id: 'reviews', label: 'Reviews', icon: Star },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((item) => {
               const Icon = item.icon;

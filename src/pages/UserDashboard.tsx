@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { Calendar, CreditCard, User, Settings, LogOut } from 'lucide-react';
+import { Calendar, CreditCard, User, Settings, LogOut, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import BackButton from '@/components/BackButton';
 import UserBookings from '@/components/user/UserBookings';
 import UserProfile from '@/components/user/UserProfile';
 import UserBilling from '@/components/user/UserBilling';
+import UserTrainingRequests from '@/components/user/UserTrainingRequests';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -32,6 +34,8 @@ const UserDashboard = () => {
     switch (activeTab) {
       case 'bookings':
         return <UserBookings />;
+      case 'training-requests':
+        return <UserTrainingRequests />;
       case 'profile':
         return <UserProfile />;
       case 'billing':
@@ -70,6 +74,7 @@ const UserDashboard = () => {
           <div className="w-full lg:w-64 space-y-2">
             {[
               { id: 'bookings', label: 'My Bookings', icon: Calendar },
+              { id: 'training-requests', label: 'Training Requests', icon: FileText },
               { id: 'profile', label: 'Profile', icon: User },
               { id: 'billing', label: 'Billing', icon: CreditCard },
               { id: 'settings', label: 'Settings', icon: Settings },

@@ -648,6 +648,155 @@ export type Database = {
           },
         ]
       }
+      training_applications: {
+        Row: {
+          availability_notes: string | null
+          created_at: string
+          id: string
+          message_to_client: string | null
+          proposed_duration_hours: number | null
+          proposed_end_date: string | null
+          proposed_price: number
+          proposed_start_date: string | null
+          proposed_syllabus: string | null
+          request_id: string
+          status: string | null
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          availability_notes?: string | null
+          created_at?: string
+          id?: string
+          message_to_client?: string | null
+          proposed_duration_hours?: number | null
+          proposed_end_date?: string | null
+          proposed_price: number
+          proposed_start_date?: string | null
+          proposed_syllabus?: string | null
+          request_id: string
+          status?: string | null
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          availability_notes?: string | null
+          created_at?: string
+          id?: string
+          message_to_client?: string | null
+          proposed_duration_hours?: number | null
+          proposed_end_date?: string | null
+          proposed_price?: number
+          proposed_start_date?: string | null
+          proposed_syllabus?: string | null
+          request_id?: string
+          status?: string | null
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_applications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "training_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_applications_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_requests: {
+        Row: {
+          allow_trainer_pricing: boolean | null
+          allow_trainer_syllabus: boolean | null
+          application_deadline: string | null
+          budget_max: number | null
+          budget_min: number | null
+          client_id: string
+          created_at: string
+          delivery_mode: string | null
+          description: string | null
+          duration_hours: number | null
+          expected_end_date: string | null
+          expected_start_date: string | null
+          id: string
+          language_preference: string | null
+          location: string | null
+          selected_trainer_id: string | null
+          status: string | null
+          syllabus_content: string | null
+          syllabus_file_url: string | null
+          target_audience: string
+          title: string
+          tools_required: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          allow_trainer_pricing?: boolean | null
+          allow_trainer_syllabus?: boolean | null
+          application_deadline?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          client_id: string
+          created_at?: string
+          delivery_mode?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          expected_end_date?: string | null
+          expected_start_date?: string | null
+          id?: string
+          language_preference?: string | null
+          location?: string | null
+          selected_trainer_id?: string | null
+          status?: string | null
+          syllabus_content?: string | null
+          syllabus_file_url?: string | null
+          target_audience: string
+          title: string
+          tools_required?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          allow_trainer_pricing?: boolean | null
+          allow_trainer_syllabus?: boolean | null
+          application_deadline?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          client_id?: string
+          created_at?: string
+          delivery_mode?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          expected_end_date?: string | null
+          expected_start_date?: string | null
+          id?: string
+          language_preference?: string | null
+          location?: string | null
+          selected_trainer_id?: string | null
+          status?: string | null
+          syllabus_content?: string | null
+          syllabus_file_url?: string | null
+          target_audience?: string
+          title?: string
+          tools_required?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_requests_selected_trainer_id_fkey"
+            columns: ["selected_trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
