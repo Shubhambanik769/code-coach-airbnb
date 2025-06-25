@@ -77,7 +77,7 @@ const AdminDashboard = () => {
               >
                 <Icon className="h-4 w-4" />
                 {tab.label}
-              </Button>
+              </button>
             );
           })}
         </div>
