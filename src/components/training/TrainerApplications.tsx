@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
-import { FileText, Calendar, DollarSign, Clock, Users } from 'lucide-react';
+import { FileText, Calendar, DollarSign, Clock, Users, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
+import ApplicationStatusBar from './ApplicationStatusBar';
 
 interface TrainerApplication {
   id: string;
@@ -33,11 +34,13 @@ interface TrainerApplication {
     budget_max: number;
     status: string;
     created_at: string;
+    location: string;
     client_profile: {
       full_name: string;
       email: string;
     };
   } | null;
+  booking_id?: string;
 }
 
 const TrainerApplications = () => {
@@ -65,7 +68,7 @@ const TrainerApplications = () => {
     enabled: !!user?.id
   });
 
-  // Fetch trainer's applications
+  // Fetch trainer's applications with booking status
   const { data: applications, isLoading } = useQuery({
     queryKey: ['trainer-applications', trainer?.id, statusFilter],
     queryFn: async () => {
@@ -97,20 +100,36 @@ const TrainerApplications = () => {
       }
       
       console.log('Applications fetched:', data);
-      return data as TrainerApplication[];
+      
+      // Check for related bookings for selected applications
+      const enrichedApplications = await Promise.all(
+        (data || []).map(async (app) => {
+          if (app.status === 'selected' && app.training_request) {
+            // Check if there's a booking for this trainer and request
+            const { data: booking } = await supabase
+              .from('bookings')
+              .select('id, status')
+              .eq('trainer_id', trainer.id)
+              .eq('training_topic', app.training_request.title)
+              .eq('status', 'confirmed')
+              .maybeSingle();
+
+            if (booking) {
+              return {
+                ...app,
+                status: 'booking_confirmed',
+                booking_id: booking.id
+              };
+            }
+          }
+          return app;
+        })
+      );
+      
+      return enrichedApplications as TrainerApplication[];
     },
     enabled: !!trainer?.id
   });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'shortlisted': return 'bg-blue-100 text-blue-800';
-      case 'selected': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getRequestStatusColor = (status: string) => {
     switch (status) {
@@ -169,7 +188,7 @@ const TrainerApplications = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {applications?.map((application) => {
               // Skip applications with null training_request
               if (!application.training_request) {
@@ -177,83 +196,118 @@ const TrainerApplications = () => {
               }
 
               return (
-                <Card key={application.id} className="border-l-4 border-l-techblue-500">
+                <Card key={application.id} className="border-0 shadow-lg bg-white">
                   <CardContent className="p-6">
+                    {/* Status Bar */}
+                    <div className="mb-6">
+                      <ApplicationStatusBar
+                        status={application.status}
+                        createdAt={application.created_at}
+                        bookingId={application.booking_id}
+                      />
+                    </div>
+
+                    {/* Application Header */}
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{application.training_request.title}</h3>
-                          <Badge className={getStatusColor(application.status)}>
-                            {application.status}
-                          </Badge>
+                          <h3 className="text-xl font-bold text-gray-800">{application.training_request.title}</h3>
                           <Badge className={getRequestStatusColor(application.training_request.status)}>
                             Request: {application.training_request.status}
                           </Badge>
                         </div>
-                        <p className="text-gray-600 mb-3">{application.training_request.description}</p>
+                        <p className="text-gray-600 mb-3 leading-relaxed">{application.training_request.description}</p>
                         {application.training_request.client_profile && (
-                          <p className="text-sm text-gray-500 mb-2">
-                            Client: {application.training_request.client_profile.full_name} ({application.training_request.client_profile.email})
-                          </p>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Users className="h-4 w-4" />
+                            <span>Client: {application.training_request.client_profile.full_name}</span>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                        <div>
-                          <span className="text-sm text-gray-500">Your Quote:</span>
-                          <p className="font-semibold">${application.proposed_price}</p>
+                    {/* Key Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">Your Quote</span>
                         </div>
+                        <p className="text-lg font-bold text-green-700">${application.proposed_price}</p>
+                        {application.training_request.budget_min > 0 && (
+                          <p className="text-xs text-green-600">
+                            Budget: ${application.training_request.budget_min} - ${application.training_request.budget_max}
+                          </p>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <span className="text-sm text-gray-500">Duration:</span>
-                          <p>{application.proposed_duration_hours || application.training_request.duration_hours}h</p>
+
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">Duration</span>
                         </div>
+                        <p className="text-lg font-bold text-blue-700">
+                          {application.proposed_duration_hours || application.training_request.duration_hours}h
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <span className="text-sm text-gray-500">Audience:</span>
-                          <p>{application.training_request.target_audience}</p>
+
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Users className="h-4 w-4 text-purple-600" />
+                          <span className="text-sm font-medium text-purple-800">Audience</span>
                         </div>
+                        <p className="text-sm font-medium text-purple-700">{application.training_request.target_audience}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <span className="text-sm text-gray-500">Applied:</span>
-                          <p>{format(new Date(application.created_at), 'MMM dd')}</p>
+
+                      <div className="bg-orange-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calendar className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium text-orange-800">Applied</span>
                         </div>
+                        <p className="text-sm font-bold text-orange-700">
+                          {format(new Date(application.created_at), 'MMM dd, yyyy')}
+                        </p>
                       </div>
                     </div>
 
-                    {application.training_request.budget_min > 0 && (
-                      <div className="mb-4">
-                        <span className="text-sm text-gray-500">Client Budget Range:</span>
-                        <p className="text-sm">
-                          ${application.training_request.budget_min} - ${application.training_request.budget_max}
-                        </p>
+                    {/* Delivery Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Delivery Mode:</span>
+                        <p className="text-sm text-gray-800">{application.training_request.delivery_mode || 'Not specified'}</p>
                       </div>
-                    )}
+                      {application.training_request.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <span className="text-sm font-medium text-gray-600">Location:</span>
+                            <p className="text-sm text-gray-800">{application.training_request.location}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
+                    {/* Application Details */}
                     {application.message_to_client && (
                       <div className="mb-4">
-                        <span className="text-sm font-medium text-gray-600">Your Message:</span>
-                        <p className="mt-1 p-3 bg-gray-50 rounded-md text-sm">{application.message_to_client}</p>
+                        <span className="text-sm font-medium text-gray-700">Your Message to Client:</span>
+                        <div className="mt-2 p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">
+                          <p className="text-sm text-gray-700">{application.message_to_client}</p>
+                        </div>
                       </div>
                     )}
 
                     {application.availability_notes && (
                       <div className="mb-4">
-                        <span className="text-sm font-medium text-gray-600">Availability Notes:</span>
-                        <p className="mt-1 p-3 bg-gray-50 rounded-md text-sm">{application.availability_notes}</p>
+                        <span className="text-sm font-medium text-gray-700">Availability Notes:</span>
+                        <div className="mt-2 p-4 bg-gray-50 rounded-lg border-l-4 border-green-500">
+                          <p className="text-sm text-gray-700">{application.availability_notes}</p>
+                        </div>
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center text-sm text-gray-500">
+                    {/* Timeline */}
+                    <div className="flex justify-between items-center text-sm text-gray-500 pt-4 border-t">
                       <span>
                         Request Posted: {format(new Date(application.training_request.created_at), 'MMM dd, yyyy')}
                       </span>

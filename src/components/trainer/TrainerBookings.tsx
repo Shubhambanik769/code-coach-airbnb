@@ -35,6 +35,7 @@ interface BookingData {
   student_name?: string;
   student_email?: string;
   feedback_token?: string;
+  booking_type?: string; // New field for training request bookings
 }
 
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
@@ -44,7 +45,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch bookings with client details - Fixed student profile fetching
+  // Fetch bookings with client details - Enhanced to handle training request bookings
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -73,7 +74,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // Get student/client details - Fixed the profile fetching logic
+      // Get student/client details
       const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
       console.log('Fetching student profiles for IDs:', studentIds);
       
@@ -84,7 +85,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
       if (studentsError) {
         console.error('Error fetching student profiles:', studentsError);
-        // Continue with empty profiles array instead of throwing
       }
 
       console.log('Student profiles fetched:', studentsData);
@@ -101,18 +101,20 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.error('Error fetching feedback links:', feedbackError);
       }
 
-      // Combine all data - Fixed the profile matching logic
+      // Combine all data
       const enrichedBookings = bookingsData.map(booking => {
         const studentProfile = studentsData?.find(s => s.id === booking.student_id);
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         
-        console.log(`Booking ${booking.id}: student_id=${booking.student_id}, found profile:`, studentProfile);
+        // Check if this booking came from a training request (auto-confirmed)
+        const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
         return {
           ...booking,
           student_name: studentProfile?.full_name || 'Unknown Client',
           student_email: studentProfile?.email || 'No email available',
-          feedback_token: feedbackLink?.token || null
+          feedback_token: feedbackLink?.token || null,
+          is_training_request: isTrainingRequestBooking
         };
       });
 
@@ -122,13 +124,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     enabled: !!trainerId
   });
 
-  // Fixed booking status update mutation - removed automatic feedback link creation
+  // Updated booking status update mutation - handles training request bookings differently
   const updateBookingStatusMutation = useMutation({
     mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
       console.log('Updating booking status:', { bookingId, status });
       
       try {
-        // Update booking status with proper error handling
         const { data, error } = await supabase
           .from('bookings')
           .update({ 
@@ -136,7 +137,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
             updated_at: new Date().toISOString()
           })
           .eq('id', bookingId)
-          .eq('trainer_id', trainerId) // Ensure trainer can only update their own bookings
+          .eq('trainer_id', trainerId)
           .select()
           .single();
 
@@ -362,6 +363,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                           {booking.organization_name && (
                             <p className="text-xs text-blue-600">{booking.organization_name}</p>
                           )}
+                          {booking.is_training_request && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                              Training Request
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -446,7 +452,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                           </DialogContent>
                         </Dialog>
 
-                        {booking.status === 'pending' && (
+                        {/* Updated action buttons - no accept/decline for training request bookings */}
+                        {booking.status === 'pending' && !booking.is_training_request && (
                           <>
                             <Button
                               variant="outline"
@@ -468,7 +475,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             </Button>
                           </>
                         )}
-                        {booking.status === 'confirmed' && (
+                        
+                        {booking.status === 'pending' && booking.is_training_request && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                            Auto-Confirmed via Training Request
+                          </Badge>
+                        )}
+                        
+                        {(booking.status === 'confirmed' || (booking.status === 'pending' && booking.is_training_request)) && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -479,6 +493,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             Mark Complete
                           </Button>
                         )}
+                        
                         {booking.status === 'completed' && booking.feedback_token && (
                           <Button
                             variant="outline"
