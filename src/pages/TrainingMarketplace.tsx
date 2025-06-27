@@ -67,7 +67,7 @@ const TrainingMarketplace = () => {
           application_deadline,
           created_at,
           client_id,
-          profiles!training_requests_client_id_fkey(full_name)
+          profiles(full_name)
         `)
         .eq('status', 'open')
         .order('created_at', { ascending: false });
@@ -87,7 +87,7 @@ const TrainingMarketplace = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as TrainingRequest[];
+      return data;
     }
   });
 
