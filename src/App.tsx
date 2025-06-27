@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import TrainerProfile from "./pages/TrainerProfile";
 import SearchResults from "./pages/SearchResults";
 import TrainerSearch from "./pages/TrainerSearch";
+import TrainingMarketplace from "./pages/TrainingMarketplace";
 import TechnologyPage from "./pages/TechnologyPage";
 import FeedbackForm from "./pages/FeedbackForm";
 import FeedbackSuccess from "./pages/FeedbackSuccess";
@@ -54,6 +56,7 @@ const App = () => (
                   <Route path="/trainer-status" element={<TrainerOnboardingStatus />} />
                   <Route path="/search" element={<SearchResults />} />
                   <Route path="/trainers" element={<TrainerSearch />} />
+                  <Route path="/training-marketplace" element={<TrainingMarketplace />} />
                   <Route path="/technology/:slug" element={<TechnologyPage />} />
                   <Route path="/trainer/:id" element={<TrainerProfile />} />
                   {/* Updated feedback route to properly handle base64 encoded tokens */}

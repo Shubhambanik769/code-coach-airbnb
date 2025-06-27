@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Search, Calendar, MapPin, Users, DollarSign, FileText, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLocation } from 'react-router-dom';
 
 interface TrainingRequest {
   id: string;
@@ -64,6 +65,10 @@ const TrainingRequestsFeed = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const location = useLocation();
+
+  // Check if we need to highlight a specific request from marketplace navigation
+  const highlightedRequestId = location.state?.requestId;
 
   // Fetch training requests
   const { data: requests, isLoading } = useQuery({
@@ -93,6 +98,16 @@ const TrainingRequestsFeed = () => {
       return data as TrainingRequest[];
     }
   });
+
+  // Auto-open highlighted request from marketplace
+  useEffect(() => {
+    if (highlightedRequestId && requests) {
+      const request = requests.find(r => r.id === highlightedRequestId);
+      if (request) {
+        handleApply(request);
+      }
+    }
+  }, [highlightedRequestId, requests]);
 
   // Get trainer ID for the current user
   const { data: trainer } = useQuery({
@@ -255,7 +270,12 @@ const TrainingRequestsFeed = () => {
               </div>
             ) : (
               filteredRequests?.map((request) => (
-                <Card key={request.id} className="border-l-4 border-l-techblue-500">
+                <Card 
+                  key={request.id} 
+                  className={`border-l-4 border-l-techblue-500 ${
+                    request.id === highlightedRequestId ? 'ring-2 ring-techblue-300 bg-techblue-50' : ''
+                  }`}
+                >
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>

@@ -1,17 +1,45 @@
 
 import { useState } from 'react';
-import { Menu } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import CurrencySelector from '@/components/CurrencySelector';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Menu, X, User, LogOut, Settings, BarChart3, FileText, Briefcase } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, userRole, signOut, loading } = useAuth();
+  const { user, userRole, signOut } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const getDashboardRoute = () => {
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account.",
+      });
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error signing out",
+        description: "There was a problem signing you out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getDashboardLink = () => {
     switch (userRole) {
       case 'admin':
         return '/admin';
@@ -22,132 +50,201 @@ const Header = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  const handleBecomeTrainer = () => {
-    if (userRole === 'trainer') {
-      navigate('/trainer-dashboard');
-    } else if (user) {
-      navigate('/trainer-status');
-    } else {
-      navigate('/apply-trainer');
-    }
-  };
-
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-white shadow-md relative z-50">
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-8 h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">SL</span>
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="bg-techblue-600 text-white px-3 py-1 rounded-lg font-bold text-xl">
+              TT
             </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold bg-gradient-to-r from-techblue-600 to-purple-600 bg-clip-text text-transparent">
-                Skilloop.io
-              </span>
-              <span className="text-xs text-gray-500 -mt-1">by Gyanyodha</span>
-            </div>
-          </div>
+            <span className="text-xl font-bold text-gray-900">TechTrainer</span>
+          </Link>
 
-          {/* Right Section */}
-          <div className="flex items-center space-x-4">
-            <CurrencySelector />
-            
-            {loading ? (
-              <div className="w-8 h-8 animate-pulse bg-gray-200 rounded-full"></div>
-            ) : !user ? (
-              <>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate('/trainer-resources')}
-                  className="hidden md:inline-flex"
-                >
-                  For Trainers
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={handleBecomeTrainer}
-                  className="hidden sm:inline-flex"
-                >
-                  Become a Trainer
-                </Button>
-                <Button 
-                  onClick={() => navigate('/auth')}
-                >
-                  Sign In
-                </Button>
-              </>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link 
+              to="/trainers" 
+              className="text-gray-700 hover:text-techblue-600 transition-colors"
+            >
+              Find Trainers
+            </Link>
+            <Link 
+              to="/training-marketplace" 
+              className="text-gray-700 hover:text-techblue-600 transition-colors"
+            >
+              Training Marketplace
+            </Link>
+            <Link 
+              to="/about" 
+              className="text-gray-700 hover:text-techblue-600 transition-colors"
+            >
+              About
+            </Link>
+            <Link 
+              to="/careers" 
+              className="text-gray-700 hover:text-techblue-600 transition-colors"
+            >
+              Careers
+            </Link>
+          </nav>
+
+          {/* User Menu */}
+          <div className="hidden md:flex items-center space-x-4">
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <NotificationBell />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.user_metadata?.avatar_url} />
+                        <AvatarFallback>
+                          {user.email?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 mt-2 bg-white" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        <p className="font-medium">{user.email}</p>
+                        {userRole && (
+                          <Badge variant="secondary" className="w-fit text-xs">
+                            {userRole}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-px bg-gray-200 my-1" />
+                    <DropdownMenuItem asChild>
+                      <Link to={getDashboardLink()} className="flex items-center">
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/trainer-status" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <div className="h-px bg-gray-200 my-1" />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : (
               <div className="flex items-center space-x-3">
-                {userRole !== 'trainer' && (
-                  <Button 
-                    variant="ghost" 
-                    onClick={handleBecomeTrainer}
-                    className="hidden sm:inline-flex"
-                  >
-                    Become a Trainer
-                  </Button>
-                )}
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate(getDashboardRoute())}
-                  className="hidden sm:inline-flex"
-                >
-                  Dashboard
-                </Button>
-                <Button variant="ghost" onClick={handleSignOut}>
-                  Sign Out
-                </Button>
+                <Link to="/apply-trainer">
+                  <Button variant="outline">Become a Trainer</Button>
+                </Link>
+                <Link to="/auth">
+                  <Button>Sign In</Button>
+                </Link>
               </div>
             )}
-
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2"
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100">
-            <nav className="flex flex-col space-y-3">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/trainer-resources')}
-                className="text-left justify-start py-2"
+          <div className="md:hidden bg-white border-t border-gray-200 py-4">
+            <nav className="flex flex-col space-y-4">
+              <Link 
+                to="/trainers" 
+                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                onClick={() => setIsMenuOpen(false)}
               >
-                For Trainers
-              </Button>
-              {user && (
-                <>
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => navigate(getDashboardRoute())}
-                    className="text-left justify-start py-2"
+                Find Trainers
+              </Link>
+              <Link 
+                to="/training-marketplace" 
+                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Training Marketplace
+              </Link>
+              <Link 
+                to="/about" 
+                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About
+              </Link>
+              <Link 
+                to="/careers" 
+                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Careers
+              </Link>
+              
+              {user ? (
+                <div className="flex flex-col space-y-2 px-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={user.user_metadata?.avatar_url} />
+                      <AvatarFallback className="text-xs">
+                        {user.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{user.email}</span>
+                    {userRole && (
+                      <Badge variant="secondary" className="text-xs">
+                        {userRole}
+                      </Badge>
+                    )}
+                  </div>
+                  <Link 
+                    to={getDashboardLink()} 
+                    className="text-gray-700 hover:text-techblue-600 transition-colors flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
                   >
+                    <BarChart3 className="mr-2 h-4 w-4" />
                     Dashboard
-                  </Button>
-                  {userRole !== 'trainer' && (
-                    <Button 
-                      variant="ghost" 
-                      onClick={handleBecomeTrainer}
-                      className="text-left justify-start py-2"
-                    >
-                      Become a Trainer
-                    </Button>
-                  )}
-                </>
+                  </Link>
+                  <Link 
+                    to="/trainer-status" 
+                    className="text-gray-700 hover:text-techblue-600 transition-colors flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                  <button 
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="text-gray-700 hover:text-techblue-600 transition-colors flex items-center text-left"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col space-y-2 px-4 pt-4 border-t border-gray-200">
+                  <Link to="/apply-trainer" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full">Become a Trainer</Button>
+                  </Link>
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full">Sign In</Button>
+                  </Link>
+                </div>
               )}
             </nav>
           </div>

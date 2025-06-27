@@ -1,54 +1,113 @@
 
-import { useEffect } from 'react';
-import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import CategoryCards from '@/components/CategoryCards';
-import FeaturedTrainers from '@/components/FeaturedTrainers';
 import HowItWorks from '@/components/HowItWorks';
+import FeaturedTrainers from '@/components/FeaturedTrainers';
 import TrustSection from '@/components/TrustSection';
+import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Briefcase, Users, Search, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
-  useEffect(() => {
-    // Initialize any necessary data or tracking
-    console.log('Index page loaded');
-    
-    // Ensure favicon is set correctly
-    const favicon = document.querySelector("link[rel*='icon']");
-    if (!favicon) {
-      const link = document.createElement('link');
-      link.rel = 'icon';
-      link.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%234F46E5;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%237C3AED;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='url(%23grad)'/%3E%3Ctext x='16' y='22' font-family='Inter, sans-serif' font-size='12' font-weight='bold' text-anchor='middle' fill='white'%3ESL%3C/text%3E%3C/svg%3E";
-      link.type = 'image/svg+xml';
-      document.head.appendChild(link);
-    }
-  }, []);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      
-      {/* Hero Section */}
       <HeroSection />
-      
-      {/* Category Cards */}
       <CategoryCards />
       
-      {/* Featured Trainers */}
-      <FeaturedTrainers />
-      
-      {/* How It Works */}
+      {/* Training Marketplace Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Training Opportunities Marketplace
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Browse available training requests from organizations looking for expert trainers
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <Card className="p-6">
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="bg-techblue-100 p-3 rounded-lg">
+                      <Briefcase className="h-6 w-6 text-techblue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold">For Trainers</h3>
+                      <p className="text-gray-600">Find training opportunities that match your expertise</p>
+                    </div>
+                  </div>
+                  <ul className="space-y-2 text-gray-600 mb-6">
+                    <li className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-techblue-500" />
+                      Browse open training requests
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-techblue-500" />
+                      Connect with organizations directly
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-techblue-500" />
+                      Build your training portfolio
+                    </li>
+                  </ul>
+                  <Link to="/training-marketplace">
+                    <Button className="w-full">
+                      Explore Training Requests
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div>
+              <Card className="p-6">
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="bg-green-100 p-3 rounded-lg">
+                      <Users className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold">For Organizations</h3>
+                      <p className="text-gray-600">Post your training needs and find qualified trainers</p>
+                    </div>
+                  </div>
+                  <ul className="space-y-2 text-gray-600 mb-6">
+                    <li className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-green-500" />
+                      Post detailed training requirements
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-green-500" />
+                      Review trainer applications
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-green-500" />
+                      Select the best fit for your needs
+                    </li>
+                  </ul>
+                  <Link to="/auth">
+                    <Button variant="outline" className="w-full">
+                      Post Training Request
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <HowItWorks />
-      
-      {/* Trust Section */}
+      <FeaturedTrainers />
       <TrustSection />
-      
-      {/* Footer */}
       <Footer />
-      
-      {/* PWA Install Prompt */}
-      <PWAInstallPrompt />
     </div>
   );
 };
