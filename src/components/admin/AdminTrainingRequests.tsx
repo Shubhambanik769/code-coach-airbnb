@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,14 +31,14 @@ interface TrainingRequest {
   client_profile: {
     full_name: string;
     email: string;
-  };
+  } | null;
   selected_trainer?: {
     name: string;
     title: string;
     rating: number;
-  };
+  } | null;
   applications_count: number;
-  booking_status?: string;
+  booking_status?: string | null;
 }
 
 interface TrainingApplication {
@@ -79,7 +80,7 @@ const AdminTrainingRequests = () => {
           .from('training_requests')
           .select(`
             *,
-            client_profile:profiles!training_requests_client_id_fkey(full_name, email)
+            client_profile:profiles!fk_training_requests_client_id(full_name, email)
           `)
           .order('created_at', { ascending: false });
 
@@ -172,7 +173,7 @@ const AdminTrainingRequests = () => {
         );
 
         console.log('Enhanced requests:', enhancedRequests);
-        return enhancedRequests as TrainingRequest[];
+        return enhancedRequests;
       } catch (error) {
         console.error('Failed to fetch training requests:', error);
         toast({
