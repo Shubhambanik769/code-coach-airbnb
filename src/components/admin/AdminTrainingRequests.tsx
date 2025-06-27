@@ -98,7 +98,7 @@ const AdminTrainingRequests = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as TrainingRequest[];
+      return data;
     }
   });
 
@@ -170,7 +170,7 @@ const AdminTrainingRequests = () => {
     }
   };
 
-  const handleViewDetails = (request: TrainingRequest) => {
+  const handleViewDetails = (request: any) => {
     setSelectedRequest(request);
     setViewingApplications(true);
   };
@@ -237,7 +237,7 @@ const AdminTrainingRequests = () => {
                           <User className="h-4 w-4 text-gray-400" />
                           <span className="text-sm font-medium">Client:</span>
                           <span className="text-sm">{request.profiles?.full_name || 'N/A'}</span>
-                          <span className="text-sm text-gray-500">({request.profiles?.email})</span>
+                          <span className="text-sm text-gray-500">({request.profiles?.email || 'N/A'})</span>
                         </div>
                       </div>
                       
@@ -346,7 +346,7 @@ const AdminTrainingRequests = () => {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
                       <span className="text-sm font-medium text-gray-600">Client:</span>
-                      <p>{selectedRequest.profiles?.full_name} ({selectedRequest.profiles?.email})</p>
+                      <p>{selectedRequest.profiles?.full_name || 'N/A'} ({selectedRequest.profiles?.email || 'N/A'})</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">Status:</span>
