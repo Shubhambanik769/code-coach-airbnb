@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,7 +87,7 @@ const AdminTrainingRequests = () => {
         .from('training_requests')
         .select(`
           *,
-          client_profile:profiles(full_name, email)
+          client_profile:profiles!client_id(full_name, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -99,11 +98,7 @@ const AdminTrainingRequests = () => {
       const { data, error } = await query;
       if (error) throw error;
       
-      // Transform the data to match our interface
-      return data?.map(request => ({
-        ...request,
-        client_profile: request.client_profile
-      })) as TrainingRequest[];
+      return data as TrainingRequest[];
     }
   });
 
