@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -55,35 +56,35 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-techblue-600 text-white px-3 py-1 rounded-lg font-bold text-xl">
-              TT
+            <div className="bg-blue-600 text-white px-3 py-1 rounded-lg font-bold text-xl">
+              S
             </div>
-            <span className="text-xl font-bold text-gray-900">TechTrainer</span>
+            <span className="text-xl font-bold text-gray-900">Skilloop.io</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
               to="/trainers" 
-              className="text-gray-700 hover:text-techblue-600 transition-colors"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               Find Trainers
             </Link>
             <Link 
               to="/training-marketplace" 
-              className="text-gray-700 hover:text-techblue-600 transition-colors"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               Training Marketplace
             </Link>
             <Link 
               to="/about" 
-              className="text-gray-700 hover:text-techblue-600 transition-colors"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               About
             </Link>
             <Link 
               to="/careers" 
-              className="text-gray-700 hover:text-techblue-600 transition-colors"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               Careers
             </Link>
@@ -165,28 +166,28 @@ const Header = () => {
             <nav className="flex flex-col space-y-4">
               <Link 
                 to="/trainers" 
-                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Find Trainers
               </Link>
               <Link 
                 to="/training-marketplace" 
-                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Training Marketplace
               </Link>
               <Link 
                 to="/about" 
-                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 About
               </Link>
               <Link 
                 to="/careers" 
-                className="text-gray-700 hover:text-techblue-600 transition-colors px-4"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Careers
@@ -210,7 +211,7 @@ const Header = () => {
                   </div>
                   <Link 
                     to={getDashboardLink()} 
-                    className="text-gray-700 hover:text-techblue-600 transition-colors flex items-center"
+                    className="text-gray-700 hover:text-blue-600 transition-colors flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <BarChart3 className="mr-2 h-4 w-4" />
@@ -218,7 +219,7 @@ const Header = () => {
                   </Link>
                   <Link 
                     to="/trainer-status" 
-                    className="text-gray-700 hover:text-techblue-600 transition-colors flex items-center"
+                    className="text-gray-700 hover:text-blue-600 transition-colors flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <User className="mr-2 h-4 w-4" />
@@ -229,7 +230,7 @@ const Header = () => {
                       handleSignOut();
                       setIsMenuOpen(false);
                     }}
-                    className="text-gray-700 hover:text-techblue-600 transition-colors flex items-center text-left"
+                    className="text-gray-700 hover:text-blue-600 transition-colors flex items-center text-left"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign out
