@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -55,11 +56,18 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-blue-600 text-white px-3 py-1 rounded-lg font-bold text-xl">
-              S
+          <Link to="/" className="flex items-center space-x-3">
+            <img 
+              src="/lovable-uploads/47af27d3-23ea-4024-aa71-701579305a9b.png" 
+              alt="Skilloop.io Logo" 
+              className="w-10 h-10 rounded-lg"
+            />
+            <div className="flex flex-col">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                Skilloop.io
+              </span>
+              <span className="text-xs text-gray-500 -mt-1">by Gyanyodha</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">Skilloop.io</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -255,3 +263,4 @@ const Header = () => {
 };
 
 export default Header;
+
