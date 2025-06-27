@@ -72,7 +72,7 @@ const TrainingMarketplace = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data;
+      return data as TrainingRequest[];
     }
   });
 
