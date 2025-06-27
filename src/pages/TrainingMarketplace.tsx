@@ -32,7 +32,7 @@ interface TrainingRequest {
   application_deadline: string | null;
   created_at: string;
   client_id: string;
-  profiles?: {
+  profiles: {
     full_name: string | null;
   } | null;
 }
@@ -51,7 +51,22 @@ const TrainingMarketplace = () => {
       let query = supabase
         .from('training_requests')
         .select(`
-          *,
+          id,
+          title,
+          description,
+          target_audience,
+          expected_start_date,
+          expected_end_date,
+          duration_hours,
+          delivery_mode,
+          location,
+          language_preference,
+          tools_required,
+          budget_min,
+          budget_max,
+          application_deadline,
+          created_at,
+          client_id,
           profiles!training_requests_client_id_fkey(full_name)
         `)
         .eq('status', 'open')
