@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Eye, Users, Calendar, DollarSign, User, GraduationCap } from 'lucide-react';
+import { FileText, Eye, Users, Calendar, DollarSign, User, GraduationCap, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 interface TrainingRequest {
   id: string;
@@ -65,82 +65,123 @@ const AdminTrainingRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
   const [viewingApplications, setViewingApplications] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const { toast } = useToast();
 
   // Fetch all training requests for admin view with comprehensive details
-  const { data: requests, isLoading } = useQuery({
+  const { data: requests, isLoading, error } = useQuery({
     queryKey: ['admin-training-requests', statusFilter],
     queryFn: async () => {
       console.log('Fetching training requests with filter:', statusFilter);
 
-      // Build the query with status filter if needed
-      let query = supabase
-        .from('training_requests')
-        .select(`
-          *,
-          client_profile:profiles!client_id(full_name, email)
-        `)
-        .order('created_at', { ascending: false });
+      try {
+        // Build the query with status filter if needed
+        let query = supabase
+          .from('training_requests')
+          .select(`
+            *,
+            client_profile:profiles!training_requests_client_id_fkey(full_name, email)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
+        if (statusFilter !== 'all') {
+          query = query.eq('status', statusFilter);
+        }
 
-      const { data: requestsData, error } = await query;
+        const { data: requestsData, error: fetchError } = await query;
 
-      if (error) {
-        console.error('Error fetching training requests:', error);
+        if (fetchError) {
+          console.error('Error fetching training requests:', fetchError);
+          toast({
+            title: "Error",
+            description: "Failed to fetch training requests. Please try again.",
+            variant: "destructive",
+          });
+          throw fetchError;
+        }
+
+        console.log('Training requests fetched:', requestsData);
+
+        if (!requestsData || requestsData.length === 0) {
+          console.log('No training requests found');
+          return [];
+        }
+
+        // Enhance each request with additional details
+        const enhancedRequests = await Promise.all(
+          requestsData.map(async (request) => {
+            try {
+              // Get applications count
+              const { count: applicationsCount, error: countError } = await supabase
+                .from('training_applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('request_id', request.id);
+
+              if (countError) {
+                console.error('Error fetching applications count:', countError);
+              }
+
+              // Get selected trainer details if exists
+              let selectedTrainer = null;
+              if (request.selected_trainer_id) {
+                const { data: trainerData, error: trainerError } = await supabase
+                  .from('trainers')
+                  .select('name, title, rating')
+                  .eq('id', request.selected_trainer_id)
+                  .maybeSingle();
+                
+                if (trainerError) {
+                  console.error('Error fetching trainer:', trainerError);
+                } else {
+                  selectedTrainer = trainerData;
+                }
+              }
+
+              // Get booking status if trainer is selected
+              let bookingStatus = null;
+              if (request.selected_trainer_id) {
+                const { data: bookingData, error: bookingError } = await supabase
+                  .from('bookings')
+                  .select('status')
+                  .eq('trainer_id', request.selected_trainer_id)
+                  .eq('training_topic', request.title)
+                  .maybeSingle();
+
+                if (bookingError) {
+                  console.error('Error fetching booking status:', bookingError);
+                } else if (bookingData) {
+                  bookingStatus = bookingData.status;
+                }
+              }
+
+              return {
+                ...request,
+                selected_trainer: selectedTrainer,
+                applications_count: applicationsCount || 0,
+                booking_status: bookingStatus
+              };
+            } catch (error) {
+              console.error('Error enhancing request:', error);
+              return {
+                ...request,
+                selected_trainer: null,
+                applications_count: 0,
+                booking_status: null
+              };
+            }
+          })
+        );
+
+        console.log('Enhanced requests:', enhancedRequests);
+        return enhancedRequests as TrainingRequest[];
+      } catch (error) {
+        console.error('Failed to fetch training requests:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load training requests. Please check your connection and try again.",
+          variant: "destructive",
+        });
         throw error;
       }
-
-      console.log('Training requests fetched:', requestsData);
-
-      // Enhance each request with additional details
-      const enhancedRequests = await Promise.all(
-        requestsData.map(async (request) => {
-          // Get applications count
-          const { count: applicationsCount } = await supabase
-            .from('training_applications')
-            .select('*', { count: 'exact', head: true })
-            .eq('request_id', request.id);
-
-          // Get selected trainer details if exists
-          let selectedTrainer = null;
-          if (request.selected_trainer_id) {
-            const { data: trainerData } = await supabase
-              .from('trainers')
-              .select('name, title, rating')
-              .eq('id', request.selected_trainer_id)
-              .single();
-            
-            selectedTrainer = trainerData;
-          }
-
-          // Get booking status if trainer is selected
-          let bookingStatus = null;
-          if (request.selected_trainer_id) {
-            const { data: bookingData } = await supabase
-              .from('bookings')
-              .select('status')
-              .eq('trainer_id', request.selected_trainer_id)
-              .eq('training_topic', request.title)
-              .maybeSingle();
-
-            if (bookingData) {
-              bookingStatus = bookingData.status;
-            }
-          }
-
-          return {
-            ...request,
-            selected_trainer: selectedTrainer,
-            applications_count: applicationsCount || 0,
-            booking_status: bookingStatus
-          };
-        })
-      );
-
-      console.log('Enhanced requests:', enhancedRequests);
-      return enhancedRequests as TrainingRequest[];
     }
   });
 
@@ -150,17 +191,31 @@ const AdminTrainingRequests = () => {
     queryFn: async () => {
       if (!selectedRequest?.id) return [];
       
-      const { data, error } = await supabase
-        .from('training_applications')
-        .select(`
-          *,
-          trainer:trainers(name, rating, total_reviews, title, experience_years)
-        `)
-        .eq('request_id', selectedRequest.id)
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('training_applications')
+          .select(`
+            *,
+            trainer:trainers(name, rating, total_reviews, title, experience_years)
+          `)
+          .eq('request_id', selectedRequest.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as TrainingApplication[];
+        if (error) {
+          console.error('Error fetching applications:', error);
+          throw error;
+        }
+        
+        return data as TrainingApplication[];
+      } catch (error) {
+        console.error('Failed to fetch applications:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load applications for this request.",
+          variant: "destructive",
+        });
+        throw error;
+      }
     },
     enabled: !!selectedRequest?.id
   });
@@ -202,6 +257,35 @@ const AdminTrainingRequests = () => {
     }
   };
 
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Failed to Load Training Requests
+              </h3>
+              <p className="text-gray-600 mb-4">
+                There was an error loading the training requests. This might be due to:
+              </p>
+              <ul className="text-left text-sm text-gray-500 mb-4 max-w-md mx-auto">
+                <li>• Database connection issues</li>
+                <li>• Missing table permissions</li>
+                <li>• Network connectivity problems</li>
+              </ul>
+              <Button onClick={() => window.location.reload()}>
+                Retry Loading
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -229,13 +313,30 @@ const AdminTrainingRequests = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading training requests...</div>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p>Loading training requests...</p>
+            </div>
           ) : requests?.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">
-                {statusFilter === 'all' ? 'No training requests found' : `No training requests with status: ${statusFilter}`}
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {statusFilter === 'all' ? 'No Training Requests Found' : `No ${statusFilter.replace('_', ' ')} Requests`}
+              </h3>
+              <p className="text-gray-500 mb-4">
+                {statusFilter === 'all' 
+                  ? 'There are currently no training requests in the system.' 
+                  : `No training requests with status: ${statusFilter.replace('_', ' ')}`
+                }
               </p>
+              <div className="text-sm text-gray-400 bg-gray-50 p-4 rounded-lg max-w-md mx-auto">
+                <p className="mb-2">This could mean:</p>
+                <ul className="text-left space-y-1">
+                  <li>• No clients have submitted training requests yet</li>
+                  <li>• The training_requests table is empty</li>
+                  <li>• There are permission issues with data access</li>
+                </ul>
+              </div>
             </div>
           ) : (
             <div className="border rounded-lg">
