@@ -46,7 +46,7 @@ interface TrainingRequest {
   created_at: string;
   selected_trainer_id: string | null;
   client_id: string;
-  profiles: ClientProfile | null;
+  client_profile: ClientProfile | null;
 }
 
 interface TrainerInfo {
@@ -88,7 +88,7 @@ const AdminTrainingRequests = () => {
         .from('training_requests')
         .select(`
           *,
-          profiles!client_id(full_name, email)
+          client_profile:profiles(full_name, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -98,7 +98,12 @@ const AdminTrainingRequests = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      
+      // Transform the data to match our interface
+      return data?.map(request => ({
+        ...request,
+        client_profile: request.client_profile
+      })) as TrainingRequest[];
     }
   });
 
@@ -170,7 +175,7 @@ const AdminTrainingRequests = () => {
     }
   };
 
-  const handleViewDetails = (request: any) => {
+  const handleViewDetails = (request: TrainingRequest) => {
     setSelectedRequest(request);
     setViewingApplications(true);
   };
@@ -236,8 +241,8 @@ const AdminTrainingRequests = () => {
                         <div className="flex items-center gap-2 mb-3">
                           <User className="h-4 w-4 text-gray-400" />
                           <span className="text-sm font-medium">Client:</span>
-                          <span className="text-sm">{request.profiles?.full_name || 'N/A'}</span>
-                          <span className="text-sm text-gray-500">({request.profiles?.email || 'N/A'})</span>
+                          <span className="text-sm">{request.client_profile?.full_name || 'N/A'}</span>
+                          <span className="text-sm text-gray-500">({request.client_profile?.email || 'N/A'})</span>
                         </div>
                       </div>
                       
@@ -346,7 +351,7 @@ const AdminTrainingRequests = () => {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
                       <span className="text-sm font-medium text-gray-600">Client:</span>
-                      <p>{selectedRequest.profiles?.full_name || 'N/A'} ({selectedRequest.profiles?.email || 'N/A'})</p>
+                      <p>{selectedRequest.client_profile?.full_name || 'N/A'} ({selectedRequest.client_profile?.email || 'N/A'})</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">Status:</span>
