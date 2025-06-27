@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { BarChart3, Users, Calendar, Settings, LogOut, MessageSquare, DollarSign, FileText, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import BackButton from '@/components/BackButton';
@@ -21,6 +23,22 @@ const TrainerDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Get trainer data for the current user
+  const { data: trainerData, isLoading } = useQuery({
+    queryKey: ['trainer-data', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trainers')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user
+  });
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -35,23 +53,31 @@ const TrainerDashboard = () => {
   };
 
   const renderContent = () => {
+    if (isLoading) {
+      return <div className="p-6">Loading...</div>;
+    }
+
+    if (!trainerData?.id) {
+      return <div className="p-6">Trainer profile not found.</div>;
+    }
+
     switch (activeTab) {
       case 'bookings':
-        return <TrainerBookings trainerId="trainer-id" />;
+        return <TrainerBookings trainerId={trainerData.id} />;
       case 'training-requests':
         return <TrainerTrainingRequests />;
       case 'notifications':
         return <NotificationsPage />;
       case 'profile':
-        return <TrainerProfile />;
+        return <TrainerProfile trainerId={trainerData.id} />;
       case 'earnings':
-        return <TrainerEarnings />;
+        return <TrainerEarnings trainerId={trainerData.id} />;
       case 'analytics':
         return <TrainerAnalytics />;
       case 'settings':
-        return <TrainerSettings />;
+        return <TrainerSettings trainerId={trainerData.id} />;
       default:
-        return <TrainerBookings trainerId="trainer-id" />;
+        return <TrainerBookings trainerId={trainerData.id} />;
     }
   };
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -15,8 +14,7 @@ import {
   UserX, 
   DollarSign, 
   Star, 
-  Bell,
-  MarkAsReadIcon
+  Bell
 } from 'lucide-react';
 import type { NotificationType } from '@/types/notifications';
 
