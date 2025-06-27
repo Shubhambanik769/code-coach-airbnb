@@ -55,8 +55,9 @@ const App = () => (
                 <Route path="/trainers" element={<TrainerSearch />} />
                 <Route path="/technology/:slug" element={<TechnologyPage />} />
                 <Route path="/trainer/:id" element={<TrainerProfile />} />
+                {/* Updated feedback route to properly handle base64 encoded tokens */}
                 <Route path="/feedback/:token" element={<FeedbackForm />} />
-                <Route path="/feedback/success" element={<FeedbackSuccess />} />
+                <Route path="/feedback-success" element={<FeedbackSuccess />} />
                 <Route 
                   path="/dashboard" 
                   element={

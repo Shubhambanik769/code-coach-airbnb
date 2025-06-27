@@ -257,7 +257,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const copyFeedbackLink = (token: string) => {
-    const feedbackUrl = `${window.location.origin}/feedback/${token}`;
+    // Properly encode the token for URL usage
+    const encodedToken = encodeURIComponent(token);
+    const feedbackUrl = `${window.location.origin}/feedback/${encodedToken}`;
     navigator.clipboard.writeText(feedbackUrl);
     toast({
       title: "Link Copied!",

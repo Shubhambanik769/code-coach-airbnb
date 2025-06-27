@@ -11,9 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Star, CheckCircle, AlertCircle } from 'lucide-react';
 
 const FeedbackForm = () => {
-  const { token } = useParams();
+  const { token: rawToken } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Properly decode the token from URL parameters
+  const token = rawToken ? decodeURIComponent(rawToken) : null;
   
   const [formData, setFormData] = useState({
     respondent_name: '',
