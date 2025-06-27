@@ -33,6 +33,10 @@ interface TrainerApplication {
     budget_max: number;
     status: string;
     created_at: string;
+    client_profile: {
+      full_name: string;
+      email: string;
+    };
   } | null;
 }
 
@@ -52,7 +56,10 @@ const TrainerApplications = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trainer:', error);
+        return null;
+      }
       return data;
     },
     enabled: !!user?.id
@@ -64,11 +71,16 @@ const TrainerApplications = () => {
     queryFn: async () => {
       if (!trainer?.id) return [];
       
+      console.log('Fetching applications for trainer:', trainer.id);
+      
       let query = supabase
         .from('training_applications')
         .select(`
           *,
-          training_request:training_requests(*)
+          training_request:training_requests(
+            *,
+            client_profile:profiles!client_id(full_name, email)
+          )
         `)
         .eq('trainer_id', trainer.id)
         .order('created_at', { ascending: false });
@@ -79,7 +91,12 @@ const TrainerApplications = () => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching applications:', error);
+        return [];
+      }
+      
+      console.log('Applications fetched:', data);
       return data as TrainerApplication[];
     },
     enabled: !!trainer?.id
@@ -105,6 +122,16 @@ const TrainerApplications = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (!trainer) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8">Loading trainer data...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -164,6 +191,11 @@ const TrainerApplications = () => {
                           </Badge>
                         </div>
                         <p className="text-gray-600 mb-3">{application.training_request.description}</p>
+                        {application.training_request.client_profile && (
+                          <p className="text-sm text-gray-500 mb-2">
+                            Client: {application.training_request.client_profile.full_name} ({application.training_request.client_profile.email})
+                          </p>
+                        )}
                       </div>
                     </div>
 

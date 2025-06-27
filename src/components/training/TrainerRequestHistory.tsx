@@ -34,6 +34,8 @@ const TrainerRequestHistory = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
+      console.log('Fetching request history for user:', user.id);
+
       // First get the trainer ID
       const { data: trainer } = await supabase
         .from('trainers')
@@ -41,7 +43,12 @@ const TrainerRequestHistory = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (!trainer) return [];
+      if (!trainer) {
+        console.log('No trainer found for user');
+        return [];
+      }
+
+      console.log('Found trainer:', trainer.id);
 
       // Get all applications with request details
       const { data, error } = await supabase
@@ -51,7 +58,7 @@ const TrainerRequestHistory = () => {
           proposed_price,
           created_at,
           status,
-          request:training_requests(
+          training_request:training_requests(
             id,
             title,
             description,
@@ -67,22 +74,27 @@ const TrainerRequestHistory = () => {
         .eq('trainer_id', trainer.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching request history:', error);
+        return [];
+      }
 
-      return data?.map(app => ({
-        id: app.request.id,
-        title: app.request.title,
-        description: app.request.description,
-        target_audience: app.request.target_audience,
-        duration_hours: app.request.duration_hours,
-        budget_min: app.request.budget_min,
-        budget_max: app.request.budget_max,
-        status: app.request.status,
-        created_at: app.request.created_at,
+      console.log('Request history fetched:', data);
+
+      return data?.filter(app => app.training_request).map(app => ({
+        id: app.training_request.id,
+        title: app.training_request.title,
+        description: app.training_request.description,
+        target_audience: app.training_request.target_audience,
+        duration_hours: app.training_request.duration_hours,
+        budget_min: app.training_request.budget_min,
+        budget_max: app.training_request.budget_max,
+        status: app.training_request.status,
+        created_at: app.training_request.created_at,
         application_status: app.status,
         proposed_price: app.proposed_price,
         applied_at: app.created_at,
-        client_profile: app.request.client_profile
+        client_profile: app.training_request.client_profile
       })) || [];
     },
     enabled: !!user?.id
@@ -136,7 +148,7 @@ const TrainerRequestHistory = () => {
         ) : (
           <div className="space-y-4">
             {history?.map((request) => (
-              <Card key={request.id} className="border-l-4 border-l-techblue-500">
+              <Card key={`${request.id}-${request.applied_at}`} className="border-l-4 border-l-techblue-500">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
