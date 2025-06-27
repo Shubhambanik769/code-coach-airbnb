@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -257,16 +256,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const copyFeedbackLink = (token: string) => {
-    // Debug the token before encoding
-    console.log('Original token:', token);
-    console.log('Token length:', token.length);
-    console.log('Token contains special chars:', /[+/=]/.test(token));
+    // Create a clean base64url token that works in URLs
+    const cleanToken = token
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
     
-    // Use base64url encoding for better URL compatibility
-    const base64urlToken = token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    console.log('Base64url token:', base64urlToken);
-    
-    const feedbackUrl = `${window.location.origin}/feedback/${base64urlToken}`;
+    const feedbackUrl = `${window.location.origin}/feedback/${cleanToken}`;
     console.log('Generated feedback URL:', feedbackUrl);
     
     navigator.clipboard.writeText(feedbackUrl);

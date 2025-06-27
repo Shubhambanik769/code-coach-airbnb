@@ -15,31 +15,26 @@ const FeedbackForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Properly decode the token from URL parameters - handle both base64 and base64url
+  // Enhanced token processing to handle both base64 and base64url
   const token = rawToken ? (() => {
-    console.log('Raw token from URL:', rawToken);
+    console.log('Processing token from URL:', rawToken);
     
-    // Convert base64url to base64 if needed
     let processedToken = rawToken;
+    
+    // If it looks like base64url (no +, /, =), convert to base64
     if (!rawToken.includes('+') && !rawToken.includes('/') && !rawToken.includes('=')) {
-      // This looks like base64url, convert to base64
       processedToken = rawToken.replace(/-/g, '+').replace(/_/g, '/');
-      // Add padding if needed
+      
+      // Add proper base64 padding
       const padding = processedToken.length % 4;
       if (padding) {
         processedToken += '='.repeat(4 - padding);
       }
+      
       console.log('Converted base64url to base64:', processedToken);
     }
     
-    try {
-      const decoded = decodeURIComponent(processedToken);
-      console.log('Final decoded token:', decoded);
-      return decoded;
-    } catch (error) {
-      console.log('No URI decoding needed, using processed token:', processedToken);
-      return processedToken;
-    }
+    return processedToken;
   })() : null;
   
   const [formData, setFormData] = useState({
@@ -112,14 +107,14 @@ const FeedbackForm = () => {
     retry: false
   });
 
-  // Submit feedback mutation - PUBLIC ACCESS (no authentication required)
+  // Enhanced feedback submission that triggers rating updates
   const submitFeedbackMutation = useMutation({
     mutationFn: async (feedbackData: typeof formData) => {
       if (!feedbackLink?.id) throw new Error('Invalid feedback link');
       
       console.log('Submitting feedback:', feedbackData);
       
-      // Check for duplicate submission by email (public access - now works with RLS)
+      // Check for duplicate submission
       const { data: existingFeedback, error: checkError } = await supabase
         .from('feedback_responses')
         .select('id')
@@ -136,8 +131,7 @@ const FeedbackForm = () => {
         throw new Error('You have already submitted feedback for this session.');
       }
 
-      // Prepare the submission data, only including rating fields that have values > 0
-      // This prevents check constraint violations for rating fields that expect 1-5 values
+      // Prepare submission data
       const submissionData: any = {
         feedback_link_id: feedbackLink.id,
         respondent_name: feedbackData.respondent_name,
@@ -161,7 +155,7 @@ const FeedbackForm = () => {
 
       console.log('Final submission data:', submissionData);
 
-      // Submit feedback without authentication (public access - now works with RLS)
+      // Submit feedback
       const { error } = await supabase
         .from('feedback_responses')
         .insert(submissionData);
@@ -174,7 +168,7 @@ const FeedbackForm = () => {
       console.log('Feedback submitted successfully');
     },
     onSuccess: () => {
-      // Mark as submitted in localStorage to prevent duplicate submissions
+      // Mark as submitted in localStorage
       if (token) {
         const submittedKey = `feedback_submitted_${token}`;
         localStorage.setItem(submittedKey, 'true');
@@ -183,7 +177,7 @@ const FeedbackForm = () => {
       
       toast({
         title: "Thank you!",
-        description: "Your feedback has been submitted successfully."
+        description: "Your feedback has been submitted successfully and will be visible on the trainer's profile."
       });
       navigate('/feedback-success');
     },
@@ -263,7 +257,7 @@ const FeedbackForm = () => {
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Link Not Found</h2>
             <p className="text-gray-600 mb-4">
-              Debug info: Token = {token || 'null'}, Raw token = {rawToken || 'null'}
+              Debug: Raw token = {rawToken || 'null'}, Processed token = {token || 'null'}
             </p>
             <p className="text-gray-600 mb-4">
               {error?.message || "This feedback link is invalid, expired, or has been deactivated."}

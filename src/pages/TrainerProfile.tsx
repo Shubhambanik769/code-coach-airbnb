@@ -32,7 +32,7 @@ const TrainerProfilePage = () => {
       }
 
       try {
-        // Get trainer data - only fetch approved trainers for public view
+        // Get trainer data
         const { data: trainer, error: trainerError } = await supabase
           .from('trainers')
           .select('*')
@@ -40,7 +40,7 @@ const TrainerProfilePage = () => {
           .eq('status', 'approved')
           .single();
 
-        console.log('Trainer query result for authenticated user:', { trainer, trainerError });
+        console.log('Trainer query result:', { trainer, trainerError });
 
         if (trainerError) {
           console.error('Trainer fetch error:', trainerError);
@@ -51,42 +51,42 @@ const TrainerProfilePage = () => {
           throw new Error('Trainer not found or not approved');
         }
 
-        // Get profile data - now accessible to all users
+        // Get profile data
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', trainer.user_id)
           .maybeSingle();
 
-        console.log('Profile query result for authenticated user:', { profile, profileError });
-
         if (profileError) {
           console.error('Profile fetch error:', profileError);
         }
 
-        // Get reviews from reviews table - now accessible to all users
+        // Get reviews from reviews table
         const { data: reviews, error: reviewsError } = await supabase
           .from('reviews')
           .select('*')
           .eq('trainer_id', id);
 
-        console.log('Reviews query result for authenticated user:', { reviews, reviewsError });
-
-        // Get feedback responses through feedback links - now accessible to all users
+        // Get feedback responses - Enhanced query to get all feedback
         const { data: feedbackResponses, error: feedbackError } = await supabase
           .from('feedback_responses')
           .select(`
             *,
             feedback_links!inner(
               booking_id,
-              bookings!inner(trainer_id)
+              bookings!inner(
+                trainer_id,
+                training_topic,
+                start_time
+              )
             )
           `)
           .eq('feedback_links.bookings.trainer_id', id);
 
-        console.log('Feedback query result for authenticated user:', { feedbackResponses, feedbackError });
+        console.log('Enhanced feedback query result:', { feedbackResponses, feedbackError });
 
-        // Combine all feedback data
+        // Combine ALL feedback sources for comprehensive rating
         const allFeedback = [
           ...(reviews || []).map(r => ({
             rating: r.rating,
@@ -96,8 +96,9 @@ const TrainerProfilePage = () => {
             punctuality_rating: r.punctuality_rating,
             skills_rating: r.skills_rating,
             would_recommend: r.would_recommend,
-            respondent_name: 'Anonymous User',
-            source: 'review'
+            respondent_name: 'Platform User',
+            source: 'review',
+            training_topic: null
           })),
           ...(feedbackResponses || []).map(fr => ({
             rating: fr.rating,
@@ -108,29 +109,55 @@ const TrainerProfilePage = () => {
             skills_rating: fr.skills_rating,
             would_recommend: fr.would_recommend,
             respondent_name: fr.respondent_name || 'Anonymous',
-            source: 'feedback'
+            source: 'feedback',
+            training_topic: fr.feedback_links?.bookings?.training_topic
           }))
         ];
 
-        // Calculate comprehensive rating
+        // Calculate comprehensive rating from ALL sources
         const totalRatings = allFeedback.length;
         const averageRating = totalRatings > 0 
           ? allFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalRatings
           : 0;
 
-        console.log('Calculated rating for authenticated view:', { averageRating, totalRatings });
+        // Calculate additional metrics
+        const communicationRatings = allFeedback.filter(f => f.communication_rating);
+        const avgCommunication = communicationRatings.length > 0
+          ? communicationRatings.reduce((sum, f) => sum + f.communication_rating, 0) / communicationRatings.length
+          : 0;
+
+        const punctualityRatings = allFeedback.filter(f => f.punctuality_rating);
+        const avgPunctuality = punctualityRatings.length > 0
+          ? punctualityRatings.reduce((sum, f) => sum + f.punctuality_rating, 0) / punctualityRatings.length
+          : 0;
+
+        const skillsRatings = allFeedback.filter(f => f.skills_rating);
+        const avgSkills = skillsRatings.length > 0
+          ? skillsRatings.reduce((sum, f) => sum + f.skills_rating, 0) / skillsRatings.length
+          : 0;
+
+        console.log('Comprehensive rating calculation:', { 
+          averageRating, 
+          totalRatings,
+          avgCommunication,
+          avgPunctuality,
+          avgSkills 
+        });
 
         return { 
           trainer: { 
             ...trainer, 
             profile,
             rating: Number(averageRating.toFixed(1)),
-            total_reviews: totalRatings
+            total_reviews: totalRatings,
+            avg_communication: Number(avgCommunication.toFixed(1)),
+            avg_punctuality: Number(avgPunctuality.toFixed(1)),
+            avg_skills: Number(avgSkills.toFixed(1))
           },
-          reviews: allFeedback
+          reviews: allFeedback.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         };
       } catch (error) {
-        console.error('Error in trainer profile fetch for authenticated user:', error);
+        console.error('Error in trainer profile fetch:', error);
         throw error;
       }
     },

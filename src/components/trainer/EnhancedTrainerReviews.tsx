@@ -21,11 +21,14 @@ const EnhancedTrainerReviews = () => {
 
       if (!trainer) throw new Error('Trainer not found');
 
-      // Get both reviews and feedback responses
+      // Get both reviews and feedback responses with enhanced data
       const [reviewsResult, feedbackResult] = await Promise.all([
         supabase
           .from('reviews')
-          .select('*')
+          .select(`
+            *,
+            bookings!inner(training_topic, start_time)
+          `)
           .eq('trainer_id', trainer.id)
           .order('created_at', { ascending: false }),
         
@@ -38,7 +41,8 @@ const EnhancedTrainerReviews = () => {
               bookings!inner (
                 trainer_id,
                 training_topic,
-                start_time
+                start_time,
+                organization_name
               )
             )
           `)
@@ -49,24 +53,31 @@ const EnhancedTrainerReviews = () => {
       const reviews = reviewsResult.data || [];
       const feedbackResponses = feedbackResult.data || [];
 
+      console.log('Enhanced reviews data:', { reviews, feedbackResponses });
+
       if (reviews.length === 0 && feedbackResponses.length === 0) {
         return { allFeedback: [], stats: null };
       }
 
-      // Combine both data sources for comprehensive view
+      // Combine and enrich feedback data
       const allFeedback = [
         ...reviews.map(review => ({
           ...review,
           type: 'review',
           date: review.created_at,
-          name: 'Anonymous Student'
+          name: 'Platform User',
+          comment: review.comment,
+          training_topic: review.bookings?.training_topic,
+          organization_name: null
         })),
         ...feedbackResponses.map(feedback => ({
           ...feedback,
           type: 'feedback',
           date: feedback.submitted_at,
           name: feedback.respondent_name,
-          comment: feedback.review_comment
+          comment: feedback.review_comment,
+          training_topic: feedback.feedback_links?.bookings?.training_topic,
+          organization_name: feedback.feedback_links?.bookings?.organization_name || feedback.organization_name
         }))
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -241,17 +252,17 @@ const EnhancedTrainerReviews = () => {
         </CardContent>
       </Card>
 
-      {/* Recent Reviews & Feedback */}
+      {/* Recent Reviews & Feedback - Enhanced */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            All Reviews & Feedback
+            All Reviews & Feedback ({reviewsData?.stats?.totalResponses || 0})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {allFeedback.slice(0, 15).map((item, index) => (
+            {reviewsData?.allFeedback.slice(0, 20).map((item, index) => (
               <div key={`${item.type}-${item.id}-${index}`} className="border-b border-gray-100 pb-6 last:border-b-0">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -265,9 +276,21 @@ const EnhancedTrainerReviews = () => {
                       <p className="text-sm text-gray-500">
                         {format(new Date(item.date), 'MMM dd, yyyy')}
                       </p>
-                      <Badge variant="outline" className="text-xs mt-1">
-                        {item.type === 'review' ? 'Platform Review' : 'External Feedback'}
-                      </Badge>
+                      <div className="flex gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          {item.type === 'review' ? 'Platform Review' : 'Client Feedback'}
+                        </Badge>
+                        {item.training_topic && (
+                          <Badge variant="secondary" className="text-xs">
+                            {item.training_topic}
+                          </Badge>
+                        )}
+                        {item.organization_name && (
+                          <Badge variant="outline" className="text-xs">
+                            {item.organization_name}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -283,8 +306,8 @@ const EnhancedTrainerReviews = () => {
                   </div>
                 </div>
 
-                {/* Detailed Ratings for Feedback */}
-                {item.type === 'feedback' && (item.communication_rating || item.punctuality_rating || item.skills_rating) && (
+                {/* Detailed Ratings */}
+                {(item.communication_rating || item.punctuality_rating || item.skills_rating) && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 text-sm">
                     {item.communication_rating && (
                       <div className="flex items-center gap-2">
