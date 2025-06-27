@@ -35,7 +35,7 @@ interface BookingData {
   student_name?: string;
   student_email?: string;
   feedback_token?: string;
-  booking_type?: string; // New field for training request bookings
+  booking_type?: string;
 }
 
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
@@ -45,7 +45,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch bookings with client details - Enhanced to handle training request bookings
+  // Fetch bookings with client details and auto-confirm training request bookings
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -72,6 +72,38 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       if (!bookingsData || bookingsData.length === 0) {
         console.log('No bookings found for trainer:', trainerId);
         return [];
+      }
+
+      // Auto-confirm training request bookings that are still pending
+      const trainingRequestBookings = bookingsData.filter(
+        booking => booking.booking_type === 'training_request' && booking.status === 'pending'
+      );
+
+      if (trainingRequestBookings.length > 0) {
+        console.log('Auto-confirming training request bookings:', trainingRequestBookings.map(b => b.id));
+        
+        // Update all training request bookings to confirmed status
+        for (const booking of trainingRequestBookings) {
+          await supabase
+            .from('bookings')
+            .update({ 
+              status: 'confirmed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', booking.id);
+        }
+        
+        // Refetch data to get updated status
+        const { data: updatedBookingsData } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('trainer_id', trainerId)
+          .order('start_time', { ascending: false });
+        
+        if (updatedBookingsData) {
+          bookingsData.length = 0;
+          bookingsData.push(...updatedBookingsData);
+        }
       }
 
       // Get student/client details
@@ -106,7 +138,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const studentProfile = studentsData?.find(s => s.id === booking.student_id);
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         
-        // Check if this booking came from a training request (auto-confirmed)
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
         return {
@@ -452,7 +483,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                           </DialogContent>
                         </Dialog>
 
-                        {/* Updated action buttons - no accept/decline for training request bookings */}
+                        {/* Only show accept/decline for regular bookings, not training request bookings */}
                         {booking.status === 'pending' && !booking.is_training_request && (
                           <>
                             <Button
@@ -476,13 +507,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                           </>
                         )}
                         
-                        {booking.status === 'pending' && booking.is_training_request && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                            Auto-Confirmed via Training Request
+                        {/* Show auto-confirmed message for training request bookings */}
+                        {booking.is_training_request && booking.status === 'confirmed' && (
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                            Auto-Confirmed
                           </Badge>
                         )}
                         
-                        {(booking.status === 'confirmed' || (booking.status === 'pending' && booking.is_training_request)) && (
+                        {booking.status === 'confirmed' && (
                           <Button
                             variant="outline"
                             size="sm"
