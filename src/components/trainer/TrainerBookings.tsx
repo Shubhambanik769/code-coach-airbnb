@@ -257,9 +257,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const copyFeedbackLink = (token: string) => {
-    // Properly encode the token for URL usage
-    const encodedToken = encodeURIComponent(token);
-    const feedbackUrl = `${window.location.origin}/feedback/${encodedToken}`;
+    // Debug the token before encoding
+    console.log('Original token:', token);
+    console.log('Token length:', token.length);
+    console.log('Token contains special chars:', /[+/=]/.test(token));
+    
+    // Use base64url encoding for better URL compatibility
+    const base64urlToken = token.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    console.log('Base64url token:', base64urlToken);
+    
+    const feedbackUrl = `${window.location.origin}/feedback/${base64urlToken}`;
+    console.log('Generated feedback URL:', feedbackUrl);
+    
     navigator.clipboard.writeText(feedbackUrl);
     toast({
       title: "Link Copied!",

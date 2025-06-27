@@ -15,8 +15,32 @@ const FeedbackForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Properly decode the token from URL parameters
-  const token = rawToken ? decodeURIComponent(rawToken) : null;
+  // Properly decode the token from URL parameters - handle both base64 and base64url
+  const token = rawToken ? (() => {
+    console.log('Raw token from URL:', rawToken);
+    
+    // Convert base64url to base64 if needed
+    let processedToken = rawToken;
+    if (!rawToken.includes('+') && !rawToken.includes('/') && !rawToken.includes('=')) {
+      // This looks like base64url, convert to base64
+      processedToken = rawToken.replace(/-/g, '+').replace(/_/g, '/');
+      // Add padding if needed
+      const padding = processedToken.length % 4;
+      if (padding) {
+        processedToken += '='.repeat(4 - padding);
+      }
+      console.log('Converted base64url to base64:', processedToken);
+    }
+    
+    try {
+      const decoded = decodeURIComponent(processedToken);
+      console.log('Final decoded token:', decoded);
+      return decoded;
+    } catch (error) {
+      console.log('No URI decoding needed, using processed token:', processedToken);
+      return processedToken;
+    }
+  })() : null;
   
   const [formData, setFormData] = useState({
     respondent_name: '',
@@ -238,6 +262,9 @@ const FeedbackForm = () => {
           <CardContent className="text-center p-6">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Link Not Found</h2>
+            <p className="text-gray-600 mb-4">
+              Debug info: Token = {token || 'null'}, Raw token = {rawToken || 'null'}
+            </p>
             <p className="text-gray-600 mb-4">
               {error?.message || "This feedback link is invalid, expired, or has been deactivated."}
             </p>
