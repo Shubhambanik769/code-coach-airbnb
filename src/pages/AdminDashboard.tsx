@@ -10,6 +10,7 @@ import Analytics from '@/components/admin/Analytics';
 import JobManagement from '@/components/admin/JobManagement';
 import SystemSettings from '@/components/admin/SystemSettings';
 import SuccessStoryManagement from '@/components/admin/SuccessStoryManagement';
+import AdminTrainingRequests from '@/components/admin/AdminTrainingRequests';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminDashboard = () => {
@@ -27,7 +28,7 @@ const AdminDashboard = () => {
       case 'bookings':
         return <BookingManagement />;
       case 'training-requests':
-        return <div className="p-6">Training requests management coming soon...</div>;
+        return <AdminTrainingRequests />;
       case 'analytics':
         return <Analytics />;
       case 'stories':
