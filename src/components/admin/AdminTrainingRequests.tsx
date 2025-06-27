@@ -24,49 +24,53 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
+interface ClientProfile {
+  full_name: string | null;
+  email: string;
+}
+
 interface TrainingRequest {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   target_audience: string;
-  expected_start_date: string;
-  expected_end_date: string;
-  duration_hours: number;
-  delivery_mode: string;
-  location: string;
-  budget_min: number;
-  budget_max: number;
-  application_deadline: string;
-  status: string;
+  expected_start_date: string | null;
+  expected_end_date: string | null;
+  duration_hours: number | null;
+  delivery_mode: string | null;
+  location: string | null;
+  budget_min: number | null;
+  budget_max: number | null;
+  application_deadline: string | null;
+  status: string | null;
   created_at: string;
-  selected_trainer_id: string;
+  selected_trainer_id: string | null;
   client_id: string;
-  profiles?: {
-    full_name: string;
-    email: string;
-  };
+  profiles: ClientProfile | null;
+}
+
+interface TrainerInfo {
+  id: string;
+  name: string;
+  rating: number | null;
+  total_reviews: number | null;
+  title: string;
+  experience_years: number | null;
+  hourly_rate: number | null;
 }
 
 interface TrainingApplication {
   id: string;
   proposed_price: number;
-  proposed_start_date: string;
-  proposed_end_date: string;
-  proposed_duration_hours: number;
-  availability_notes: string;
-  message_to_client: string;
-  proposed_syllabus: string;
-  status: string;
+  proposed_start_date: string | null;
+  proposed_end_date: string | null;
+  proposed_duration_hours: number | null;
+  availability_notes: string | null;
+  message_to_client: string | null;
+  proposed_syllabus: string | null;
+  status: string | null;
   created_at: string;
-  trainer?: {
-    id: string;
-    name: string;
-    rating: number;
-    total_reviews: number;
-    title: string;
-    experience_years: number;
-    hourly_rate: number;
-  };
+  trainer: TrainerInfo | null;
 }
 
 const AdminTrainingRequests = () => {
@@ -222,8 +226,8 @@ const AdminTrainingRequests = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold">{request.title}</h3>
-                          <Badge className={getStatusColor(request.status)}>
-                            {request.status}
+                          <Badge className={getStatusColor(request.status || 'open')}>
+                            {request.status || 'open'}
                           </Badge>
                         </div>
                         <p className="text-gray-600 mb-3 line-clamp-2">{request.description}</p>
@@ -249,7 +253,7 @@ const AdminTrainingRequests = () => {
                         {request.status === 'open' && (
                           <Select
                             onValueChange={(value) => handleUpdateRequestStatus(request.id, value)}
-                            defaultValue={request.status}
+                            defaultValue={request.status || 'open'}
                           >
                             <SelectTrigger className="w-32">
                               <SelectValue />
@@ -276,7 +280,7 @@ const AdminTrainingRequests = () => {
                         <Clock className="h-4 w-4 text-gray-400" />
                         <div>
                           <span className="text-xs text-gray-500">Duration:</span>
-                          <p className="text-sm font-medium">{request.duration_hours}h</p>
+                          <p className="text-sm font-medium">{request.duration_hours || 'N/A'}h</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -286,13 +290,13 @@ const AdminTrainingRequests = () => {
                           <p className="text-sm font-medium">{request.delivery_mode || 'N/A'}</p>
                         </div>
                       </div>
-                      {(request.budget_min > 0 || request.budget_max > 0) && (
+                      {((request.budget_min && request.budget_min > 0) || (request.budget_max && request.budget_max > 0)) && (
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-gray-400" />
                           <div>
                             <span className="text-xs text-gray-500">Budget:</span>
                             <p className="text-sm font-medium">
-                              ${request.budget_min}-${request.budget_max}
+                              ${request.budget_min || 0}-${request.budget_max || 0}
                             </p>
                           </div>
                         </div>
@@ -346,8 +350,8 @@ const AdminTrainingRequests = () => {
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">Status:</span>
-                      <Badge className={getStatusColor(selectedRequest.status)}>
-                        {selectedRequest.status}
+                      <Badge className={getStatusColor(selectedRequest.status || 'open')}>
+                        {selectedRequest.status || 'open'}
                       </Badge>
                     </div>
                     <div>
@@ -356,7 +360,7 @@ const AdminTrainingRequests = () => {
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">Duration:</span>
-                      <p>{selectedRequest.duration_hours} hours</p>
+                      <p>{selectedRequest.duration_hours || 'Not specified'} hours</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">Delivery Mode:</span>
@@ -373,11 +377,11 @@ const AdminTrainingRequests = () => {
                     <p className="mt-1 p-3 bg-gray-50 rounded-md">{selectedRequest.description}</p>
                   </div>
                   
-                  {(selectedRequest.budget_min > 0 || selectedRequest.budget_max > 0) && (
+                  {((selectedRequest.budget_min && selectedRequest.budget_min > 0) || (selectedRequest.budget_max && selectedRequest.budget_max > 0)) && (
                     <div>
                       <span className="text-sm font-medium text-gray-600">Budget Range:</span>
                       <p className="text-lg font-semibold text-green-600">
-                        ${selectedRequest.budget_min} - ${selectedRequest.budget_max}
+                        ${selectedRequest.budget_min || 0} - ${selectedRequest.budget_max || 0}
                       </p>
                     </div>
                   )}
@@ -408,8 +412,8 @@ const AdminTrainingRequests = () => {
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                   <h4 className="font-semibold">{application.trainer?.name}</h4>
-                                  <Badge className={getApplicationStatusColor(application.status)}>
-                                    {application.status}
+                                  <Badge className={getApplicationStatusColor(application.status || 'pending')}>
+                                    {application.status || 'pending'}
                                   </Badge>
                                 </div>
                                 <p className="text-sm text-gray-600 mb-2">{application.trainer?.title}</p>
