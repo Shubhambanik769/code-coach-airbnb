@@ -317,6 +317,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           created_at: string
@@ -809,17 +845,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_notification: {
+        Args: {
+          p_user_id: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_title: string
+          p_message: string
+          p_data?: Json
+        }
+        Returns: string
+      }
       generate_feedback_token: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_unread_notification_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       get_user_role: {
         Args: { user_id: string }
         Returns: string
       }
+      mark_notifications_read: {
+        Args: { notification_ids: string[] }
+        Returns: number
+      }
     }
     Enums: {
-      [_ in never]: never
+      notification_type:
+        | "booking_confirmed"
+        | "booking_cancelled"
+        | "booking_completed"
+        | "training_request_created"
+        | "training_application_received"
+        | "training_application_accepted"
+        | "training_application_rejected"
+        | "trainer_approved"
+        | "trainer_rejected"
+        | "payment_received"
+        | "review_received"
+        | "system_announcement"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -934,6 +1000,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      notification_type: [
+        "booking_confirmed",
+        "booking_cancelled",
+        "booking_completed",
+        "training_request_created",
+        "training_application_received",
+        "training_application_accepted",
+        "training_application_rejected",
+        "trainer_approved",
+        "trainer_rejected",
+        "payment_received",
+        "review_received",
+        "system_announcement",
+      ],
+    },
   },
 } as const

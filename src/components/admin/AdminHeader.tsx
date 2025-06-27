@@ -1,9 +1,10 @@
 
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Settings, Bell } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface AdminHeaderProps {
   user: any;
@@ -40,9 +41,7 @@ const AdminHeader = ({ user }: AdminHeaderProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationBell />
             
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-700">

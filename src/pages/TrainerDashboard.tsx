@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { Calendar, BarChart3, DollarSign, Settings, LogOut, Star, FileText } from 'lucide-react';
+import { BarChart3, Users, Calendar, Settings, LogOut, MessageSquare, DollarSign, FileText, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,34 +9,17 @@ import BackButton from '@/components/BackButton';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
 import TrainerProfile from '@/components/trainer/TrainerProfile';
 import TrainerEarnings from '@/components/trainer/TrainerEarnings';
-import TrainerReviews from '@/components/trainer/TrainerReviews';
+import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
+import TrainerSettings from '@/components/trainer/TrainerSettings';
 import TrainerTrainingRequests from '@/components/trainer/TrainerTrainingRequests';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import NotificationsPage from '@/components/notifications/NotificationsPage';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Get trainer data
-  const { data: trainer } = useQuery({
-    queryKey: ['trainer-profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      
-      const { data, error } = await supabase
-        .from('trainers')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
 
   const handleSignOut = async () => {
     try {
@@ -51,29 +35,23 @@ const TrainerDashboard = () => {
   };
 
   const renderContent = () => {
-    if (!trainer) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">Loading trainer profile...</p>
-        </div>
-      );
-    }
-
     switch (activeTab) {
       case 'bookings':
-        return <TrainerBookings trainerId={trainer.id} />;
+        return <TrainerBookings trainerId="trainer-id" />;
       case 'training-requests':
         return <TrainerTrainingRequests />;
+      case 'notifications':
+        return <NotificationsPage />;
       case 'profile':
-        return <TrainerProfile trainerId={trainer.id} />;
+        return <TrainerProfile />;
       case 'earnings':
-        return <TrainerEarnings trainerId={trainer.id} />;
-      case 'reviews':
-        return <TrainerReviews trainerId={trainer.id} />;
+        return <TrainerEarnings />;
+      case 'analytics':
+        return <TrainerAnalytics />;
       case 'settings':
-        return <div className="p-6">Trainer settings coming soon...</div>;
+        return <TrainerSettings />;
       default:
-        return <TrainerBookings trainerId={trainer.id} />;
+        return <TrainerBookings trainerId="trainer-id" />;
     }
   };
 
@@ -88,6 +66,7 @@ const TrainerDashboard = () => {
               Trainer Dashboard
             </h1>
             <div className="flex items-center space-x-4">
+              <NotificationBell />
               <span className="text-sm text-gray-700">{user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
@@ -105,9 +84,10 @@ const TrainerDashboard = () => {
             {[
               { id: 'bookings', label: 'My Bookings', icon: Calendar },
               { id: 'training-requests', label: 'Training Requests', icon: FileText },
-              { id: 'profile', label: 'Profile', icon: Settings },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'profile', label: 'Profile', icon: Users },
               { id: 'earnings', label: 'Earnings', icon: DollarSign },
-              { id: 'reviews', label: 'Reviews', icon: Star },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((item) => {
               const Icon = item.icon;

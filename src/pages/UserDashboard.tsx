@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Calendar, CreditCard, User, Settings, LogOut, FileText } from 'lucide-react';
+import { Calendar, CreditCard, User, Settings, LogOut, FileText, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import UserBookings from '@/components/user/UserBookings';
 import UserProfile from '@/components/user/UserProfile';
 import UserBilling from '@/components/user/UserBilling';
 import UserTrainingRequests from '@/components/user/UserTrainingRequests';
+import NotificationsPage from '@/components/notifications/NotificationsPage';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -36,6 +38,8 @@ const UserDashboard = () => {
         return <UserBookings />;
       case 'training-requests':
         return <UserTrainingRequests />;
+      case 'notifications':
+        return <NotificationsPage />;
       case 'profile':
         return <UserProfile />;
       case 'billing':
@@ -58,6 +62,7 @@ const UserDashboard = () => {
               Client Dashboard
             </h1>
             <div className="flex items-center space-x-4">
+              <NotificationBell />
               <span className="text-sm text-gray-700">{user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
@@ -75,6 +80,7 @@ const UserDashboard = () => {
             {[
               { id: 'bookings', label: 'My Bookings', icon: Calendar },
               { id: 'training-requests', label: 'Training Requests', icon: FileText },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
               { id: 'profile', label: 'Profile', icon: User },
               { id: 'billing', label: 'Billing', icon: CreditCard },
               { id: 'settings', label: 'Settings', icon: Settings },
