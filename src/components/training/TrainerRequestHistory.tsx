@@ -1,0 +1,202 @@
+
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
+import { FileText, Calendar, DollarSign, Users, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+
+interface TrainingRequestHistory {
+  id: string;
+  title: string;
+  description: string;
+  target_audience: string;
+  duration_hours: number;
+  budget_min: number;
+  budget_max: number;
+  status: string;
+  created_at: string;
+  application_status: string;
+  proposed_price: number;
+  applied_at: string;
+  client_profile: {
+    full_name: string;
+    email: string;
+  };
+}
+
+const TrainerRequestHistory = () => {
+  const { user } = useAuth();
+
+  const { data: history, isLoading } = useQuery({
+    queryKey: ['trainer-request-history', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      // First get the trainer ID
+      const { data: trainer } = await supabase
+        .from('trainers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!trainer) return [];
+
+      // Get all applications with request details
+      const { data, error } = await supabase
+        .from('training_applications')
+        .select(`
+          id,
+          proposed_price,
+          created_at,
+          status,
+          request:training_requests(
+            id,
+            title,
+            description,
+            target_audience,
+            duration_hours,
+            budget_min,
+            budget_max,
+            status,
+            created_at,
+            client_profile:profiles!client_id(full_name, email)
+          )
+        `)
+        .eq('trainer_id', trainer.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return data?.map(app => ({
+        id: app.request.id,
+        title: app.request.title,
+        description: app.request.description,
+        target_audience: app.request.target_audience,
+        duration_hours: app.request.duration_hours,
+        budget_min: app.request.budget_min,
+        budget_max: app.request.budget_max,
+        status: app.request.status,
+        created_at: app.request.created_at,
+        application_status: app.status,
+        proposed_price: app.proposed_price,
+        applied_at: app.created_at,
+        client_profile: app.request.client_profile
+      })) || [];
+    },
+    enabled: !!user?.id
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
+      case 'trainer_selected': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-purple-100 text-purple-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getApplicationStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'shortlisted': return 'bg-blue-100 text-blue-800';
+      case 'selected': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8">Loading request history...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Training Request History ({history?.length || 0})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {history?.length === 0 ? (
+          <div className="text-center py-8">
+            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No application history found</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {history?.map((request) => (
+              <Card key={request.id} className="border-l-4 border-l-techblue-500">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold">{request.title}</h3>
+                        <Badge className={getStatusColor(request.status)}>
+                          {request.status}
+                        </Badge>
+                        <Badge className={getApplicationStatusColor(request.application_status)}>
+                          Application: {request.application_status}
+                        </Badge>
+                      </div>
+                      <p className="text-gray-600 mb-3">{request.description}</p>
+                      <div className="text-sm text-gray-500 mb-2">
+                        Client: {request.client_profile?.full_name || 'N/A'} ({request.client_profile?.email || 'N/A'})
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{request.target_audience}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{request.duration_hours}h</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">
+                        Budget: ${request.budget_min}-${request.budget_max}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium">
+                        Your Bid: ${request.proposed_price}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm text-gray-500">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Request Posted: {format(new Date(request.created_at), 'MMM dd, yyyy')}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Applied: {format(new Date(request.applied_at), 'MMM dd, yyyy HH:mm')}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default TrainerRequestHistory;

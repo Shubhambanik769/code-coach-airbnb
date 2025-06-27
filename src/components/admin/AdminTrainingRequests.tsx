@@ -1,89 +1,67 @@
+
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  FileText, 
-  Users, 
-  DollarSign, 
-  Calendar, 
-  CheckCircle, 
-  XCircle, 
-  Eye, 
-  Star,
-  Clock,
-  MapPin,
-  User
-} from 'lucide-react';
+import { FileText, Eye, Users, Calendar, DollarSign, User } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface ClientProfile {
-  full_name: string | null;
-  email: string;
-}
 
 interface TrainingRequest {
   id: string;
   title: string;
-  description: string | null;
+  description: string;
   target_audience: string;
-  expected_start_date: string | null;
-  expected_end_date: string | null;
-  duration_hours: number | null;
-  delivery_mode: string | null;
-  location: string | null;
-  budget_min: number | null;
-  budget_max: number | null;
-  application_deadline: string | null;
-  status: string | null;
+  expected_start_date: string;
+  expected_end_date: string;
+  duration_hours: number;
+  delivery_mode: string;
+  location: string;
+  budget_min: number;
+  budget_max: number;
+  application_deadline: string;
+  status: string;
   created_at: string;
-  selected_trainer_id: string | null;
-  client_id: string;
-  client_profile: ClientProfile | null;
-}
-
-interface TrainerInfo {
-  id: string;
-  name: string;
-  rating: number | null;
-  total_reviews: number | null;
-  title: string;
-  experience_years: number | null;
-  hourly_rate: number | null;
+  selected_trainer_id: string;
+  client_profile: {
+    full_name: string;
+    email: string;
+  };
 }
 
 interface TrainingApplication {
   id: string;
   proposed_price: number;
-  proposed_start_date: string | null;
-  proposed_end_date: string | null;
-  proposed_duration_hours: number | null;
-  availability_notes: string | null;
-  message_to_client: string | null;
-  proposed_syllabus: string | null;
-  status: string | null;
+  proposed_start_date: string;
+  proposed_end_date: string;
+  proposed_duration_hours: number;
+  availability_notes: string;
+  message_to_client: string;
+  proposed_syllabus: string;
+  status: string;
   created_at: string;
-  trainer: TrainerInfo | null;
+  trainer_id: string;
+  trainer?: {
+    name: string;
+    rating: number;
+    total_reviews: number;
+    title: string;
+    experience_years: number;
+  };
 }
 
 const AdminTrainingRequests = () => {
-  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
   const [viewingApplications, setViewingApplications] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // Fetch all training requests with client details
+  // Fetch all training requests for admin view
   const { data: requests, isLoading } = useQuery({
-    queryKey: ['admin-training-requests', statusFilter],
+    queryKey: ['admin-training-requests'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('training_requests')
         .select(`
           *,
@@ -91,13 +69,7 @@ const AdminTrainingRequests = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
-      
       return data as TrainingRequest[];
     }
   });
@@ -112,7 +84,7 @@ const AdminTrainingRequests = () => {
         .from('training_applications')
         .select(`
           *,
-          trainer:trainers(id, name, rating, total_reviews, title, experience_years, hourly_rate)
+          trainer:trainers(name, rating, total_reviews, title, experience_years)
         `)
         .eq('request_id', selectedRequest.id)
         .order('created_at', { ascending: false });
@@ -123,37 +95,17 @@ const AdminTrainingRequests = () => {
     enabled: !!selectedRequest?.id
   });
 
-  // Update request status mutation
-  const updateRequestStatusMutation = useMutation({
-    mutationFn: async ({ requestId, status }: { requestId: string; status: string }) => {
-      const { error } = await supabase
-        .from('training_requests')
-        .update({ status })
-        .eq('id', requestId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Request status updated successfully"
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-training-requests'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update request status",
-        variant: "destructive"
-      });
-    }
-  });
+  const handleViewApplications = (request: TrainingRequest) => {
+    setSelectedRequest(request);
+    setViewingApplications(true);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-green-100 text-green-800';
       case 'closed': return 'bg-gray-100 text-gray-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'trainer_selected': return 'bg-blue-100 text-blue-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
       case 'completed': return 'bg-purple-100 text-purple-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -170,39 +122,14 @@ const AdminTrainingRequests = () => {
     }
   };
 
-  const handleViewDetails = (request: TrainingRequest) => {
-    setSelectedRequest(request);
-    setViewingApplications(true);
-  };
-
-  const handleUpdateRequestStatus = (requestId: string, status: string) => {
-    updateRequestStatusMutation.mutate({ requestId, status });
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header with filters */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Training Requests Management ({requests?.length || 0})
-            </CardTitle>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            All Training Requests ({requests?.length || 0})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -210,116 +137,89 @@ const AdminTrainingRequests = () => {
           ) : requests?.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">
-                {statusFilter === 'all' 
-                  ? "No training requests found"
-                  : `No requests with status: ${statusFilter}`
-                }
-              </p>
+              <p className="text-gray-500">No training requests found</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {requests?.map((request) => (
-                <Card key={request.id} className="border-l-4 border-l-techblue-500">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{request.title}</h3>
-                          <Badge className={getStatusColor(request.status || 'open')}>
-                            {request.status || 'open'}
-                          </Badge>
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Request</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Target Audience</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Budget</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requests?.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{request.title}</p>
+                          <p className="text-sm text-gray-500 truncate max-w-xs">
+                            {request.description}
+                          </p>
                         </div>
-                        <p className="text-gray-600 mb-3 line-clamp-2">{request.description}</p>
-                        
-                        {/* Client Information */}
-                        <div className="flex items-center gap-2 mb-3">
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm font-medium">Client:</span>
-                          <span className="text-sm">{request.client_profile?.full_name || 'N/A'}</span>
-                          <span className="text-sm text-gray-500">({request.client_profile?.email || 'N/A'})</span>
+                          <div>
+                            <p className="font-medium">{request.client_profile?.full_name || 'N/A'}</p>
+                            <p className="text-sm text-gray-500">{request.client_profile?.email || 'N/A'}</p>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex gap-2 ml-4">
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm">{request.target_audience}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm">{request.duration_hours}h</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {(request.budget_min > 0 || request.budget_max > 0) && (
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm">
+                              ${request.budget_min}-${request.budget_max}
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(request.status)}>
+                          {request.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {format(new Date(request.created_at), 'MMM dd, yyyy')}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleViewDetails(request)}
+                          onClick={() => handleViewApplications(request)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View Details
                         </Button>
-                        {request.status === 'open' && (
-                          <Select
-                            onValueChange={(value) => handleUpdateRequestStatus(request.id, value)}
-                            defaultValue={request.status || 'open'}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="open">Open</SelectItem>
-                              <SelectItem value="closed">Close</SelectItem>
-                              <SelectItem value="cancelled">Cancel</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <span className="text-xs text-gray-500">Audience:</span>
-                          <p className="text-sm font-medium">{request.target_audience}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <span className="text-xs text-gray-500">Duration:</span>
-                          <p className="text-sm font-medium">{request.duration_hours || 'N/A'}h</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <span className="text-xs text-gray-500">Mode:</span>
-                          <p className="text-sm font-medium">{request.delivery_mode || 'N/A'}</p>
-                        </div>
-                      </div>
-                      {((request.budget_min && request.budget_min > 0) || (request.budget_max && request.budget_max > 0)) && (
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-gray-400" />
-                          <div>
-                            <span className="text-xs text-gray-500">Budget:</span>
-                            <p className="text-sm font-medium">
-                              ${request.budget_min || 0}-${request.budget_max || 0}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <span className="text-xs text-gray-500">Posted:</span>
-                          <p className="text-sm font-medium">
-                            {format(new Date(request.created_at), 'MMM dd')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {request.application_deadline && (
-                      <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-                        Deadline: {format(new Date(request.application_deadline), 'MMM dd, yyyy HH:mm')}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
@@ -327,73 +227,51 @@ const AdminTrainingRequests = () => {
 
       {/* Request Details Modal */}
       <Dialog open={viewingApplications} onOpenChange={setViewingApplications}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Request Details: {selectedRequest?.title}
+            <DialogTitle>
+              Training Request Details: {selectedRequest?.title}
             </DialogTitle>
           </DialogHeader>
-          
           {selectedRequest && (
             <div className="space-y-6">
-              {/* Request Information */}
+              {/* Request Details */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Request Information</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Client:</span>
-                      <p>{selectedRequest.client_profile?.full_name || 'N/A'} ({selectedRequest.client_profile?.email || 'N/A'})</p>
+                      <h4 className="font-semibold mb-2">Basic Details</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><span className="font-medium">Title:</span> {selectedRequest.title}</p>
+                        <p><span className="font-medium">Description:</span> {selectedRequest.description}</p>
+                        <p><span className="font-medium">Target Audience:</span> {selectedRequest.target_audience}</p>
+                        <p><span className="font-medium">Duration:</span> {selectedRequest.duration_hours} hours</p>
+                        <p><span className="font-medium">Delivery Mode:</span> {selectedRequest.delivery_mode || 'N/A'}</p>
+                        <p><span className="font-medium">Location:</span> {selectedRequest.location || 'N/A'}</p>
+                      </div>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Status:</span>
-                      <Badge className={getStatusColor(selectedRequest.status || 'open')}>
-                        {selectedRequest.status || 'open'}
-                      </Badge>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Posted:</span>
-                      <p>{format(new Date(selectedRequest.created_at), 'MMM dd, yyyy HH:mm')}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Duration:</span>
-                      <p>{selectedRequest.duration_hours || 'Not specified'} hours</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Delivery Mode:</span>
-                      <p>{selectedRequest.delivery_mode || 'Not specified'}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Location:</span>
-                      <p>{selectedRequest.location || 'Not specified'}</p>
+                      <h4 className="font-semibold mb-2">Timeline & Budget</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><span className="font-medium">Expected Start:</span> {selectedRequest.expected_start_date ? format(new Date(selectedRequest.expected_start_date), 'MMM dd, yyyy') : 'N/A'}</p>
+                        <p><span className="font-medium">Expected End:</span> {selectedRequest.expected_end_date ? format(new Date(selectedRequest.expected_end_date), 'MMM dd, yyyy') : 'N/A'}</p>
+                        <p><span className="font-medium">Application Deadline:</span> {selectedRequest.application_deadline ? format(new Date(selectedRequest.application_deadline), 'MMM dd, yyyy HH:mm') : 'N/A'}</p>
+                        <p><span className="font-medium">Budget Range:</span> ${selectedRequest.budget_min || 0} - ${selectedRequest.budget_max || 0}</p>
+                        <p><span className="font-medium">Status:</span> <Badge className={getStatusColor(selectedRequest.status)}>{selectedRequest.status}</Badge></p>
+                        <p><span className="font-medium">Posted:</span> {format(new Date(selectedRequest.created_at), 'MMM dd, yyyy HH:mm')}</p>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Description:</span>
-                    <p className="mt-1 p-3 bg-gray-50 rounded-md">{selectedRequest.description}</p>
-                  </div>
-                  
-                  {((selectedRequest.budget_min && selectedRequest.budget_min > 0) || (selectedRequest.budget_max && selectedRequest.budget_max > 0)) && (
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Budget Range:</span>
-                      <p className="text-lg font-semibold text-green-600">
-                        ${selectedRequest.budget_min || 0} - ${selectedRequest.budget_max || 0}
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
               {/* Applications */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">
-                    Trainer Applications ({applications?.length || 0})
-                  </CardTitle>
+                  <CardTitle className="text-lg">Applications ({applications?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {applicationsLoading ? (
@@ -401,7 +279,7 @@ const AdminTrainingRequests = () => {
                   ) : applications?.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No applications received yet</p>
+                      <p className="text-gray-500">No applications received</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -411,20 +289,16 @@ const AdminTrainingRequests = () => {
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <h4 className="font-semibold">{application.trainer?.name}</h4>
-                                  <Badge className={getApplicationStatusColor(application.status || 'pending')}>
-                                    {application.status || 'pending'}
+                                  <h5 className="font-semibold">{application.trainer?.name}</h5>
+                                  <Badge className={getApplicationStatusColor(application.status)}>
+                                    {application.status}
                                   </Badge>
                                 </div>
                                 <p className="text-sm text-gray-600 mb-2">{application.trainer?.title}</p>
                                 <div className="flex items-center gap-4 text-sm text-gray-500">
-                                  <div className="flex items-center gap-1">
-                                    <Star className="h-4 w-4 text-yellow-400" />
-                                    <span>{application.trainer?.rating?.toFixed(1) || 'N/A'}</span>
-                                    <span>({application.trainer?.total_reviews || 0} reviews)</span>
-                                  </div>
-                                  <span>{application.trainer?.experience_years || 0} years exp</span>
-                                  <span>${application.trainer?.hourly_rate}/hour</span>
+                                  <span>Rating: {application.trainer?.rating?.toFixed(1) || 'N/A'}</span>
+                                  <span>Reviews: {application.trainer?.total_reviews || 0}</span>
+                                  <span>Experience: {application.trainer?.experience_years || 0} years</span>
                                 </div>
                               </div>
                             </div>
@@ -432,9 +306,7 @@ const AdminTrainingRequests = () => {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                               <div>
                                 <span className="text-sm font-medium text-gray-600">Proposed Price:</span>
-                                <p className="text-lg font-semibold text-green-600">
-                                  ${application.proposed_price}
-                                </p>
+                                <p className="text-lg font-semibold text-green-600">${application.proposed_price}</p>
                               </div>
                               <div>
                                 <span className="text-sm font-medium text-gray-600">Duration:</span>
@@ -442,15 +314,11 @@ const AdminTrainingRequests = () => {
                               </div>
                               <div>
                                 <span className="text-sm font-medium text-gray-600">Start Date:</span>
-                                <p>
-                                  {application.proposed_start_date
-                                    ? format(new Date(application.proposed_start_date), 'MMM dd, yyyy')
-                                    : 'Flexible'}
-                                </p>
+                                <p>{application.proposed_start_date ? format(new Date(application.proposed_start_date), 'MMM dd, yyyy') : 'Flexible'}</p>
                               </div>
                               <div>
                                 <span className="text-sm font-medium text-gray-600">Applied:</span>
-                                <p>{format(new Date(application.created_at), 'MMM dd')}</p>
+                                <p>{format(new Date(application.created_at), 'MMM dd, yyyy')}</p>
                               </div>
                             </div>
 
@@ -458,15 +326,6 @@ const AdminTrainingRequests = () => {
                               <div className="mb-3">
                                 <span className="text-sm font-medium text-gray-600">Message:</span>
                                 <p className="mt-1 p-2 bg-gray-50 rounded text-sm">{application.message_to_client}</p>
-                              </div>
-                            )}
-
-                            {application.proposed_syllabus && (
-                              <div>
-                                <span className="text-sm font-medium text-gray-600">Proposed Syllabus:</span>
-                                <p className="mt-1 p-2 bg-gray-50 rounded text-sm whitespace-pre-wrap">
-                                  {application.proposed_syllabus}
-                                </p>
                               </div>
                             )}
                           </CardContent>

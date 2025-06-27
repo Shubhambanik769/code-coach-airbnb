@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { FileText, Eye, Users, Star, DollarSign, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Eye, Users, Star, DollarSign, Calendar, CheckCircle, XCircle, BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TrainingRequest {
@@ -27,6 +26,7 @@ interface TrainingRequest {
   application_deadline: string;
   status: string;
   created_at: string;
+  selected_trainer_id: string;
 }
 
 interface TrainingApplication {
@@ -42,6 +42,7 @@ interface TrainingApplication {
   created_at: string;
   trainer_id: string;
   trainer?: {
+    id: string;
     name: string;
     rating: number;
     total_reviews: number;
@@ -53,11 +54,13 @@ interface TrainingApplication {
 const ClientTrainingRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
   const [viewingApplications, setViewingApplications] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<TrainingApplication | null>(null);
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch client's training requests
+  // Fetch client's training requests (including completed/closed ones for history)
   const { data: requests, isLoading } = useQuery({
     queryKey: ['client-training-requests', user?.id],
     queryFn: async () => {
@@ -85,7 +88,7 @@ const ClientTrainingRequests = () => {
         .from('training_applications')
         .select(`
           *,
-          trainer:trainers(name, rating, total_reviews, title, experience_years)
+          trainer:trainers(id, name, rating, total_reviews, title, experience_years)
         `)
         .eq('request_id', selectedRequest.id)
         .order('created_at', { ascending: false });
@@ -117,6 +120,81 @@ const ClientTrainingRequests = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to update application status",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Select trainer and update request mutation
+  const selectTrainerMutation = useMutation({
+    mutationFn: async ({ requestId, trainerId }: { requestId: string; trainerId: string }) => {
+      const { error } = await supabase
+        .from('training_requests')
+        .update({ 
+          selected_trainer_id: trainerId,
+          status: 'trainer_selected'
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Trainer selected successfully. You can now proceed with booking."
+      });
+      queryClient.invalidateQueries({ queryKey: ['client-training-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['training-applications'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to select trainer",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Create booking mutation
+  const createBookingMutation = useMutation({
+    mutationFn: async ({ request, application }: { request: TrainingRequest; application: TrainingApplication }) => {
+      const startDate = new Date(application.proposed_start_date || request.expected_start_date);
+      const endDate = new Date(startDate);
+      endDate.setHours(startDate.getHours() + (application.proposed_duration_hours || request.duration_hours));
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert({
+          student_id: user!.id,
+          trainer_id: application.trainer_id,
+          training_topic: request.title,
+          start_time: startDate.toISOString(),
+          end_time: endDate.toISOString(),
+          duration_hours: application.proposed_duration_hours || request.duration_hours,
+          total_amount: application.proposed_price,
+          status: 'pending',
+          special_requirements: request.description,
+          notes: application.message_to_client,
+          organization_name: request.location
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Booking created successfully!"
+      });
+      setShowBookingDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['client-training-requests'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create booking",
         variant: "destructive"
       });
     }
@@ -159,6 +237,25 @@ const ClientTrainingRequests = () => {
     updateApplicationStatusMutation.mutate({ applicationId, status });
   };
 
+  const handleSelectTrainer = (application: TrainingApplication) => {
+    if (selectedRequest) {
+      selectTrainerMutation.mutate({ 
+        requestId: selectedRequest.id, 
+        trainerId: application.trainer_id 
+      });
+      setSelectedApplication(application);
+    }
+  };
+
+  const handleCreateBooking = () => {
+    if (selectedRequest && selectedApplication) {
+      createBookingMutation.mutate({ 
+        request: selectedRequest, 
+        application: selectedApplication 
+      });
+    }
+  };
+
   const handleCloseRequest = (requestId: string) => {
     closeRequestMutation.mutate(requestId);
   };
@@ -167,7 +264,8 @@ const ClientTrainingRequests = () => {
     switch (status) {
       case 'open': return 'bg-green-100 text-green-800';
       case 'closed': return 'bg-gray-100 text-gray-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'trainer_selected': return 'bg-blue-100 text-blue-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
       case 'completed': return 'bg-purple-100 text-purple-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -225,6 +323,19 @@ const ClientTrainingRequests = () => {
                           <Eye className="h-4 w-4 mr-1" />
                           View Applications
                         </Button>
+                        {request.status === 'trainer_selected' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowBookingDialog(true);
+                            }}
+                          >
+                            <BookOpen className="h-4 w-4 mr-1" />
+                            Book Training
+                          </Button>
+                        )}
                         {request.status === 'open' && (
                           <Button
                             variant="outline"
@@ -314,7 +425,7 @@ const ClientTrainingRequests = () => {
                             </div>
                           </div>
                           <div className="flex gap-2 ml-4">
-                            {application.status === 'pending' && (
+                            {selectedRequest.status === 'open' && application.status === 'pending' && (
                               <>
                                 <Button
                                   size="sm"
@@ -337,15 +448,15 @@ const ClientTrainingRequests = () => {
                                 </Button>
                               </>
                             )}
-                            {application.status === 'shortlisted' && (
+                            {selectedRequest.status === 'open' && application.status === 'shortlisted' && (
                               <Button
                                 size="sm"
-                                onClick={() => handleUpdateApplicationStatus(application.id, 'selected')}
-                                disabled={updateApplicationStatusMutation.isPending}
+                                onClick={() => handleSelectTrainer(application)}
+                                disabled={selectTrainerMutation.isPending}
                                 className="bg-green-50 text-green-700 border-green-200"
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
-                                Select
+                                Select Trainer
                               </Button>
                             )}
                           </div>
@@ -411,6 +522,52 @@ const ClientTrainingRequests = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Booking Confirmation Modal */}
+      <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirm Booking</DialogTitle>
+          </DialogHeader>
+          {selectedRequest && selectedApplication && (
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold mb-2">Training Request: {selectedRequest.title}</h4>
+                <p className="text-sm text-gray-600 mb-2">{selectedRequest.description}</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Trainer:</span> {selectedApplication.trainer?.name}
+                  </div>
+                  <div>
+                    <span className="font-medium">Price:</span> ${selectedApplication.proposed_price}
+                  </div>
+                  <div>
+                    <span className="font-medium">Duration:</span> {selectedApplication.proposed_duration_hours || selectedRequest.duration_hours}h
+                  </div>
+                  <div>
+                    <span className="font-medium">Start Date:</span> {
+                      selectedApplication.proposed_start_date 
+                        ? format(new Date(selectedApplication.proposed_start_date), 'MMM dd, yyyy')
+                        : 'To be scheduled'
+                    }
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowBookingDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateBooking}
+                  disabled={createBookingMutation.isPending}
+                >
+                  {createBookingMutation.isPending ? 'Creating...' : 'Confirm Booking'}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
