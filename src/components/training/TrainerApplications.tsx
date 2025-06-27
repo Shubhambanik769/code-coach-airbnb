@@ -33,7 +33,7 @@ interface TrainerApplication {
     budget_max: number;
     status: string;
     created_at: string;
-  };
+  } | null;
 }
 
 const TrainerApplications = () => {
@@ -143,91 +143,98 @@ const TrainerApplications = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {applications?.map((application) => (
-              <Card key={application.id} className="border-l-4 border-l-techblue-500">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{application.training_request.title}</h3>
-                        <Badge className={getStatusColor(application.status)}>
-                          {application.status}
-                        </Badge>
-                        <Badge className={getRequestStatusColor(application.training_request.status)}>
-                          Request: {application.training_request.status}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-600 mb-3">{application.training_request.description}</p>
-                    </div>
-                  </div>
+            {applications?.map((application) => {
+              // Skip applications with null training_request
+              if (!application.training_request) {
+                return null;
+              }
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <div>
-                        <span className="text-sm text-gray-500">Your Quote:</span>
-                        <p className="font-semibold">${application.proposed_price}</p>
+              return (
+                <Card key={application.id} className="border-l-4 border-l-techblue-500">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{application.training_request.title}</h3>
+                          <Badge className={getStatusColor(application.status)}>
+                            {application.status}
+                          </Badge>
+                          <Badge className={getRequestStatusColor(application.training_request.status)}>
+                            Request: {application.training_request.status}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600 mb-3">{application.training_request.description}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <span className="text-sm text-gray-500">Duration:</span>
-                        <p>{application.proposed_duration_hours || application.training_request.duration_hours}h</p>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <div>
+                          <span className="text-sm text-gray-500">Your Quote:</span>
+                          <p className="font-semibold">${application.proposed_price}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <span className="text-sm text-gray-500">Duration:</span>
+                          <p>{application.proposed_duration_hours || application.training_request.duration_hours}h</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <span className="text-sm text-gray-500">Audience:</span>
+                          <p>{application.training_request.target_audience}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <span className="text-sm text-gray-500">Applied:</span>
+                          <p>{format(new Date(application.created_at), 'MMM dd')}</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <span className="text-sm text-gray-500">Audience:</span>
-                        <p>{application.training_request.target_audience}</p>
+
+                    {application.training_request.budget_min > 0 && (
+                      <div className="mb-4">
+                        <span className="text-sm text-gray-500">Client Budget Range:</span>
+                        <p className="text-sm">
+                          ${application.training_request.budget_min} - ${application.training_request.budget_max}
+                        </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <span className="text-sm text-gray-500">Applied:</span>
-                        <p>{format(new Date(application.created_at), 'MMM dd')}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {application.training_request.budget_min > 0 && (
-                    <div className="mb-4">
-                      <span className="text-sm text-gray-500">Client Budget Range:</span>
-                      <p className="text-sm">
-                        ${application.training_request.budget_min} - ${application.training_request.budget_max}
-                      </p>
-                    </div>
-                  )}
-
-                  {application.message_to_client && (
-                    <div className="mb-4">
-                      <span className="text-sm font-medium text-gray-600">Your Message:</span>
-                      <p className="mt-1 p-3 bg-gray-50 rounded-md text-sm">{application.message_to_client}</p>
-                    </div>
-                  )}
-
-                  {application.availability_notes && (
-                    <div className="mb-4">
-                      <span className="text-sm font-medium text-gray-600">Availability Notes:</span>
-                      <p className="mt-1 p-3 bg-gray-50 rounded-md text-sm">{application.availability_notes}</p>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center text-sm text-gray-500">
-                    <span>
-                      Request Posted: {format(new Date(application.training_request.created_at), 'MMM dd, yyyy')}
-                    </span>
-                    {application.proposed_start_date && (
-                      <span>
-                        Proposed Start: {format(new Date(application.proposed_start_date), 'MMM dd, yyyy')}
-                      </span>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                    {application.message_to_client && (
+                      <div className="mb-4">
+                        <span className="text-sm font-medium text-gray-600">Your Message:</span>
+                        <p className="mt-1 p-3 bg-gray-50 rounded-md text-sm">{application.message_to_client}</p>
+                      </div>
+                    )}
+
+                    {application.availability_notes && (
+                      <div className="mb-4">
+                        <span className="text-sm font-medium text-gray-600">Availability Notes:</span>
+                        <p className="mt-1 p-3 bg-gray-50 rounded-md text-sm">{application.availability_notes}</p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <span>
+                        Request Posted: {format(new Date(application.training_request.created_at), 'MMM dd, yyyy')}
+                      </span>
+                      {application.proposed_start_date && (
+                        <span>
+                          Proposed Start: {format(new Date(application.proposed_start_date), 'MMM dd, yyyy')}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </CardContent>
