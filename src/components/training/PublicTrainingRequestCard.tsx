@@ -8,19 +8,19 @@ import { format } from 'date-fns';
 interface TrainingRequest {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   target_audience: string;
-  expected_start_date: string;
-  duration_hours: number;
-  delivery_mode: string;
-  tools_required: string[];
-  budget_min: number;
-  budget_max: number;
-  application_deadline: string;
+  expected_start_date: string | null;
+  duration_hours: number | null;
+  delivery_mode: string | null;
+  tools_required: string[] | null;
+  budget_min: number | null;
+  budget_max: number | null;
+  application_deadline: string | null;
   created_at: string;
   profiles?: {
-    full_name: string;
-  };
+    full_name: string | null;
+  } | null;
 }
 
 interface PublicTrainingRequestCardProps {
@@ -45,7 +45,9 @@ const PublicTrainingRequestCard = ({
                 {request.target_audience}
               </Badge>
             </div>
-            <p className="text-gray-600 mb-4 line-clamp-2">{request.description}</p>
+            {request.description && (
+              <p className="text-gray-600 mb-4 line-clamp-2">{request.description}</p>
+            )}
             <div className="text-sm text-gray-500 mb-4">
               Posted by: <span className="font-medium">{request.profiles?.full_name || 'Anonymous'}</span>
             </div>
@@ -61,21 +63,23 @@ const PublicTrainingRequestCard = ({
 
         {/* Key Details Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-medium">{request.delivery_mode}</span>
-          </div>
+          {request.delivery_mode && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-400" />
+              <span className="text-sm font-medium">{request.delivery_mode}</span>
+            </div>
+          )}
           {request.duration_hours && (
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-gray-400" />
               <span className="text-sm">{request.duration_hours} hours</span>
             </div>
           )}
-          {(request.budget_min > 0 || request.budget_max > 0) && (
+          {((request.budget_min && request.budget_min > 0) || (request.budget_max && request.budget_max > 0)) && (
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-gray-400" />
               <span className="text-sm font-medium">
-                ${request.budget_min}-${request.budget_max}
+                ${request.budget_min || 0}-${request.budget_max || 0}
               </span>
             </div>
           )}

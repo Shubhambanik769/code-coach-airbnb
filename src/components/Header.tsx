@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Menu, X, User, LogOut, Settings, BarChart3, FileText, Briefcase } from 'lucide-react';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
