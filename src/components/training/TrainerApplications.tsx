@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,7 +67,7 @@ const TrainerApplications = () => {
     enabled: !!user?.id
   });
 
-  // Fetch trainer's applications with booking status
+  // Fetch trainer's applications with booking status - filter out completed lifecycle
   const { data: applications, isLoading } = useQuery({
     queryKey: ['trainer-applications', trainer?.id, statusFilter],
     queryFn: async () => {
@@ -127,6 +126,7 @@ const TrainerApplications = () => {
           const trainingRequest = requestsData?.find(req => req.id === app.request_id) || null;
           
           let bookingId = null;
+          let bookingStatus = null;
           if (app.status === 'selected' && trainingRequest) {
             // Check if there's a booking for this trainer and request
             const { data: booking } = await supabase
@@ -139,6 +139,7 @@ const TrainerApplications = () => {
 
             if (booking) {
               bookingId = booking.id;
+              bookingStatus = booking.status;
             }
           }
 
@@ -146,13 +147,26 @@ const TrainerApplications = () => {
             ...app,
             training_request: trainingRequest,
             booking_id: bookingId,
+            booking_status: bookingStatus,
             status: bookingId ? 'booking_confirmed' : app.status
           };
         })
       );
       
-      console.log('Final enriched applications:', enrichedApplications);
-      return enrichedApplications as TrainerApplication[];
+      // Filter out applications that should be moved to request history
+      const activeApplications = enrichedApplications.filter(app => {
+        // Move to history if rejected
+        if (app.status === 'rejected') return false;
+        
+        // Move to history if booking is completed
+        if (app.booking_status === 'completed') return false;
+        
+        // Keep all other applications (pending, shortlisted, selected, booking_confirmed)
+        return true;
+      });
+      
+      console.log('Active applications after filtering:', activeApplications);
+      return activeApplications as TrainerApplication[];
     },
     enabled: !!trainer?.id
   });
@@ -195,7 +209,6 @@ const TrainerApplications = () => {
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="shortlisted">Shortlisted</SelectItem>
               <SelectItem value="selected">Selected</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
         </CardTitle>
@@ -208,9 +221,12 @@ const TrainerApplications = () => {
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">
               {statusFilter === 'all' 
-                ? "You haven't applied to any training requests yet"
-                : `No applications with status: ${statusFilter}`
+                ? "You haven't applied to any training requests yet, or all applications have moved to history"
+                : `No active applications with status: ${statusFilter}`
               }
+            </p>
+            <p className="text-sm text-gray-400 mt-2">
+              Completed and rejected applications can be found in Request History
             </p>
           </div>
         ) : (

@@ -20,6 +20,7 @@ interface TrainingRequestHistory {
   application_status: string;
   proposed_price: number;
   applied_at: string;
+  booking_status?: string;
   client_profile: {
     full_name: string;
     email: string;
@@ -81,7 +82,46 @@ const TrainerRequestHistory = () => {
 
       console.log('Request history fetched:', data);
 
-      return data?.filter(app => app.training_request).map(app => ({
+      // Get booking status for each application
+      const enrichedData = await Promise.all(
+        data?.map(async (app) => {
+          let bookingStatus = null;
+          
+          if (app.status === 'selected' && app.training_request) {
+            // Check if there's a booking for this trainer and request
+            const { data: booking } = await supabase
+              .from('bookings')
+              .select('status')
+              .eq('trainer_id', trainer.id)
+              .eq('training_topic', app.training_request.title)
+              .maybeSingle();
+
+            if (booking) {
+              bookingStatus = booking.status;
+            }
+          }
+
+          return {
+            ...app,
+            booking_status: bookingStatus
+          };
+        }) || []
+      );
+
+      // Filter to show only completed lifecycle applications (rejected or booking completed)
+      const completedApplications = enrichedData.filter(app => {
+        if (!app.training_request) return false;
+        
+        // Show rejected applications
+        if (app.status === 'rejected') return true;
+        
+        // Show applications where booking is completed
+        if (app.booking_status === 'completed') return true;
+        
+        return false;
+      });
+
+      return completedApplications.map(app => ({
         id: app.training_request.id,
         title: app.training_request.title,
         description: app.training_request.description,
@@ -94,8 +134,9 @@ const TrainerRequestHistory = () => {
         application_status: app.status,
         proposed_price: app.proposed_price,
         applied_at: app.created_at,
+        booking_status: app.booking_status,
         client_profile: app.training_request.client_profile
-      })) || [];
+      }));
     },
     enabled: !!user?.id
   });
@@ -121,6 +162,16 @@ const TrainerRequestHistory = () => {
     }
   };
 
+  const getCompletionStatus = (applicationStatus: string, bookingStatus?: string) => {
+    if (applicationStatus === 'rejected') {
+      return { label: 'Application Rejected', color: 'bg-red-100 text-red-800' };
+    }
+    if (bookingStatus === 'completed') {
+      return { label: 'Training Completed', color: 'bg-purple-100 text-purple-800' };
+    }
+    return null;
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -143,67 +194,79 @@ const TrainerRequestHistory = () => {
         {history?.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No application history found</p>
+            <p className="text-gray-500">No completed applications found</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Rejected applications and completed trainings will appear here
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {history?.map((request) => (
-              <Card key={`${request.id}-${request.applied_at}`} className="border-l-4 border-l-techblue-500">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{request.title}</h3>
-                        <Badge className={getStatusColor(request.status)}>
-                          {request.status}
-                        </Badge>
-                        <Badge className={getApplicationStatusColor(request.application_status)}>
-                          Application: {request.application_status}
-                        </Badge>
+            {history?.map((request) => {
+              const completionStatus = getCompletionStatus(request.application_status, request.booking_status);
+              
+              return (
+                <Card key={`${request.id}-${request.applied_at}`} className="border-l-4 border-l-gray-400">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{request.title}</h3>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status}
+                          </Badge>
+                          <Badge className={getApplicationStatusColor(request.application_status)}>
+                            Application: {request.application_status}
+                          </Badge>
+                          {completionStatus && (
+                            <Badge className={completionStatus.color}>
+                              {completionStatus.label}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-gray-600 mb-3">{request.description}</p>
+                        <div className="text-sm text-gray-500 mb-2">
+                          Client: {request.client_profile?.full_name || 'N/A'} ({request.client_profile?.email || 'N/A'})
+                        </div>
                       </div>
-                      <p className="text-gray-600 mb-3">{request.description}</p>
-                      <div className="text-sm text-gray-500 mb-2">
-                        Client: {request.client_profile?.full_name || 'N/A'} ({request.client_profile?.email || 'N/A'})
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">{request.target_audience}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">{request.duration_hours}h</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">
+                          Budget: ${request.budget_min}-${request.budget_max}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium">
+                          Your Bid: ${request.proposed_price}
+                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">{request.target_audience}</span>
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>Request Posted: {format(new Date(request.created_at), 'MMM dd, yyyy')}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>Applied: {format(new Date(request.applied_at), 'MMM dd, yyyy HH:mm')}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">{request.duration_hours}h</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">
-                        Budget: ${request.budget_min}-${request.budget_max}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium">
-                        Your Bid: ${request.proposed_price}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>Request Posted: {format(new Date(request.created_at), 'MMM dd, yyyy')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>Applied: {format(new Date(request.applied_at), 'MMM dd, yyyy HH:mm')}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </CardContent>
