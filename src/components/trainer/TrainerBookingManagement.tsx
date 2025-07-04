@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,8 +16,8 @@ interface TrainerBookingManagementProps {
   trainerId: string;
 }
 
-type BookingWithProfile = Tables<'bookings'> & {
-  student_profile?: {
+type BookingWithClientProfile = Tables<'bookings'> & {
+  client_profile?: {
     id: string;
     full_name: string | null;
     email: string;
@@ -35,7 +36,9 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
-    queryFn: async (): Promise<BookingWithProfile[]> => {
+    queryFn: async (): Promise<BookingWithClientProfile[]> => {
+      console.log('Fetching bookings for trainer:', trainerId);
+      
       let query = supabase
         .from('bookings')
         .select('*')
@@ -49,22 +52,38 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
       const { data: bookingsData, error } = await query;
       if (error) throw error;
 
-      // Fetch student profiles
-      const studentIds = [...new Set(bookingsData?.map(b => b.student_id) || [])];
-      
-      if (studentIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', studentIds);
-
-        return bookingsData?.map(booking => ({
-          ...booking,
-          student_profile: profilesData?.find(p => p.id === booking.student_id)
-        })) || [];
+      if (!bookingsData || bookingsData.length === 0) {
+        return [];
       }
 
-      return bookingsData || [];
+      // Get unique student IDs from bookings
+      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
+      console.log('Fetching student profiles for IDs:', studentIds);
+      
+      // Fetch student profiles (these are the clients who booked the trainer)
+      const { data: clientProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', studentIds);
+
+      if (profilesError) {
+        console.error('Error fetching client profiles:', profilesError);
+      }
+
+      console.log('Student profiles fetched:', clientProfiles);
+
+      // Map bookings with client profiles
+      const enrichedBookings = bookingsData.map(booking => ({
+        ...booking,
+        client_profile: clientProfiles?.find(profile => profile.id === booking.student_id) || {
+          id: booking.student_id,
+          full_name: 'Unknown Client',
+          email: 'No email available'
+        }
+      }));
+
+      console.log('Final enriched bookings:', enrichedBookings);
+      return enrichedBookings;
     },
     enabled: !!trainerId
   });
@@ -215,7 +234,7 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student</TableHead>
+                  <TableHead>Client Details</TableHead>
                   <TableHead>Training Topic</TableHead>
                   <TableHead>Date & Time</TableHead>
                   <TableHead>Duration</TableHead>
@@ -243,10 +262,10 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                            {booking.student_profile?.full_name || 'N/A'}
+                            {booking.client_profile?.full_name || 'Unknown Client'}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {booking.student_profile?.email}
+                            {booking.client_profile?.email || 'No email available'}
                           </div>
                         </div>
                       </TableCell>
@@ -289,7 +308,7 @@ const TrainerBookingManagement = ({ trainerId }: TrainerBookingManagementProps) 
                               onClick={() => setSelectedChat({
                                 bookingId: booking.id,
                                 studentId: booking.student_id,
-                                studentName: booking.student_profile?.full_name || booking.student_profile?.email || 'Student'
+                                studentName: booking.client_profile?.full_name || booking.client_profile?.email || 'Client'
                               })}
                             >
                               Chat
