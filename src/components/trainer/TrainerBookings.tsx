@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -145,12 +144,26 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Ensure we have proper client profile data
-        const clientProfile = booking.client_profile || {
-          id: booking.student_id,
-          full_name: null,
-          email: 'No email available'
-        };
+        // Ensure we have proper client profile data - handle both array and object cases
+        let clientProfile;
+        if (Array.isArray(booking.client_profile)) {
+          // If it's an array, take the first element
+          clientProfile = booking.client_profile[0] || {
+            id: booking.student_id,
+            full_name: null,
+            email: 'No email available'
+          };
+        } else if (booking.client_profile) {
+          // If it's already an object, use it directly
+          clientProfile = booking.client_profile;
+        } else {
+          // Fallback if no client profile
+          clientProfile = {
+            id: booking.student_id,
+            full_name: null,
+            email: 'No email available'
+          };
+        }
         
         return {
           ...booking,
