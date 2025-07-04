@@ -2,61 +2,49 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Clock, CreditCard, Users, CheckCircle2, Star, AlertCircle } from 'lucide-react';
-import { format, addDays, isSameDay, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { useAuth } from '@/hooks/useAuth';
+import { Calendar as CalendarIcon, Clock, User, CheckCircle } from 'lucide-react';
+import { format, parseISO, addHours } from 'date-fns';
 
 interface BookingCalendarProps {
   trainerId: string;
   trainerName: string;
-  hourlyRate: number;
+  hourlyRate?: number;
 }
 
 interface AvailabilitySlot {
   id: string;
   start_time: string;
   end_time: string;
-  date: string;
   is_available: boolean;
   is_booked: boolean;
 }
 
-interface ConfirmedBooking {
-  id: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  student_id: string;
-}
-
-const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendarProps) => {
+const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedSlot, setSelectedSlot] = useState<any>(null);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [bookingData, setBookingData] = useState({
-    trainingTopic: '',
-    duration: 1,
-    notes: '',
-    organizationName: ''
-  });
+  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+  const [trainingTopic, setTrainingTopic] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [specialRequirements, setSpecialRequirements] = useState('');
+  const [durationHours, setDurationHours] = useState(1);
+  
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { formatPrice } = useCurrency();
+  const queryClient = useQueryClient();
 
-  // Fetch availability slots for the selected date
-  const { data: availability = [], isLoading: isLoadingAvailability } = useQuery({
-    queryKey: ['trainer-availability', trainerId, selectedDate],
+  // Fetch available slots for the selected date
+  const { data: availableSlots, isLoading } = useQuery({
+    queryKey: ['trainer-available-slots', trainerId, selectedDate],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('trainer_availability')
@@ -64,263 +52,125 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
         .eq('trainer_id', trainerId)
         .eq('date', format(selectedDate, 'yyyy-MM-dd'))
         .eq('is_available', true)
+        .eq('is_booked', false)
         .order('start_time');
 
       if (error) throw error;
       return data as AvailabilitySlot[];
-    }
-  });
-
-  // Fetch ALL bookings for the trainer and student to prevent multiple bookings
-  const { data: allBookings = [], isLoading: isLoadingBookings } = useQuery({
-    queryKey: ['all-bookings', trainerId, user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('trainer_id', trainerId)
-        .in('status', ['pending', 'confirmed']);
-
-      if (error) throw error;
-      return data as ConfirmedBooking[];
     },
-    enabled: !!user
+    enabled: !!trainerId
   });
-
-  // Get confirmed bookings for the selected date
-  const confirmedBookings = allBookings.filter(booking => {
-    const bookingDate = new Date(booking.start_time);
-    return isSameDay(bookingDate, selectedDate) && booking.status === 'confirmed';
-  });
-
-  // Check if user has any pending bookings with this trainer
-  const userPendingBookings = allBookings.filter(booking => 
-    booking.student_id === user?.id && booking.status === 'pending'
-  );
 
   const createBookingMutation = useMutation({
-    mutationFn: async (bookingInfo: any) => {
-      if (!user) {
-        throw new Error('User must be authenticated to book a session');
-      }
-
-      // Check for existing pending bookings
-      if (userPendingBookings.length > 0) {
-        throw new Error('You already have a pending booking with this trainer. Please wait for confirmation before booking another session.');
-      }
-
-      const startTime = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedSlot.start_time}`);
-      const endTime = new Date(startTime.getTime() + bookingInfo.duration * 60 * 60 * 1000);
+    mutationFn: async (bookingData: any) => {
+      if (!user) throw new Error('User not authenticated');
       
-      console.log('Creating booking with user ID:', user.id);
-      
-      // Check for conflicts with all existing bookings
-      const hasConflict = allBookings.some(booking => {
-        const bookingStart = parseISO(booking.start_time);
-        const bookingEnd = parseISO(booking.end_time);
-        
-        return (
-          (startTime >= bookingStart && startTime < bookingEnd) ||
-          (endTime > bookingStart && endTime <= bookingEnd) ||
-          (startTime <= bookingStart && endTime >= bookingEnd)
-        );
-      });
+      const startTime = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedSlot?.start_time}`);
+      const endTime = addHours(startTime, durationHours);
+      const totalAmount = hourlyRate * durationHours;
 
-      if (hasConflict) {
-        throw new Error('This time slot conflicts with an existing booking');
-      }
-
-      // Double-check slot availability
-      const slotCheck = await supabase
-        .from('trainer_availability')
-        .select('is_available, is_booked')
-        .eq('id', selectedSlot.id)
-        .single();
-
-      if (slotCheck.error || !slotCheck.data?.is_available || slotCheck.data?.is_booked) {
-        throw new Error('This time slot is no longer available');
-      }
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('bookings')
         .insert({
-          trainer_id: trainerId,
           student_id: user.id,
-          training_topic: bookingInfo.trainingTopic,
+          trainer_id: trainerId,
+          training_topic: trainingTopic,
+          organization_name: organizationName,
+          special_requirements: specialRequirements,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          duration_hours: bookingInfo.duration,
-          total_amount: hourlyRate * bookingInfo.duration,
-          notes: bookingInfo.notes,
-          organization_name: bookingInfo.organizationName,
-          status: 'pending'
-        });
+          duration_hours: durationHours,
+          total_amount: totalAmount,
+          status: 'pending',
+          payment_status: 'pending'
+        })
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Booking creation error:', error);
-        throw error;
+      if (error) throw error;
+
+      // Update the availability slot to mark it as booked
+      if (selectedSlot) {
+        await supabase
+          .from('trainer_availability')
+          .update({ is_booked: true })
+          .eq('id', selectedSlot.id);
       }
 
-      // Mark the slot as booked
-      await supabase
-        .from('trainer_availability')
-        .update({ is_booked: true })
-        .eq('id', selectedSlot.id);
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainer-availability'] });
-      queryClient.invalidateQueries({ queryKey: ['all-bookings'] });
-      setShowBookingForm(false);
+      queryClient.invalidateQueries({ queryKey: ['trainer-available-slots'] });
+      setIsBookingDialogOpen(false);
       setSelectedSlot(null);
-      setBookingData({
-        trainingTopic: '',
-        duration: 1,
-        notes: '',
-        organizationName: ''
-      });
+      setTrainingTopic('');
+      setOrganizationName('');
+      setSpecialRequirements('');
+      setDurationHours(1);
       toast({
-        title: "Booking Requested",
-        description: "Your booking request has been sent to the trainer."
+        title: "Booking Created Successfully!",
+        description: "Your booking request has been sent to the trainer. You will be notified once confirmed."
       });
     },
     onError: (error: any) => {
-      console.error('Booking mutation error:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create booking. Please try again.",
+        title: "Booking Failed",
+        description: error.message || "Failed to create booking",
         variant: "destructive"
       });
     }
   });
 
-  // Filter available slots to exclude those that conflict with bookings
-  const getAvailableSlots = () => {
-    if (!availability || !allBookings) return [];
-
-    return availability.filter(slot => {
-      if (slot.is_booked) return false;
-
-      // Check if this slot conflicts with any booking
-      const slotStart = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${slot.start_time}`);
-      const slotEnd = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${slot.end_time}`);
-
-      const hasConflict = allBookings.some(booking => {
-        const bookingStart = parseISO(booking.start_time);
-        const bookingEnd = parseISO(booking.end_time);
-
-        return (
-          (slotStart >= bookingStart && slotStart < bookingEnd) ||
-          (slotEnd > bookingStart && slotEnd <= bookingEnd) ||
-          (slotStart <= bookingStart && slotEnd >= bookingEnd)
-        );
-      });
-
-      return !hasConflict;
-    });
-  };
-
-  const handleBooking = () => {
+  const handleSlotSelect = (slot: AvailabilitySlot) => {
     if (!user) {
       toast({
         title: "Authentication Required",
-        description: "Please sign in to book a session.",
+        description: "Please sign in to book a session",
         variant: "destructive"
       });
       return;
     }
 
-    if (userPendingBookings.length > 0) {
-      toast({
-        title: "Pending Booking Exists",
-        description: "You already have a pending booking with this trainer. Please wait for confirmation.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!selectedSlot || !bookingData.trainingTopic) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
-    createBookingMutation.mutate(bookingData);
+    setSelectedSlot(slot);
+    setIsBookingDialogOpen(true);
   };
 
-  const isLoading = isLoadingAvailability || isLoadingBookings;
-  const availableSlots = getAvailableSlots();
+  const handleBookingSubmit = () => {
+    if (!trainingTopic.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide the training topic",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  // Show sign-in prompt if user is not authenticated
-  if (!user) {
-    return (
-      <Card className="w-full shadow-lg border-0 bg-gradient-to-br from-blue-50 to-indigo-50">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="flex items-center justify-center gap-3 text-xl">
-            <CalendarIcon className="h-6 w-6 text-blue-600" />
-            Book with {trainerName}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center py-8">
-          <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Users className="h-8 w-8 text-blue-600" />
-          </div>
-          <p className="text-gray-600 mb-6 text-lg">Sign in to book your training session</p>
-          <Button 
-            onClick={() => window.location.href = '/auth'}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-all hover:shadow-lg"
-            size="lg"
-          >
-            Sign In to Book
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+    createBookingMutation.mutate({});
+  };
+
+  const calculateEndTime = (startTime: string, duration: number) => {
+    const start = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${startTime}`);
+    const end = addHours(start, duration);
+    return format(end, 'HH:mm');
+  };
 
   return (
-    <Card className="w-full shadow-lg border-0 bg-white">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CalendarIcon className="h-6 w-6" />
-            <div>
-              <h3 className="text-xl font-semibold">Book with {trainerName}</h3>
-              <p className="text-blue-100 text-sm">Choose your preferred time slot</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold">{formatPrice(hourlyRate)}</div>
-            <div className="text-blue-100 text-sm">per hour</div>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="p-8">
-        {/* Show pending booking warning */}
-        {userPendingBookings.length > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
-              <span className="font-medium text-orange-800">Pending Booking</span>
-            </div>
-            <p className="text-orange-700 text-sm mt-1">
-              You have a pending booking with this trainer. Please wait for confirmation before booking another session.
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5" />
+            Book a Session with {trainerName}
+          </CardTitle>
+          {hourlyRate > 0 && (
+            <p className="text-sm text-gray-600">
+              Rate: ₹{hourlyRate}/hour
             </p>
-          </div>
-        )}
-
-        <div className="space-y-8">
-          {/* Calendar Section */}
-          <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-blue-600" />
-              Select Date
-            </h4>
-            <div className="bg-gray-50 rounded-xl p-6">
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -330,190 +180,141 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate }: BookingCalendar
                   today.setHours(0, 0, 0, 0);
                   return date < today;
                 }}
-                className="mx-auto border-0 bg-transparent"
+                className="rounded-md border"
               />
             </div>
-          </div>
-          
-          {/* Time Slots Section */}
-          <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-600" />
-              Available Times - {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-            </h4>
             
-            {isLoading ? (
-              <div className="grid grid-cols-2 gap-3">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse"></div>
-                ))}
-              </div>
-            ) : availableSlots.length === 0 ? (
-              <div className="bg-gray-50 rounded-xl p-8 text-center">
-                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No available slots for this date</p>
-                <p className="text-gray-400 text-sm mt-2">Try selecting a different date</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {availableSlots.map((slot) => (
-                  <Button
-                    key={slot.id}
-                    variant={selectedSlot?.id === slot.id ? "default" : "outline"}
-                    className={`h-14 text-left flex-col items-start justify-center transition-all duration-200 ${
-                      selectedSlot?.id === slot.id 
-                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg scale-105" 
-                        : "hover:bg-blue-50 hover:border-blue-300 hover:shadow-md"
-                    } ${userPendingBookings.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    onClick={() => !userPendingBookings.length && setSelectedSlot(slot)}
-                    disabled={userPendingBookings.length > 0}
-                  >
-                    <div className="font-medium">
-                      {slot.start_time} - {slot.end_time}
-                    </div>
-                    <div className={`text-xs ${selectedSlot?.id === slot.id ? "text-blue-100" : "text-gray-500"}`}>
-                      Available
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Selected Slot & Booking */}
-          {selectedSlot && userPendingBookings.length === 0 && (
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-green-600" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">Selected Time Slot</h4>
-                    <p className="text-gray-600">
-                      {format(selectedDate, 'MMM d, yyyy')} • {selectedSlot.start_time} - {selectedSlot.end_time}
-                    </p>
-                  </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">
+                Available Slots - {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+              </h3>
+              
+              {isLoading ? (
+                <div className="text-center py-8">Loading available slots...</div>
+              ) : availableSlots?.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No available slots for this date. Please select another date.
                 </div>
-                <Badge className="bg-green-100 text-green-800 border-green-200">
-                  {formatPrice(hourlyRate)}/hour
-                </Badge>
+              ) : (
+                <div className="space-y-2">
+                  {availableSlots?.map((slot) => (
+                    <div
+                      key={slot.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-green-200 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer"
+                      onClick={() => handleSlotSelect(slot)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <div>
+                          <div className="font-medium text-green-800">
+                            {slot.start_time} - {slot.end_time}
+                          </div>
+                          <div className="text-xs text-green-600">Available</div>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        Book Now
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Booking Dialog */}
+      <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Book Training Session</DialogTitle>
+          </DialogHeader>
+          
+          {selectedSlot && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="text-sm font-medium text-blue-900">Session Details</div>
+                <div className="text-sm text-blue-700">
+                  Date: {format(selectedDate, 'MMMM d, yyyy')}
+                </div>
+                <div className="text-sm text-blue-700">
+                  Time: {selectedSlot.start_time} - {calculateEndTime(selectedSlot.start_time, durationHours)}
+                </div>
+                <div className="text-sm text-blue-700">
+                  Duration: {durationHours} hour(s)
+                </div>
+                {hourlyRate > 0 && (
+                  <div className="text-sm font-medium text-blue-900">
+                    Total Cost: ₹{hourlyRate * durationHours}
+                  </div>
+                )}
               </div>
 
-              <Dialog open={showBookingForm} onOpenChange={setShowBookingForm}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 rounded-lg font-medium transition-all hover:shadow-lg"
-                    size="lg"
-                  >
-                    <CreditCard className="h-5 w-5 mr-2" />
-                    Book This Session
-                  </Button>
-                </DialogTrigger>
-                
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="text-xl font-semibold text-gray-900">
-                      Complete Your Booking
-                    </DialogTitle>
-                  </DialogHeader>
-                  
-                  <div className="space-y-6 mt-6">
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Star className="h-4 w-4 text-blue-600" />
-                        <span className="font-medium text-blue-900">Session Details</span>
-                      </div>
-                      <p className="text-blue-700 text-sm">
-                        {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedSlot.start_time}
-                      </p>
-                    </div>
+              <div>
+                <Label htmlFor="duration">Duration (hours)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  max="8"
+                  value={durationHours}
+                  onChange={(e) => setDurationHours(Number(e.target.value))}
+                />
+              </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="topic" className="text-sm font-medium text-gray-700">
-                          Training Topic *
-                        </Label>
-                        <Input
-                          id="topic"
-                          value={bookingData.trainingTopic}
-                          onChange={(e) => setBookingData({...bookingData, trainingTopic: e.target.value})}
-                          placeholder="e.g., React Development, Python Basics"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="duration" className="text-sm font-medium text-gray-700">
-                          Duration (hours)
-                        </Label>
-                        <Input
-                          id="duration"
-                          type="number"
-                          min="1"
-                          max="8"
-                          value={bookingData.duration}
-                          onChange={(e) => setBookingData({...bookingData, duration: parseInt(e.target.value) || 1})}
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="organization" className="text-sm font-medium text-gray-700">
-                          Organization (optional)
-                        </Label>
-                        <Input
-                          id="organization"
-                          value={bookingData.organizationName}
-                          onChange={(e) => setBookingData({...bookingData, organizationName: e.target.value})}
-                          placeholder="Company or personal"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
-                          Additional Notes
-                        </Label>
-                        <Textarea
-                          id="notes"
-                          value={bookingData.notes}
-                          onChange={(e) => setBookingData({...bookingData, notes: e.target.value})}
-                          placeholder="Any specific requirements or goals..."
-                          rows={3}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Rate per hour:</span>
-                        <span className="font-medium">{formatPrice(hourlyRate)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Duration:</span>
-                        <span className="font-medium">{bookingData.duration} hour{bookingData.duration > 1 ? 's' : ''}</span>
-                      </div>
-                      <div className="border-t pt-2 flex justify-between text-lg font-semibold">
-                        <span>Total:</span>
-                        <span className="text-blue-600">{formatPrice(hourlyRate * bookingData.duration)}</span>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      onClick={handleBooking}
-                      disabled={createBookingMutation.isPending}
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 rounded-lg font-medium transition-all hover:shadow-lg"
-                    >
-                      {createBookingMutation.isPending ? 'Processing...' : 'Confirm Booking'}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <div>
+                <Label htmlFor="topic">Training Topic *</Label>
+                <Input
+                  id="topic"
+                  placeholder="e.g., React Development, Python Basics"
+                  value={trainingTopic}
+                  onChange={(e) => setTrainingTopic(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="organization">Organization/Company</Label>
+                <Input
+                  id="organization"
+                  placeholder="Your organization name (optional)"
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="requirements">Special Requirements</Label>
+                <Textarea
+                  id="requirements"
+                  placeholder="Any specific requirements or notes (optional)"
+                  value={specialRequirements}
+                  onChange={(e) => setSpecialRequirements(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleBookingSubmit}
+                  disabled={createBookingMutation.isPending || !trainingTopic.trim()}
+                  className="flex-1"
+                >
+                  {createBookingMutation.isPending ? 'Booking...' : 'Confirm Booking'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsBookingDialogOpen(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

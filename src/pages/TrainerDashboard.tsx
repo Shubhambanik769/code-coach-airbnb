@@ -14,6 +14,7 @@ import TrainerEarnings from '@/components/trainer/TrainerEarnings';
 import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 import TrainerSettings from '@/components/trainer/TrainerSettings';
 import TrainerTrainingRequests from '@/components/trainer/TrainerTrainingRequests';
+import TrainerCalendar from '@/components/trainer/TrainerCalendar';
 import NotificationsPage from '@/components/notifications/NotificationsPage';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -64,6 +65,8 @@ const TrainerDashboard = () => {
     switch (activeTab) {
       case 'bookings':
         return <TrainerBookings trainerId={trainerData.id} />;
+      case 'calendar':
+        return <TrainerCalendar trainerId={trainerData.id} />;
       case 'training-requests':
         return <TrainerTrainingRequests />;
       case 'notifications':
@@ -109,6 +112,7 @@ const TrainerDashboard = () => {
           <div className="w-full lg:w-64 space-y-2">
             {[
               { id: 'bookings', label: 'My Bookings', icon: Calendar },
+              { id: 'calendar', label: 'Availability Calendar', icon: Calendar },
               { id: 'training-requests', label: 'Training Requests', icon: FileText },
               { id: 'notifications', label: 'Notifications', icon: Bell },
               { id: 'profile', label: 'Profile', icon: Users },
