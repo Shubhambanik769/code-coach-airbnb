@@ -129,6 +129,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
       console.log('Client profiles fetched:', clientProfiles);
 
+      // Also try to get user info from auth.users metadata if profiles are missing
+      const missingProfileIds = studentIds.filter(id => 
+        !clientProfiles?.some(profile => profile.id === id)
+      );
+
+      console.log('Student IDs missing profiles:', missingProfileIds);
+
       // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
       const { data: feedbackData, error: feedbackError } = await supabase
@@ -149,13 +156,16 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         // Find the client profile for this booking
         const clientProfile = clientProfiles?.find(profile => profile.id === booking.student_id);
         
+        // Create a meaningful client profile even if missing from profiles table
+        const effectiveClientProfile = clientProfile || {
+          id: booking.student_id,
+          full_name: null,
+          email: `User ${booking.student_id.substring(0, 8)}` // Show partial ID as fallback
+        };
+        
         return {
           ...booking,
-          client_profile: clientProfile || {
-            id: booking.student_id,
-            full_name: null,
-            email: 'No email available'
-          },
+          client_profile: effectiveClientProfile,
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
@@ -167,7 +177,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     enabled: !!trainerId
   });
 
-  // Booking status update mutation
   const updateBookingStatusMutation = useMutation({
     mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
       console.log('Updating booking status:', { bookingId, status });
@@ -328,7 +337,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
   const filteredBookings = bookings?.filter(booking => {
     const clientName = booking.client_profile?.full_name || 'Unknown Client';
-    const clientEmail = booking.client_profile?.email || 'No email available';
+    const clientEmail = booking.client_profile?.email || '';
     
     return (
       clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -406,8 +415,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  const clientName = booking.client_profile?.full_name || 'Unknown Client';
-                  const clientEmail = booking.client_profile?.email || 'No email available';
+                  const clientName = booking.client_profile?.full_name || 'Client';
+                  const clientEmail = booking.client_profile?.email || '';
+                  const isProfileMissing = !booking.client_profile?.full_name;
                   
                   return (
                     <TableRow key={booking.id}>
@@ -415,7 +425,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400" />
                           <div>
-                            <p className="font-medium">{clientName}</p>
+                            <p className="font-medium">
+                              {clientName}
+                              {isProfileMissing && (
+                                <span className="text-xs text-orange-600 ml-1">(Profile Incomplete)</span>
+                              )}
+                            </p>
                             <p className="text-sm text-gray-500">{clientEmail}</p>
                             {booking.organization_name && (
                               <p className="text-xs text-blue-600">{booking.organization_name}</p>
@@ -553,8 +568,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
-                    <p className="font-medium">{selectedBooking.client_profile?.full_name || 'Unknown Client'}</p>
-                    <p className="text-sm text-gray-500">{selectedBooking.client_profile?.email || 'No email available'}</p>
+                    <p className="font-medium">{selectedBooking.client_profile?.full_name || 'Client'}</p>
+                    <p className="text-sm text-gray-500">{selectedBooking.client_profile?.email || ''}</p>
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
