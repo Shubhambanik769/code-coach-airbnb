@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, User, DollarSign, Search, Link, Copy, Eye, MapPin, FileText } from 'lucide-react';
+import { Calendar, Clock, User, DollarSign, Search, Copy, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TrainerBookingsProps {
@@ -32,20 +33,25 @@ interface BookingData {
   special_requirements: string | null;
   meeting_link: string | null;
   notes: string | null;
-  student_name?: string;
-  student_email?: string;
-  feedback_token?: string;
   booking_type?: string;
+  feedback_token?: string;
+  // Client profile information
+  client_profile?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+  };
 }
 
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch bookings with client details and auto-confirm training request bookings
+  // Fetch bookings with proper client details
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -54,7 +60,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       // Build the main bookings query
       let bookingsQuery = supabase
         .from('bookings')
-        .select('*')
+        .select(`
+          *,
+          client_profile:profiles!bookings_student_id_fkey(
+            id,
+            full_name,
+            email
+          )
+        `)
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
@@ -73,6 +86,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.log('No bookings found for trainer:', trainerId);
         return [];
       }
+
+      console.log('Raw bookings data:', bookingsData);
 
       // Auto-confirm training request bookings that are still pending
       const trainingRequestBookings = bookingsData.filter(
@@ -96,7 +111,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         // Refetch data to get updated status
         const { data: updatedBookingsData } = await supabase
           .from('bookings')
-          .select('*')
+          .select(`
+            *,
+            client_profile:profiles!bookings_student_id_fkey(
+              id,
+              full_name,
+              email
+            )
+          `)
           .eq('trainer_id', trainerId)
           .order('start_time', { ascending: false });
         
@@ -105,21 +127,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           bookingsData.push(...updatedBookingsData);
         }
       }
-
-      // Get student/client details
-      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
-      console.log('Fetching student profiles for IDs:', studentIds);
-      
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', studentIds);
-
-      if (studentsError) {
-        console.error('Error fetching student profiles:', studentsError);
-      }
-
-      console.log('Student profiles fetched:', studentsData);
 
       // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
@@ -133,17 +140,21 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.error('Error fetching feedback links:', feedbackError);
       }
 
-      // Combine all data
+      // Process and enrich bookings data
       const enrichedBookings = bookingsData.map(booking => {
-        const studentProfile = studentsData?.find(s => s.id === booking.student_id);
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
-        
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
+        
+        // Ensure we have proper client profile data
+        const clientProfile = booking.client_profile || {
+          id: booking.student_id,
+          full_name: null,
+          email: 'No email available'
+        };
         
         return {
           ...booking,
-          student_name: studentProfile?.full_name || 'Unknown Client',
-          student_email: studentProfile?.email || 'No email available',
+          client_profile: clientProfile,
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
@@ -155,7 +166,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     enabled: !!trainerId
   });
 
-  // Updated booking status update mutation - handles training request bookings differently
+  // Booking status update mutation
   const updateBookingStatusMutation = useMutation({
     mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
       console.log('Updating booking status:', { bookingId, status });
@@ -314,12 +325,22 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     }
   };
 
-  const filteredBookings = bookings?.filter(booking =>
-    booking.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.student_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.organization_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBookings = bookings?.filter(booking => {
+    const clientName = booking.client_profile?.full_name || 'Unknown Client';
+    const clientEmail = booking.client_profile?.email || 'No email available';
+    
+    return (
+      clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      clientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.organization_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const handleViewDetails = (booking: BookingData) => {
+    setSelectedBooking(booking);
+    setIsDialogOpen(true);
+  };
 
   return (
     <Card>
@@ -383,180 +404,184 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredBookings?.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="font-medium">{booking.student_name}</p>
-                          <p className="text-sm text-gray-500">{booking.student_email}</p>
-                          {booking.organization_name && (
-                            <p className="text-xs text-blue-600">{booking.organization_name}</p>
+                filteredBookings?.map((booking) => {
+                  const clientName = booking.client_profile?.full_name || 'Unknown Client';
+                  const clientEmail = booking.client_profile?.email || 'No email available';
+                  
+                  return (
+                    <TableRow key={booking.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="font-medium">{clientName}</p>
+                            <p className="text-sm text-gray-500">{clientEmail}</p>
+                            {booking.organization_name && (
+                              <p className="text-xs text-blue-600">{booking.organization_name}</p>
+                            )}
+                            {booking.is_training_request && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                Training Request
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium">{booking.training_topic}</p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="font-medium">
+                              {format(new Date(booking.start_time), 'MMM dd, yyyy')}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{booking.duration_hours}h</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          ${booking.total_amount}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(booking.status || 'pending')}>
+                          {booking.status || 'pending'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewDetails(booking)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+
+                          {/* Only show accept/decline for regular bookings, not training request bookings */}
+                          {booking.status === 'pending' && !booking.is_training_request && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                                disabled={updateBookingStatusMutation.isPending}
+                                className="bg-green-50 text-green-700 border-green-200"
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                disabled={updateBookingStatusMutation.isPending}
+                                className="bg-red-50 text-red-700 border-red-200"
+                              >
+                                Decline
+                              </Button>
+                            </>
                           )}
-                          {booking.is_training_request && (
-                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                              Training Request
+                          
+                          {/* Show auto-confirmed message for training request bookings */}
+                          {booking.is_training_request && booking.status === 'confirmed' && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                              Auto-Confirmed
                             </Badge>
                           )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{booking.training_topic}</p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="font-medium">
-                            {format(new Date(booking.start_time), 'MMM dd, yyyy')}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{booking.duration_hours}h</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                        ${booking.total_amount}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(booking.status || 'pending')}>
-                        {booking.status || 'pending'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2 flex-wrap">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => setSelectedBooking(booking)}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Booking Details</DialogTitle>
-                            </DialogHeader>
-                            {selectedBooking && (
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
-                                    <p className="font-medium">{selectedBooking.student_name}</p>
-                                    <p className="text-sm text-gray-500">{selectedBooking.student_email}</p>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
-                                    <Badge className={getStatusColor(selectedBooking.status || 'pending')}>
-                                      {selectedBooking.status || 'pending'}
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-sm text-gray-600">TRAINING TOPIC</h4>
-                                  <p>{selectedBooking.training_topic}</p>
-                                </div>
-                                {selectedBooking.organization_name && (
-                                  <div>
-                                    <h4 className="font-semibold text-sm text-gray-600">ORGANIZATION</h4>
-                                    <p>{selectedBooking.organization_name}</p>
-                                  </div>
-                                )}
-                                {selectedBooking.special_requirements && (
-                                  <div>
-                                    <h4 className="font-semibold text-sm text-gray-600">SPECIAL REQUIREMENTS</h4>
-                                    <p className="bg-gray-50 p-3 rounded-md">{selectedBooking.special_requirements}</p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-
-                        {/* Only show accept/decline for regular bookings, not training request bookings */}
-                        {booking.status === 'pending' && !booking.is_training_request && (
-                          <>
+                          
+                          {booking.status === 'confirmed' && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                              onClick={() => updateBookingStatus(booking.id, 'completed')}
                               disabled={updateBookingStatusMutation.isPending}
-                              className="bg-green-50 text-green-700 border-green-200"
+                              className="bg-blue-50 text-blue-700 border-blue-200"
                             >
-                              Accept
+                              Mark Complete
                             </Button>
+                          )}
+                          
+                          {booking.status === 'completed' && booking.feedback_token && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateBookingStatus(booking.id, 'cancelled')}
-                              disabled={updateBookingStatusMutation.isPending}
-                              className="bg-red-50 text-red-700 border-red-200"
+                              onClick={() => copyFeedbackLink(booking.feedback_token!)}
+                              className="bg-purple-50 text-purple-700 border-purple-200"
                             >
-                              Decline
+                              <Copy className="h-4 w-4 mr-1" />
+                              Copy Feedback Link
                             </Button>
-                          </>
-                        )}
-                        
-                        {/* Show auto-confirmed message for training request bookings */}
-                        {booking.is_training_request && booking.status === 'confirmed' && (
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                            Auto-Confirmed
-                          </Badge>
-                        )}
-                        
-                        {booking.status === 'confirmed' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateBookingStatus(booking.id, 'completed')}
-                            disabled={updateBookingStatusMutation.isPending}
-                            className="bg-blue-50 text-blue-700 border-blue-200"
-                          >
-                            Mark Complete
-                          </Button>
-                        )}
-                        
-                        {booking.status === 'completed' && booking.feedback_token && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyFeedbackLink(booking.feedback_token!)}
-                            className="bg-purple-50 text-purple-700 border-purple-200"
-                          >
-                            <Copy className="h-4 w-4 mr-1" />
-                            Copy Feedback Link
-                          </Button>
-                        )}
-                        {booking.status === 'completed' && !booking.feedback_token && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => createFeedbackLink(booking.id)}
-                            disabled={createFeedbackLinkMutation.isPending}
-                            className="bg-purple-50 text-purple-700 border-purple-200"
-                          >
-                            <Link className="h-4 w-4 mr-1" />
-                            Generate Link
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                          )}
+                          {booking.status === 'completed' && !booking.feedback_token && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => createFeedbackLink(booking.id)}
+                              disabled={createFeedbackLinkMutation.isPending}
+                              className="bg-purple-50 text-purple-700 border-purple-200"
+                            >
+                              Generate Link
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </div>
+
+        {/* Booking Details Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Booking Details</DialogTitle>
+            </DialogHeader>
+            {selectedBooking && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
+                    <p className="font-medium">{selectedBooking.client_profile?.full_name || 'Unknown Client'}</p>
+                    <p className="text-sm text-gray-500">{selectedBooking.client_profile?.email || 'No email available'}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
+                    <Badge className={getStatusColor(selectedBooking.status || 'pending')}>
+                      {selectedBooking.status || 'pending'}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-gray-600">TRAINING TOPIC</h4>
+                  <p>{selectedBooking.training_topic}</p>
+                </div>
+                {selectedBooking.organization_name && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-600">ORGANIZATION</h4>
+                    <p>{selectedBooking.organization_name}</p>
+                  </div>
+                )}
+                {selectedBooking.special_requirements && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-600">SPECIAL REQUIREMENTS</h4>
+                    <p className="bg-gray-50 p-3 rounded-md">{selectedBooking.special_requirements}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
