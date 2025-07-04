@@ -56,12 +56,17 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     queryFn: async () => {
       console.log('Fetching bookings for trainer:', trainerId);
       
-      // Build the main bookings query
+      if (!trainerId) {
+        console.log('No trainer ID provided');
+        return [];
+      }
+
+      // Build the main bookings query with proper join
       let bookingsQuery = supabase
         .from('bookings')
         .select(`
           *,
-          client_profile:profiles!bookings_student_id_fkey(
+          profiles!bookings_student_id_fkey(
             id,
             full_name,
             email
@@ -112,7 +117,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
           .from('bookings')
           .select(`
             *,
-            client_profile:profiles!bookings_student_id_fkey(
+            profiles!bookings_student_id_fkey(
               id,
               full_name,
               email
@@ -144,30 +149,16 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Ensure we have proper client profile data - handle both array and object cases
-        let clientProfile;
-        if (Array.isArray(booking.client_profile)) {
-          // If it's an array, take the first element
-          clientProfile = booking.client_profile[0] || {
-            id: booking.student_id,
-            full_name: null,
-            email: 'No email available'
-          };
-        } else if (booking.client_profile) {
-          // If it's already an object, use it directly
-          clientProfile = booking.client_profile;
-        } else {
-          // Fallback if no client profile
-          clientProfile = {
-            id: booking.student_id,
-            full_name: null,
-            email: 'No email available'
-          };
-        }
+        // Handle client profile data properly
+        const clientProfile = Array.isArray(booking.profiles) ? booking.profiles[0] : booking.profiles;
         
         return {
           ...booking,
-          client_profile: clientProfile,
+          client_profile: clientProfile || {
+            id: booking.student_id,
+            full_name: null,
+            email: 'No email available'
+          },
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
