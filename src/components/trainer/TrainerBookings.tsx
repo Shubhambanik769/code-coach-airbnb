@@ -61,17 +61,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // Build the main bookings query with proper join
+      // First, fetch the bookings
       let bookingsQuery = supabase
         .from('bookings')
-        .select(`
-          *,
-          profiles!bookings_student_id_fkey(
-            id,
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
@@ -112,25 +105,29 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
             .eq('id', booking.id);
         }
         
-        // Refetch data to get updated status
-        const { data: updatedBookingsData } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            profiles!bookings_student_id_fkey(
-              id,
-              full_name,
-              email
-            )
-          `)
-          .eq('trainer_id', trainerId)
-          .order('start_time', { ascending: false });
-        
+        // Refetch bookings data to get updated status
+        const { data: updatedBookingsData } = await bookingsQuery;
         if (updatedBookingsData) {
           bookingsData.length = 0;
           bookingsData.push(...updatedBookingsData);
         }
       }
+
+      // Get unique student IDs from bookings
+      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
+      console.log('Fetching client profiles for student IDs:', studentIds);
+      
+      // Fetch client profiles separately
+      const { data: clientProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', studentIds);
+
+      if (profilesError) {
+        console.error('Error fetching client profiles:', profilesError);
+      }
+
+      console.log('Client profiles fetched:', clientProfiles);
 
       // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
@@ -149,8 +146,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Handle client profile data properly
-        const clientProfile = Array.isArray(booking.profiles) ? booking.profiles[0] : booking.profiles;
+        // Find the client profile for this booking
+        const clientProfile = clientProfiles?.find(profile => profile.id === booking.student_id);
         
         return {
           ...booking,
