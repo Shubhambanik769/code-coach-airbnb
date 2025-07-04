@@ -117,10 +117,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
       console.log('Fetching client profiles for student IDs:', studentIds);
       
-      // Fetch client profiles separately
+      // Fetch client profiles with all relevant fields
       const { data: clientProfiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, phone')
         .in('id', studentIds);
 
       if (profilesError) {
@@ -128,13 +128,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       }
 
       console.log('Client profiles fetched:', clientProfiles);
-
-      // Also try to get user info from auth.users metadata if profiles are missing
-      const missingProfileIds = studentIds.filter(id => 
-        !clientProfiles?.some(profile => profile.id === id)
-      );
-
-      console.log('Student IDs missing profiles:', missingProfileIds);
 
       // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
@@ -156,8 +149,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         // Find the client profile for this booking
         const clientProfile = clientProfiles?.find(profile => profile.id === booking.student_id);
         
-        // Create a meaningful client profile even if missing from profiles table
-        const effectiveClientProfile = clientProfile || {
+        // Create a meaningful client profile with better completeness detection
+        const effectiveClientProfile = clientProfile ? {
+          id: clientProfile.id,
+          full_name: clientProfile.full_name,
+          email: clientProfile.email
+        } : {
           id: booking.student_id,
           full_name: null,
           email: `User ${booking.student_id.substring(0, 8)}` // Show partial ID as fallback
@@ -336,7 +333,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking => {
-    const clientName = booking.client_profile?.full_name || 'Unknown Client';
+    const clientName = booking.client_profile?.full_name || 'Client';
     const clientEmail = booking.client_profile?.email || '';
     
     return (
@@ -415,9 +412,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  const clientName = booking.client_profile?.full_name || 'Client';
+                  // Better client name handling - use email as display name if full_name is missing
+                  const hasFullName = booking.client_profile?.full_name && booking.client_profile.full_name.trim();
+                  const clientName = hasFullName ? booking.client_profile.full_name : 
+                    (booking.client_profile?.email?.split('@')[0] || 'Client');
                   const clientEmail = booking.client_profile?.email || '';
-                  const isProfileMissing = !booking.client_profile?.full_name;
+                  const isProfileMissing = !hasFullName && !clientEmail.includes('@');
                   
                   return (
                     <TableRow key={booking.id}>
@@ -568,7 +568,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
-                    <p className="font-medium">{selectedBooking.client_profile?.full_name || 'Client'}</p>
+                    <p className="font-medium">
+                      {selectedBooking.client_profile?.full_name || 
+                       selectedBooking.client_profile?.email?.split('@')[0] || 'Client'}
+                    </p>
                     <p className="text-sm text-gray-500">{selectedBooking.client_profile?.email || ''}</p>
                   </div>
                   <div>
