@@ -105,6 +105,8 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
           training_topic: trainingTopic,
           organization_name: organizationName,
           special_requirements: specialRequirements,
+          client_name: selectedClientName,
+          client_email: selectedClientEmail,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
           duration_hours: durationHours,
