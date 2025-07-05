@@ -154,7 +154,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header Section */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3 mb-4">
@@ -175,17 +175,18 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
         )}
       </div>
 
+      {/* Main Booking Interface */}
       <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
         <CardContent className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Calendar Section */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            {/* Left Column - Calendar Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-6">
                 <CalendarIcon className="h-6 w-6 text-primary" />
                 <h3 className="text-xl font-semibold text-gray-900">Select Date</h3>
               </div>
               
-              <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -195,14 +196,14 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
                     today.setHours(0, 0, 0, 0);
                     return date < today;
                   }}
-                  className="rounded-lg"
+                  className="w-full"
                 />
               </div>
             </div>
             
-            {/* Time Slots Section */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 mb-4">
+            {/* Right Column - Time Slots Section */}
+            <div className="space-y-4 h-full">
+              <div className="flex items-center gap-3 mb-6">
                 <Clock className="h-6 w-6 text-primary" />
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">Available Times</h3>
@@ -210,13 +211,13 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
                 </div>
               </div>
               
-              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm min-h-[300px]">
+              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm min-h-[400px] flex flex-col">
                 {isLoading ? (
-                  <div className="flex items-center justify-center h-32">
+                  <div className="flex items-center justify-center flex-1">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 ) : availableSlots?.length === 0 ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-16 flex-1 flex flex-col justify-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Clock className="h-8 w-8 text-gray-400" />
                     </div>
@@ -224,7 +225,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
                     <p className="text-gray-500">Please select another date to see available times.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-3 flex-1">
                     {availableSlots?.map((slot) => (
                       <button
                         key={slot.id}
