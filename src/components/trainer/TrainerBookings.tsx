@@ -95,14 +95,23 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
       console.log('Fetching profiles for student IDs:', studentIds);
       
-      // Fetch student profiles separately
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, company_name, designation, contact_person')
-        .in('id', studentIds);
+      // Fetch student profiles separately with better error handling
+      let profilesData = [];
+      try {
+        const { data, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, company_name, designation, contact_person')
+          .in('id', studentIds);
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          profilesData = [];
+        } else {
+          profilesData = data || [];
+        }
+      } catch (error) {
+        console.error('Exception fetching profiles:', error);
+        profilesData = [];
       }
 
       console.log('Profiles data:', profilesData);
