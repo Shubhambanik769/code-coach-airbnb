@@ -34,12 +34,16 @@ interface BookingData {
   notes: string | null;
   booking_type?: string;
   feedback_token?: string;
-  // Client profile information
-  client_profile?: {
+  is_training_request?: boolean;
+  // Client profile information from Supabase join
+  client_profile?: Array<{
     id: string;
     full_name: string | null;
-    email: string;
-  };
+    email: string | null;
+    company_name: string | null;
+    designation: string | null;
+    contact_person: string | null;
+  }>;
 }
 
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
@@ -61,10 +65,20 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // First, fetch the bookings
+      // Build the bookings query with status filter
       let bookingsQuery = supabase
         .from('bookings')
-        .select('*')
+        .select(`
+          *,
+          client_profile:profiles!bookings_student_id_fkey(
+            id,
+            full_name,
+            email,
+            company_name,
+            designation,
+            contact_person
+          )
+        `)
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
@@ -84,7 +98,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      console.log('Raw bookings data:', bookingsData);
+      console.log('Raw bookings with profiles:', bookingsData);
 
       // Auto-confirm training request bookings that are still pending
       const trainingRequestBookings = bookingsData.filter(
@@ -113,23 +127,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         }
       }
 
-      // Get unique student IDs from bookings
-      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
-      console.log('Fetching client profiles for student IDs:', studentIds);
-      
-      // Fetch client profiles with all relevant fields including company info
-      const { data: clientProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, phone, company_name, designation, contact_person')
-        .in('id', studentIds);
-
-      if (profilesError) {
-        console.error('Error fetching client profiles:', profilesError);
-        // Don't throw, continue with empty profiles
-      }
-
-      console.log('Client profiles fetched:', clientProfiles);
-
       // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
       const { data: feedbackData, error: feedbackError } = await supabase
@@ -147,23 +144,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Find the client profile for this booking using student_id
-        const clientProfile = clientProfiles?.find(profile => profile.id === booking.student_id);
-        console.log(`Booking ${booking.id} student_id: ${booking.student_id}, found profile:`, clientProfile);
-        
-        // Create client profile object with actual database values
-        const effectiveClientProfile = {
-          id: booking.student_id,
-          full_name: clientProfile?.full_name || null,
-          email: clientProfile?.email || null,
-          company_name: clientProfile?.company_name || null,
-          designation: clientProfile?.designation || null,
-          contact_person: clientProfile?.contact_person || null
-        };
+        console.log(`Booking ${booking.id} - client_profile:`, booking.client_profile);
         
         return {
           ...booking,
-          client_profile: effectiveClientProfile,
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
@@ -334,8 +318,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking => {
-    const clientName = booking.client_profile?.full_name || 'Client';
-    const clientEmail = booking.client_profile?.email || '';
+    // Get the first client profile from the array (should only be one)
+    const clientProfile = Array.isArray(booking.client_profile) ? booking.client_profile[0] : booking.client_profile;
+    const clientName = clientProfile?.full_name || clientProfile?.contact_person || 'Client';
+    const clientEmail = clientProfile?.email || '';
     
     return (
       clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -413,37 +399,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  // Client name handling with proper fallback logic and debugging
-                  const clientProfile = booking.client_profile;
-                  console.log(`Booking ${booking.id} client profile:`, clientProfile);
-                  
-                  const hasFullName = clientProfile?.full_name && clientProfile.full_name.trim();
-                  const hasEmail = clientProfile?.email && clientProfile.email.trim();
-                  const hasContactPerson = clientProfile?.contact_person && clientProfile.contact_person.trim();
-                  const hasCompanyName = clientProfile?.company_name && clientProfile.company_name.trim();
-                  
-                  console.log(`Booking ${booking.id} profile check:`, {
-                    hasFullName, hasEmail, hasContactPerson, hasCompanyName
-                  });
-                  
-                  // Determine the best name to display
-                  let clientName = 'Client';
-                  if (hasFullName) {
-                    clientName = clientProfile.full_name;
-                  } else if (hasContactPerson) {
-                    clientName = clientProfile.contact_person;
-                  } else if (hasEmail) {
-                    clientName = clientProfile.email.split('@')[0];
-                  }
-                  
-                  const clientEmail = hasEmail ? clientProfile.email : '';
-                  // Profile is complete if we have at least name OR email
-                  const hasBasicInfo = hasFullName || hasEmail;
-                  const isProfileIncomplete = !hasBasicInfo;
-                  
-                  console.log(`Booking ${booking.id} final display:`, {
-                    clientName, clientEmail, isProfileIncomplete
-                  });
+                  // Get client profile - handle array from Supabase join
+                  const clientProfileData = Array.isArray(booking.client_profile) ? booking.client_profile[0] : booking.client_profile;
+                  const clientName = clientProfileData?.full_name || 
+                                   clientProfileData?.contact_person || 
+                                   clientProfileData?.email?.split('@')[0] || 
+                                   'Unknown Client';
+                  const clientEmail = clientProfileData?.email || 'No email provided';
                   
                   return (
                     <TableRow key={booking.id}>
@@ -451,18 +413,15 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400" />
                           <div>
-                            <p className="font-medium">
+                            <p className="font-medium text-foreground">
                               {clientName}
-                              {isProfileIncomplete && (
-                                <span className="text-xs text-orange-600 ml-1">(Profile Incomplete)</span>
-                              )}
                             </p>
-                            <p className="text-sm text-gray-500">{clientEmail}</p>
-                            {booking.client_profile?.company_name && (
-                              <p className="text-xs text-blue-600">{booking.client_profile.company_name}</p>
+                            <p className="text-sm text-muted-foreground">{clientEmail}</p>
+                            {clientProfileData?.company_name && (
+                              <p className="text-xs text-blue-600">{clientProfileData.company_name}</p>
                             )}
-                            {booking.client_profile?.designation && (
-                              <p className="text-xs text-gray-500">{booking.client_profile.designation}</p>
+                            {clientProfileData?.designation && (
+                              <p className="text-xs text-gray-500">{clientProfileData.designation}</p>
                             )}
                             {booking.organization_name && (
                               <p className="text-xs text-blue-600">{booking.organization_name}</p>
@@ -600,11 +559,23 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
-                    <p className="font-medium">
-                      {selectedBooking.client_profile?.full_name || 
-                       selectedBooking.client_profile?.email?.split('@')[0] || 'Client'}
-                    </p>
-                    <p className="text-sm text-gray-500">{selectedBooking.client_profile?.email || ''}</p>
+                    {(() => {
+                      const clientProfile = Array.isArray(selectedBooking.client_profile) 
+                        ? selectedBooking.client_profile[0] 
+                        : selectedBooking.client_profile;
+                      
+                      const clientName = clientProfile?.full_name || 
+                                       clientProfile?.email?.split('@')[0] || 
+                                       'Client';
+                      const clientEmail = clientProfile?.email || '';
+                      
+                      return (
+                        <>
+                          <p className="font-medium">{clientName}</p>
+                          <p className="text-sm text-gray-500">{clientEmail}</p>
+                        </>
+                      );
+                    })()}
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
