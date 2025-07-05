@@ -55,7 +55,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch bookings with client details using proper JOIN
+  // Fetch bookings with client details using separate queries
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -66,20 +66,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // Use a single query with JOIN to get both booking and profile data
+      // First, fetch bookings
       let query = supabase
         .from('bookings')
-        .select(`
-          *,
-          profiles!bookings_student_id_fkey (
-            id,
-            full_name,
-            email,
-            company_name,
-            designation,
-            contact_person
-          )
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
@@ -90,7 +80,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       const { data: bookingsData, error } = await query;
       
       if (error) {
-        console.error('Error fetching bookings with profiles:', error);
+        console.error('Error fetching bookings:', error);
         throw error;
       }
 
@@ -99,7 +89,23 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      console.log('Raw bookings with profiles:', bookingsData);
+      console.log('Raw bookings:', bookingsData);
+
+      // Get unique student IDs from bookings
+      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
+      console.log('Fetching profiles for student IDs:', studentIds);
+      
+      // Fetch student profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, company_name, designation, contact_person')
+        .in('id', studentIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      console.log('Profiles data:', profilesData);
 
       // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
@@ -118,17 +124,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Get the profile data - handle both array and single object cases
-        let profileData = null;
-        if (booking.profiles) {
-          // If profiles is an array, take the first element
-          if (Array.isArray(booking.profiles)) {
-            profileData = booking.profiles.length > 0 ? booking.profiles[0] : null;
-          } else {
-            // If profiles is already a single object
-            profileData = booking.profiles;
-          }
-        }
+        // Find the profile for this student
+        const profileData = profilesData?.find(p => p.id === booking.student_id);
         
         console.log(`Booking ${booking.id} - profile data:`, profileData);
         
@@ -138,7 +135,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         
         return {
           ...booking,
-          client_profile: profileData,
+          client_profile: profileData || null,
           client_name: clientName,
           client_email: clientEmail,
           feedback_token: feedbackLink?.token || null,
