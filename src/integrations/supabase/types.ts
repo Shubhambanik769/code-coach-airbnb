@@ -36,8 +36,62 @@ export type Database = {
         }
         Relationships: []
       }
+      agreements: {
+        Row: {
+          agreement_terms: Json
+          booking_id: string
+          client_agreed_at: string | null
+          client_signature_status: string
+          completed_at: string | null
+          created_at: string
+          hourly_rate: number
+          id: string
+          total_cost: number
+          trainer_agreed_at: string | null
+          trainer_signature_status: string
+          updated_at: string
+        }
+        Insert: {
+          agreement_terms?: Json
+          booking_id: string
+          client_agreed_at?: string | null
+          client_signature_status?: string
+          completed_at?: string | null
+          created_at?: string
+          hourly_rate: number
+          id?: string
+          total_cost: number
+          trainer_agreed_at?: string | null
+          trainer_signature_status?: string
+          updated_at?: string
+        }
+        Update: {
+          agreement_terms?: Json
+          booking_id?: string
+          client_agreed_at?: string | null
+          client_signature_status?: string
+          completed_at?: string | null
+          created_at?: string
+          hourly_rate?: number
+          id?: string
+          total_cost?: number
+          trainer_agreed_at?: string | null
+          trainer_signature_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agreements_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
+          agreement_id: string | null
           booking_type: string | null
           client_email: string | null
           client_name: string | null
@@ -49,6 +103,7 @@ export type Database = {
           notes: string | null
           organization_name: string | null
           payment_status: string | null
+          requires_agreement: boolean
           special_requirements: string | null
           start_time: string
           status: string | null
@@ -59,6 +114,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          agreement_id?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -70,6 +126,7 @@ export type Database = {
           notes?: string | null
           organization_name?: string | null
           payment_status?: string | null
+          requires_agreement?: boolean
           special_requirements?: string | null
           start_time: string
           status?: string | null
@@ -80,6 +137,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          agreement_id?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -91,6 +149,7 @@ export type Database = {
           notes?: string | null
           organization_name?: string | null
           payment_status?: string | null
+          requires_agreement?: boolean
           special_requirements?: string | null
           start_time?: string
           status?: string | null
@@ -101,6 +160,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "agreements"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_trainer_id_fkey"
             columns: ["trainer_id"]
@@ -913,6 +979,10 @@ export type Database = {
           p_data?: Json
         }
         Returns: string
+      }
+      generate_agreement_terms: {
+        Args: { p_booking_id: string }
+        Returns: Json
       }
       generate_feedback_token: {
         Args: Record<PropertyKey, never>

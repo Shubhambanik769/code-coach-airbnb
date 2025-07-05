@@ -13,8 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight } from 'lucide-react';
+import { useAgreements } from '@/hooks/useAgreements';
+import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight, FileText } from 'lucide-react';
 import { format, parseISO, addHours } from 'date-fns';
+import AgreementModal from '@/components/agreements/AgreementModal';
 
 interface BookingCalendarProps {
   trainerId: string;
@@ -41,6 +43,8 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
   const [trainingTopic, setTrainingTopic] = useState('');
   const [selectedClientName, setSelectedClientName] = useState('');
   const [selectedClientEmail, setSelectedClientEmail] = useState('');
@@ -51,6 +55,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { createAgreementForBooking, fetchAgreement } = useAgreements();
 
   // Fetch client profile for the dropdown
   const { data: clientProfile } = useQuery({
@@ -129,20 +134,15 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (bookingData) => {
+      // Create agreement and show agreement modal instead of completing booking
+      setPendingBookingId(bookingData.id);
+      createAgreementForBooking.mutate({ 
+        bookingId: bookingData.id, 
+        userType: 'client' 
+      });
       queryClient.invalidateQueries({ queryKey: ['trainer-available-slots'] });
       setIsBookingDialogOpen(false);
-      setSelectedSlot(null);
-      setTrainingTopic('');
-      setSelectedClientName('');
-      setSelectedClientEmail('');
-      setOrganizationName('');
-      setSpecialRequirements('');
-      setDurationHours(1);
-      toast({
-        title: "Booking Created Successfully!",
-        description: "Your booking request has been sent to the trainer. You will be notified once confirmed."
-      });
     },
     onError: (error: any) => {
       toast({
@@ -152,6 +152,37 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
       });
     }
   });
+
+  // Handle agreement creation success
+  const handleAgreementCreated = () => {
+    if (pendingBookingId) {
+      setIsAgreementModalOpen(true);
+    }
+  };
+
+  // Handle agreement completion
+  const handleAgreementCompleted = () => {
+    setIsAgreementModalOpen(false);
+    setPendingBookingId(null);
+    setSelectedSlot(null);
+    setTrainingTopic('');
+    setSelectedClientName('');
+    setSelectedClientEmail('');
+    setOrganizationName('');
+    setSpecialRequirements('');
+    setDurationHours(1);
+    
+    toast({
+      title: "Booking Request Submitted!",
+      description: "Your agreement has been signed. Waiting for trainer acceptance."
+    });
+  };
+
+  // Fetch agreement data for the modal
+  const { data: agreementData } = fetchAgreement(pendingBookingId || '');
+
+  // Watch for agreement creation success
+  createAgreementForBooking.isSuccess && !isAgreementModalOpen && pendingBookingId && handleAgreementCreated();
 
   const handleSlotSelect = (slot: AvailabilitySlot) => {
     if (!user) {
@@ -508,6 +539,18 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Agreement Modal */}
+      {pendingBookingId && agreementData && (
+        <AgreementModal
+          isOpen={isAgreementModalOpen}
+          onClose={() => setIsAgreementModalOpen(false)}
+          bookingId={pendingBookingId}
+          userType="client"
+          agreementData={agreementData}
+          onSuccess={handleAgreementCompleted}
+        />
+      )}
     </div>
   );
 };

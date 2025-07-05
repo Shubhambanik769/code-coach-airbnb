@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, User, Search, Eye, Copy } from 'lucide-react';
+import { useAgreements } from '@/hooks/useAgreements';
+import { Calendar, Clock, User, Search, Eye, Copy, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import AgreementModal from '@/components/agreements/AgreementModal';
 
 interface TrainerBookingsProps {
   trainerId: string;
@@ -37,6 +39,7 @@ interface BookingData {
   is_training_request?: boolean;
   client_name?: string;
   client_email?: string;
+  agreement_id?: string;
   client_profile?: {
     id: string;
     full_name: string | null;
@@ -52,8 +55,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
+  const [pendingConfirmBookingId, setPendingConfirmBookingId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { fetchAgreement } = useAgreements();
 
   // Fetch bookings with client details using separate queries
   const { data: bookings, isLoading, refetch } = useQuery({
@@ -304,8 +310,32 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   });
 
   const updateBookingStatus = (bookingId: string, status: string) => {
-    updateBookingStatusMutation.mutate({ bookingId, status });
+    if (status === 'confirmed') {
+      // Check if agreement exists and handle accordingly
+      const booking = bookings?.find(b => b.id === bookingId);
+      if (booking?.agreement_id) {
+        // Agreement exists, show agreement modal for trainer signature
+        setPendingConfirmBookingId(bookingId);
+        setIsAgreementModalOpen(true);
+      } else {
+        // No agreement, create one and show modal
+        setPendingConfirmBookingId(bookingId);
+        setIsAgreementModalOpen(true);
+      }
+    } else {
+      // For other status changes, proceed normally
+      updateBookingStatusMutation.mutate({ bookingId, status });
+    }
   };
+
+  const handleAgreementCompleted = () => {
+    setIsAgreementModalOpen(false);
+    setPendingConfirmBookingId(null);
+    refetch();
+  };
+
+  // Fetch agreement data for the pending booking
+  const { data: pendingAgreementData } = fetchAgreement(pendingConfirmBookingId || '');
 
   const createFeedbackLink = (bookingId: string) => {
     createFeedbackLinkMutation.mutate(bookingId);
@@ -492,9 +522,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                                 size="sm"
                                 onClick={() => updateBookingStatus(booking.id, 'confirmed')}
                                 disabled={updateBookingStatusMutation.isPending}
-                                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 gap-1"
                               >
-                                Accept
+                                <FileText className="h-4 w-4" />
+                                Review & Accept
                               </Button>
                               <Button
                                 variant="outline"
@@ -616,6 +647,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Agreement Modal for Trainer Acceptance */}
+        {pendingConfirmBookingId && (
+          <AgreementModal
+            isOpen={isAgreementModalOpen}
+            onClose={() => setIsAgreementModalOpen(false)}
+            bookingId={pendingConfirmBookingId}
+            userType="trainer"
+            agreementData={pendingAgreementData}
+            onSuccess={handleAgreementCompleted}
+          />
+        )}
       </CardContent>
     </Card>
   );
