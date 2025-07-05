@@ -129,9 +129,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         
         console.log(`Booking ${booking.id} - profile data:`, profileData);
         
-        // Use client_name and client_email from booking if available, otherwise fall back to profile
-        const clientName = booking.client_name || profileData?.full_name || profileData?.contact_person || 'Unknown Client';
-        const clientEmail = booking.client_email || profileData?.email || 'No email provided';
+        // Use profile data to derive client name and email
+        const clientName = profileData?.full_name || profileData?.contact_person || 'Unknown Client';
+        const clientEmail = profileData?.email || 'No email provided';
         
         return {
           ...booking,
