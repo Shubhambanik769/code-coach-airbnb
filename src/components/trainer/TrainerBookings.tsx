@@ -413,12 +413,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  // Client name handling with proper fallback logic
+                  // Client name handling with proper fallback logic and debugging
                   const clientProfile = booking.client_profile;
+                  console.log(`Booking ${booking.id} client profile:`, clientProfile);
+                  
                   const hasFullName = clientProfile?.full_name && clientProfile.full_name.trim();
                   const hasEmail = clientProfile?.email && clientProfile.email.trim();
                   const hasContactPerson = clientProfile?.contact_person && clientProfile.contact_person.trim();
                   const hasCompanyName = clientProfile?.company_name && clientProfile.company_name.trim();
+                  
+                  console.log(`Booking ${booking.id} profile check:`, {
+                    hasFullName, hasEmail, hasContactPerson, hasCompanyName
+                  });
                   
                   // Determine the best name to display
                   let clientName = 'Client';
@@ -431,8 +437,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                   }
                   
                   const clientEmail = hasEmail ? clientProfile.email : '';
-                  const hasAnyInfo = hasFullName || hasEmail || hasContactPerson || hasCompanyName;
-                  const isProfileIncomplete = !hasAnyInfo;
+                  // Profile is complete if we have at least name OR email
+                  const hasBasicInfo = hasFullName || hasEmail;
+                  const isProfileIncomplete = !hasBasicInfo;
+                  
+                  console.log(`Booking ${booking.id} final display:`, {
+                    clientName, clientEmail, isProfileIncomplete
+                  });
                   
                   return (
                     <TableRow key={booking.id}>
