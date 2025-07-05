@@ -107,28 +107,43 @@ const AgreementModal = ({
           
         if (updateError) throw updateError;
         
-        // Check if both parties have signed
-        const { data: updatedAgreement, error: fetchError } = await supabase
-          .from('agreements')
-          .select('*')
-          .eq('id', agreementId)
-          .single();
-          
-        if (fetchError) throw fetchError;
+      // Check if both parties have signed
+      const { data: updatedAgreement, error: fetchError } = await supabase
+        .from('agreements')
+        .select('*')
+        .eq('id', agreementId)
+        .single();
         
-        if (updatedAgreement.client_signature_status === 'accepted' && 
-            updatedAgreement.trainer_signature_status === 'accepted') {
-          // Both signed, update agreement and booking status
-          await supabase
-            .from('agreements')
-            .update({ completed_at: new Date().toISOString() })
-            .eq('id', agreementId);
-            
-          await supabase
-            .from('bookings')
-            .update({ status: 'confirmed' })
-            .eq('id', bookingId);
+      if (fetchError) throw fetchError;
+      
+      if (updatedAgreement.client_signature_status === 'accepted' && 
+          updatedAgreement.trainer_signature_status === 'accepted') {
+        // Both signed, update agreement and booking status
+        const { error: completeError } = await supabase
+          .from('agreements')
+          .update({ completed_at: new Date().toISOString() })
+          .eq('id', agreementId);
+          
+        if (completeError) {
+          console.error('Error completing agreement:', completeError);
+          throw completeError;
         }
+          
+        const { error: bookingUpdateError } = await supabase
+          .from('bookings')
+          .update({ 
+            status: 'confirmed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', bookingId);
+          
+        if (bookingUpdateError) {
+          console.error('Error updating booking status:', bookingUpdateError);
+          throw bookingUpdateError;
+        }
+        
+        console.log('Both parties signed - booking confirmed:', bookingId);
+      }
       }
       
       return { action: 'accept', agreementId };
