@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight } from 'lucide-react';
@@ -28,11 +30,20 @@ interface AvailabilitySlot {
   is_booked: boolean;
 }
 
+interface ClientProfile {
+  id: string;
+  full_name: string | null;
+  email: string;
+  company_name: string | null;
+}
+
 const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [trainingTopic, setTrainingTopic] = useState('');
+  const [selectedClientName, setSelectedClientName] = useState('');
+  const [selectedClientEmail, setSelectedClientEmail] = useState('');
   const [organizationName, setOrganizationName] = useState('');
   const [specialRequirements, setSpecialRequirements] = useState('');
   const [durationHours, setDurationHours] = useState(1);
@@ -40,6 +51,24 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Fetch client profile for the dropdown
+  const { data: clientProfile } = useQuery({
+    queryKey: ['client-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, company_name')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      return data as ClientProfile;
+    },
+    enabled: !!user?.id
+  });
 
   // Fetch available slots for the selected date
   const { data: availableSlots, isLoading } = useQuery({
@@ -103,6 +132,8 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
       setIsBookingDialogOpen(false);
       setSelectedSlot(null);
       setTrainingTopic('');
+      setSelectedClientName('');
+      setSelectedClientEmail('');
       setOrganizationName('');
       setSpecialRequirements('');
       setDurationHours(1);
@@ -132,6 +163,13 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
 
     setSelectedSlot(slot);
     setIsBookingDialogOpen(true);
+    
+    // Pre-fill client information if available
+    if (clientProfile) {
+      setSelectedClientName(clientProfile.full_name || '');
+      setSelectedClientEmail(clientProfile.email || '');
+      setOrganizationName(clientProfile.company_name || '');
+    }
   };
 
   const handleBookingSubmit = () => {
@@ -139,6 +177,15 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
       toast({
         title: "Missing Information",
         description: "Please provide the training topic",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedClientName.trim() || !selectedClientEmail.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please select your name and email",
         variant: "destructive"
       });
       return;
@@ -335,6 +382,47 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
 
               {/* Booking Form */}
               <div className="space-y-5">
+                {/* Client Information */}
+                <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                  <h4 className="font-semibold text-gray-700">Personal Information</h4>
+                  
+                  <div>
+                    <Label htmlFor="clientName" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Full Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={selectedClientName} onValueChange={setSelectedClientName}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select your name" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clientProfile?.full_name && (
+                          <SelectItem value={clientProfile.full_name}>
+                            {clientProfile.full_name}
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="clientEmail" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Email Address <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={selectedClientEmail} onValueChange={setSelectedClientEmail}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select your email" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clientProfile?.email && (
+                          <SelectItem value={clientProfile.email}>
+                            {clientProfile.email}
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
                   <Label htmlFor="duration" className="text-sm font-semibold text-gray-700 mb-2 block">Duration (hours)</Label>
                   <Input
@@ -389,7 +477,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
               <div className="flex gap-4 pt-6">
                 <Button
                   onClick={handleBookingSubmit}
-                  disabled={createBookingMutation.isPending || !trainingTopic.trim()}
+                  disabled={createBookingMutation.isPending || !trainingTopic.trim() || !selectedClientName.trim() || !selectedClientEmail.trim()}
                   className="flex-1 h-14 text-lg font-semibold"
                   size="lg"
                 >
