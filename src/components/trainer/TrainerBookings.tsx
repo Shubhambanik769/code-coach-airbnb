@@ -54,7 +54,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch bookings with proper client details
+  // Fetch bookings with client details - simplified approach
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -65,20 +65,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // Build the bookings query with status filter
+      // Step 1: Fetch bookings
       let bookingsQuery = supabase
         .from('bookings')
-        .select(`
-          *,
-          client_profile:profiles!bookings_student_id_fkey(
-            id,
-            full_name,
-            email,
-            company_name,
-            designation,
-            contact_person
-          )
-        `)
+        .select('*')
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
@@ -98,36 +88,24 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      console.log('Raw bookings with profiles:', bookingsData);
+      console.log('Raw bookings data:', bookingsData);
 
-      // Auto-confirm training request bookings that are still pending
-      const trainingRequestBookings = bookingsData.filter(
-        booking => booking.booking_type === 'training_request' && booking.status === 'pending'
-      );
+      // Step 2: Get unique student IDs and fetch their profiles
+      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
+      console.log('Fetching profiles for student IDs:', studentIds);
+      
+      const { data: clientProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, company_name, designation, contact_person')
+        .in('id', studentIds);
 
-      if (trainingRequestBookings.length > 0) {
-        console.log('Auto-confirming training request bookings:', trainingRequestBookings.map(b => b.id));
-        
-        // Update all training request bookings to confirmed status
-        for (const booking of trainingRequestBookings) {
-          await supabase
-            .from('bookings')
-            .update({ 
-              status: 'confirmed',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', booking.id);
-        }
-        
-        // Refetch bookings data to get updated status
-        const { data: updatedBookingsData } = await bookingsQuery;
-        if (updatedBookingsData) {
-          bookingsData.length = 0;
-          bookingsData.push(...updatedBookingsData);
-        }
+      if (profilesError) {
+        console.error('Error fetching client profiles:', profilesError);
       }
 
-      // Get feedback links
+      console.log('Client profiles fetched:', clientProfiles);
+
+      // Step 3: Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
       const { data: feedbackData, error: feedbackError } = await supabase
         .from('feedback_links')
@@ -139,15 +117,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.error('Error fetching feedback links:', feedbackError);
       }
 
-      // Process and enrich bookings data
+      // Step 4: Combine bookings with client profiles
       const enrichedBookings = bookingsData.map(booking => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        console.log(`Booking ${booking.id} - client_profile:`, booking.client_profile);
+        // Find the client profile for this booking
+        const clientProfile = clientProfiles?.find(profile => profile.id === booking.student_id);
+        console.log(`Booking ${booking.id} - student_id: ${booking.student_id}, found profile:`, clientProfile);
         
         return {
           ...booking,
+          client_profile: clientProfile ? [clientProfile] : [], // Keep as array for compatibility
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
