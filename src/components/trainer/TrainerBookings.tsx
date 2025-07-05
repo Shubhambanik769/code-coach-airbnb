@@ -116,13 +116,16 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // The profile data comes from the JOIN
-        const profileData = booking.profiles;
+        // Extract the first profile from the array (since JOIN returns array)
+        const profileData = Array.isArray(booking.profiles) && booking.profiles.length > 0 
+          ? booking.profiles[0] 
+          : null;
+        
         console.log(`Booking ${booking.id} - profile data:`, profileData);
         
         return {
           ...booking,
-          client_profile: profileData || null,
+          client_profile: profileData,
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
