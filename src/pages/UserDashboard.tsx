@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import BackButton from '@/components/BackButton';
 import UserBookings from '@/components/user/UserBookings';
-import UserProfile from '@/components/user/UserProfile';
+import EnhancedUserProfile from '@/components/user/EnhancedUserProfile';
 import UserBilling from '@/components/user/UserBilling';
 import UserTrainingRequests from '@/components/user/UserTrainingRequests';
 import NotificationsPage from '@/components/notifications/NotificationsPage';
@@ -41,7 +41,7 @@ const UserDashboard = () => {
       case 'notifications':
         return <NotificationsPage />;
       case 'profile':
-        return <UserProfile />;
+        return <EnhancedUserProfile />;
       case 'billing':
         return <UserBilling />;
       case 'settings':

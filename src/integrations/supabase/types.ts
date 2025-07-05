@@ -390,37 +390,61 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          company_logo_url: string | null
+          company_name: string | null
+          contact_person: string | null
           created_at: string | null
+          department: string | null
+          designation: string | null
           email: string
           full_name: string | null
           id: string
+          linkedin_url: string | null
           notification_preferences: Json | null
           phone: string | null
           role: string
           updated_at: string | null
+          website_url: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          company_logo_url?: string | null
+          company_name?: string | null
+          contact_person?: string | null
           created_at?: string | null
+          department?: string | null
+          designation?: string | null
           email: string
           full_name?: string | null
           id: string
+          linkedin_url?: string | null
           notification_preferences?: Json | null
           phone?: string | null
           role?: string
           updated_at?: string | null
+          website_url?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          company_logo_url?: string | null
+          company_name?: string | null
+          contact_person?: string | null
           created_at?: string | null
+          department?: string | null
+          designation?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          linkedin_url?: string | null
           notification_preferences?: Json | null
           phone?: string | null
           role?: string
           updated_at?: string | null
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -617,21 +641,28 @@ export type Database = {
       }
       trainers: {
         Row: {
+          achievements: string[] | null
           availability: Json | null
           bio: string | null
           certification_documents: string[] | null
           created_at: string | null
           demo_video_url: string | null
+          education: string[] | null
           experience_years: number | null
+          github_profile: string | null
           hourly_rate: number | null
           id: string
+          languages_spoken: string[] | null
+          linkedin_profile: string | null
           location: string | null
           name: string
+          portfolio_url: string | null
           rating: number | null
           skills: string[] | null
           specialization: string | null
           status: string | null
           tags: string[] | null
+          teaching_methodology: string | null
           timezone: string | null
           title: string
           total_reviews: number | null
@@ -639,21 +670,28 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          achievements?: string[] | null
           availability?: Json | null
           bio?: string | null
           certification_documents?: string[] | null
           created_at?: string | null
           demo_video_url?: string | null
+          education?: string[] | null
           experience_years?: number | null
+          github_profile?: string | null
           hourly_rate?: number | null
           id?: string
+          languages_spoken?: string[] | null
+          linkedin_profile?: string | null
           location?: string | null
           name: string
+          portfolio_url?: string | null
           rating?: number | null
           skills?: string[] | null
           specialization?: string | null
           status?: string | null
           tags?: string[] | null
+          teaching_methodology?: string | null
           timezone?: string | null
           title: string
           total_reviews?: number | null
@@ -661,21 +699,28 @@ export type Database = {
           user_id: string
         }
         Update: {
+          achievements?: string[] | null
           availability?: Json | null
           bio?: string | null
           certification_documents?: string[] | null
           created_at?: string | null
           demo_video_url?: string | null
+          education?: string[] | null
           experience_years?: number | null
+          github_profile?: string | null
           hourly_rate?: number | null
           id?: string
+          languages_spoken?: string[] | null
+          linkedin_profile?: string | null
           location?: string | null
           name?: string
+          portfolio_url?: string | null
           rating?: number | null
           skills?: string[] | null
           specialization?: string | null
           status?: string | null
           tags?: string[] | null
+          teaching_methodology?: string | null
           timezone?: string | null
           title?: string
           total_reviews?: number | null

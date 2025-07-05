@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import BackButton from '@/components/BackButton';
 import TrainerBookings from '@/components/trainer/TrainerBookings';
-import TrainerProfile from '@/components/trainer/TrainerProfile';
+import EnhancedTrainerProfile from '@/components/trainer/EnhancedTrainerProfile';
 import TrainerEarnings from '@/components/trainer/TrainerEarnings';
 import TrainerAnalytics from '@/components/trainer/TrainerAnalytics';
 import TrainerSettings from '@/components/trainer/TrainerSettings';
@@ -72,7 +72,7 @@ const TrainerDashboard = () => {
       case 'notifications':
         return <NotificationsPage />;
       case 'profile':
-        return <TrainerProfile trainerId={trainerData.id} />;
+        return <EnhancedTrainerProfile trainerId={trainerData.id} />;
       case 'earnings':
         return <TrainerEarnings trainerId={trainerData.id} />;
       case 'analytics':

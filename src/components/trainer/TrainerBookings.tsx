@@ -117,10 +117,10 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
       console.log('Fetching client profiles for student IDs:', studentIds);
       
-      // Fetch client profiles with all relevant fields
+      // Fetch client profiles with all relevant fields including company info
       const { data: clientProfiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, phone')
+        .select('id, full_name, email, phone, company_name, designation, contact_person')
         .in('id', studentIds);
 
       if (profilesError) {
@@ -153,11 +153,17 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const effectiveClientProfile = clientProfile ? {
           id: clientProfile.id,
           full_name: clientProfile.full_name,
-          email: clientProfile.email
+          email: clientProfile.email,
+          company_name: clientProfile.company_name,
+          designation: clientProfile.designation,
+          contact_person: clientProfile.contact_person
         } : {
           id: booking.student_id,
           full_name: null,
-          email: `User ${booking.student_id.substring(0, 8)}` // Show partial ID as fallback
+          email: null,
+          company_name: null,
+          designation: null,
+          contact_person: null
         };
         
         return {
@@ -412,12 +418,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  // Better client name handling - use email as display name if full_name is missing
+                  // Better client name handling with company info
                   const hasFullName = booking.client_profile?.full_name && booking.client_profile.full_name.trim();
+                  const hasCompanyInfo = booking.client_profile?.company_name || booking.client_profile?.contact_person;
                   const clientName = hasFullName ? booking.client_profile.full_name : 
-                    (booking.client_profile?.email?.split('@')[0] || 'Client');
+                    (booking.client_profile?.contact_person || booking.client_profile?.email?.split('@')[0] || 'Client');
                   const clientEmail = booking.client_profile?.email || '';
-                  const isProfileMissing = !hasFullName && !clientEmail.includes('@');
+                  const isProfileComplete = hasFullName || hasCompanyInfo;
                   
                   return (
                     <TableRow key={booking.id}>
@@ -427,11 +434,17 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                           <div>
                             <p className="font-medium">
                               {clientName}
-                              {isProfileMissing && (
+                              {!isProfileComplete && (
                                 <span className="text-xs text-orange-600 ml-1">(Profile Incomplete)</span>
                               )}
                             </p>
                             <p className="text-sm text-gray-500">{clientEmail}</p>
+                            {booking.client_profile?.company_name && (
+                              <p className="text-xs text-blue-600">{booking.client_profile.company_name}</p>
+                            )}
+                            {booking.client_profile?.designation && (
+                              <p className="text-xs text-gray-500">{booking.client_profile.designation}</p>
+                            )}
                             {booking.organization_name && (
                               <p className="text-xs text-blue-600">{booking.organization_name}</p>
                             )}
