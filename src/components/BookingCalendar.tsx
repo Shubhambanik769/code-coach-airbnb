@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight } from 'lucide-react';
 import { format, parseISO, addHours } from 'date-fns';
 
 interface BookingCalendarProps {
@@ -154,39 +154,49 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header Section */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="p-3 bg-primary/10 rounded-full">
-            <CalendarIcon className="h-8 w-8 text-primary" />
+      <div className="text-center space-y-6">
+        <div className="flex items-center justify-center gap-4">
+          <div className="p-4 bg-primary/10 rounded-2xl">
+            <CalendarIcon className="h-10 w-10 text-primary" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Book a Session</h2>
-            <p className="text-lg text-gray-600">with {trainerName}</p>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Book Your Session</h1>
+            <p className="text-xl text-gray-600">with {trainerName}</p>
           </div>
         </div>
         
         {hourlyRate > 0 && (
-          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-6 py-3">
-            <Star className="h-5 w-5 text-green-600" />
-            <span className="font-semibold text-green-800">₹{hourlyRate}/hour</span>
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-full px-8 py-4 shadow-sm">
+            <Star className="h-6 w-6 text-green-600" />
+            <span className="text-xl font-bold text-green-800">₹{hourlyRate}/hour</span>
           </div>
         )}
       </div>
 
-      {/* Main Booking Interface */}
-      <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
-        <CardContent className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            {/* Left Column - Calendar Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-6">
-                <CalendarIcon className="h-6 w-6 text-primary" />
-                <h3 className="text-xl font-semibold text-gray-900">Select Date</h3>
+      {/* Step-by-step Booking Process */}
+      <div className="space-y-8">
+        
+        {/* Step 1: Select Date */}
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30">
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-10 h-10 bg-primary text-white rounded-full font-bold text-lg">
+                1
               </div>
-              
-              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <div>
+                <CardTitle className="text-2xl flex items-center gap-3">
+                  <CalendarIcon className="h-7 w-7 text-primary" />
+                  Select Your Preferred Date
+                </CardTitle>
+                <p className="text-gray-600 mt-1">Choose a date that works best for you</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -196,115 +206,137 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
                     today.setHours(0, 0, 0, 0);
                     return date < today;
                   }}
-                  className="w-full"
+                  className="w-full scale-110"
                 />
               </div>
             </div>
             
-            {/* Right Column - Time Slots Section */}
-            <div className="space-y-4 h-full">
-              <div className="flex items-center gap-3 mb-6">
-                <Clock className="h-6 w-6 text-primary" />
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">Available Times</h3>
-                  <p className="text-sm text-gray-600">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
+            {/* Selected Date Display */}
+            {selectedDate && (
+              <div className="mt-6 text-center">
+                <div className="inline-flex items-center gap-3 bg-primary/10 px-6 py-3 rounded-full">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-primary">
+                    Selected: {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                  </span>
                 </div>
               </div>
-              
-              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm min-h-[400px] flex flex-col">
-                {isLoading ? (
-                  <div className="flex items-center justify-center flex-1">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : availableSlots?.length === 0 ? (
-                  <div className="text-center py-16 flex-1 flex flex-col justify-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Clock className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Available Slots</h4>
-                    <p className="text-gray-500">Please select another date to see available times.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 flex-1">
-                    {availableSlots?.map((slot) => (
-                      <button
-                        key={slot.id}
-                        className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-green-100 bg-green-50 hover:bg-green-100 hover:border-green-200 transition-all duration-200 group"
-                        onClick={() => handleSlotSelect(slot)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div className="text-left">
-                            <div className="font-semibold text-green-800 text-lg">
-                              {slot.start_time} - {slot.end_time}
-                            </div>
-                            <div className="text-sm text-green-600">Available</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm">
-                          <BookOpen className="h-4 w-4 text-primary" />
-                          <span className="font-medium text-primary">Book Now</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Step 2: Choose Time Slot */}
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-green-50/30">
+          <CardHeader className="pb-6">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-10 h-10 bg-green-600 text-white rounded-full font-bold text-lg">
+                2
+              </div>
+              <div>
+                <CardTitle className="text-2xl flex items-center gap-3">
+                  <Clock className="h-7 w-7 text-green-600" />
+                  Choose Available Time
+                </CardTitle>
+                <p className="text-gray-600 mt-1">
+                  Available slots for {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                </p>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+                <p className="text-gray-600">Loading available times...</p>
+              </div>
+            ) : availableSlots?.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Clock className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">No Available Slots</h3>
+                <p className="text-gray-500 text-lg">Please select another date to see available times.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableSlots?.map((slot) => (
+                  <button
+                    key={slot.id}
+                    className="group relative p-6 rounded-2xl border-2 border-green-100 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 hover:border-green-200 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                    onClick={() => handleSlotSelect(slot)}
+                  >
+                    <div className="flex flex-col items-center space-y-3">
+                      <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
+                        <Clock className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-green-800 text-lg">
+                          {slot.start_time} - {slot.end_time}
+                        </div>
+                        <div className="text-sm text-green-600 font-medium">Available</div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm group-hover:shadow-md transition-shadow">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                        <span className="font-semibold text-primary">Book Now</span>
+                        <ChevronRight className="h-4 w-4 text-primary" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Booking Dialog */}
       <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <User className="h-5 w-5 text-primary" />
               </div>
-              Book Training Session
+              Complete Your Booking
             </DialogTitle>
           </DialogHeader>
           
           {selectedSlot && (
             <div className="space-y-6">
               {/* Session Summary */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
                   <CalendarIcon className="h-5 w-5 text-blue-600" />
-                  <span className="font-semibold text-blue-900">Session Summary</span>
+                  <span className="font-semibold text-blue-900 text-lg">Session Summary</span>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Date:</span>
-                    <span className="font-medium text-blue-900">{format(selectedDate, 'MMMM d, yyyy')}</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700 font-medium">Date:</span>
+                    <span className="font-semibold text-blue-900">{format(selectedDate, 'MMMM d, yyyy')}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Time:</span>
-                    <span className="font-medium text-blue-900">
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700 font-medium">Time:</span>
+                    <span className="font-semibold text-blue-900">
                       {selectedSlot.start_time} - {calculateEndTime(selectedSlot.start_time, durationHours)}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Duration:</span>
-                    <span className="font-medium text-blue-900">{durationHours} hour(s)</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-700 font-medium">Duration:</span>
+                    <span className="font-semibold text-blue-900">{durationHours} hour(s)</span>
                   </div>
                   {hourlyRate > 0 && (
-                    <div className="flex justify-between pt-2 border-t border-blue-200">
-                      <span className="font-semibold text-blue-700">Total Cost:</span>
-                      <span className="font-bold text-blue-900 text-lg">₹{hourlyRate * durationHours}</span>
+                    <div className="flex justify-between items-center pt-3 border-t border-blue-200">
+                      <span className="font-bold text-blue-700 text-lg">Total Cost:</span>
+                      <span className="font-bold text-blue-900 text-xl">₹{hourlyRate * durationHours}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Booking Form */}
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <Label htmlFor="duration" className="text-sm font-medium text-gray-700">Duration (hours)</Label>
+                  <Label htmlFor="duration" className="text-sm font-semibold text-gray-700 mb-2 block">Duration (hours)</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -312,12 +344,12 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
                     max="8"
                     value={durationHours}
                     onChange={(e) => setDurationHours(Number(e.target.value))}
-                    className="mt-1"
+                    className="h-12 text-lg"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="topic" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="topic" className="text-sm font-semibold text-gray-700 mb-2 block">
                     Training Topic <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -325,49 +357,50 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
                     placeholder="e.g., React Development, Python Basics"
                     value={trainingTopic}
                     onChange={(e) => setTrainingTopic(e.target.value)}
-                    className="mt-1"
+                    className="h-12 text-lg"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="organization" className="text-sm font-medium text-gray-700">Organization/Company</Label>
+                  <Label htmlFor="organization" className="text-sm font-semibold text-gray-700 mb-2 block">Organization/Company</Label>
                   <Input
                     id="organization"
                     placeholder="Your organization name (optional)"
                     value={organizationName}
                     onChange={(e) => setOrganizationName(e.target.value)}
-                    className="mt-1"
+                    className="h-12 text-lg"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="requirements" className="text-sm font-medium text-gray-700">Special Requirements</Label>
+                  <Label htmlFor="requirements" className="text-sm font-semibold text-gray-700 mb-2 block">Special Requirements</Label>
                   <Textarea
                     id="requirements"
                     placeholder="Any specific requirements or notes (optional)"
                     value={specialRequirements}
                     onChange={(e) => setSpecialRequirements(e.target.value)}
-                    rows={3}
-                    className="mt-1"
+                    rows={4}
+                    className="text-lg"
                   />
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-4 pt-6">
                 <Button
                   onClick={handleBookingSubmit}
                   disabled={createBookingMutation.isPending || !trainingTopic.trim()}
-                  className="flex-1 h-12 font-medium"
+                  className="flex-1 h-14 text-lg font-semibold"
+                  size="lg"
                 >
                   {createBookingMutation.isPending ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                       Booking...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="h-5 w-5 mr-3" />
                       Confirm Booking
                     </>
                   )}
@@ -375,7 +408,8 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
                 <Button
                   variant="outline"
                   onClick={() => setIsBookingDialogOpen(false)}
-                  className="flex-1 h-12 font-medium"
+                  className="flex-1 h-14 text-lg font-semibold"
+                  size="lg"
                 >
                   Cancel
                 </Button>
