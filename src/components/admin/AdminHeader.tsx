@@ -28,25 +28,29 @@ const AdminHeader = ({ user }: AdminHeaderProps) => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b">
+    <header className="bg-card shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-techblue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SL</span>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                <span className="text-primary-foreground font-bold text-lg">SL</span>
               </div>
-              <span className="text-xl font-bold text-gradient">Skilloop.io Admin</span>
+              <div>
+                <span className="text-xl font-bold text-gradient">Skilloop.io</span>
+                <div className="text-xs text-muted-foreground">Admin Panel</div>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             <NotificationBell />
             
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-700">
-                {user?.email}
-              </span>
+            <div className="flex items-center space-x-3">
+              <div className="text-right">
+                <div className="text-sm font-medium text-foreground">Admin</div>
+                <div className="text-xs text-muted-foreground">{user?.email}</div>
+              </div>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>

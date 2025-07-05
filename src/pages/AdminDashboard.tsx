@@ -43,48 +43,52 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <AdminHeader user={user} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage your platform and monitor performance</p>
+          <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+          <p className="text-muted-foreground mt-2">Manage your platform and monitor performance</p>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-lg shadow-sm">
-          {[
-            { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'users', label: 'Users', icon: Users },
-            { id: 'trainers', label: 'Trainers', icon: GraduationCap },
-            { id: 'bookings', label: 'Bookings', icon: Calendar },
-            { id: 'training-requests', label: 'Training Requests', icon: FileText },
-            { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-            { id: 'stories', label: 'Success Stories', icon: Star },
-            { id: 'jobs', label: 'Jobs', icon: Briefcase },
-            { id: 'settings', label: 'Settings', icon: Settings }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-techblue-100 text-techblue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
+        <div className="bg-card rounded-xl shadow-sm border p-3 mb-8">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'users', label: 'Users', icon: Users },
+              { id: 'trainers', label: 'Trainers', icon: GraduationCap },
+              { id: 'bookings', label: 'Bookings', icon: Calendar },
+              { id: 'training-requests', label: 'Training Requests', icon: FileText },
+              { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+              { id: 'stories', label: 'Success Stories', icon: Star },
+              { id: 'jobs', label: 'Jobs', icon: Briefcase },
+              { id: 'settings', label: 'Settings', icon: Settings }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Content */}
-        {renderContent()}
+        <div className="animate-fade-in">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

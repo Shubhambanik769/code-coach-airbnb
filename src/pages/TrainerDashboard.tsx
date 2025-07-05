@@ -85,18 +85,21 @@ const TrainerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <BackButton to="/" label="Back to Home" />
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Trainer Dashboard
-            </h1>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Trainer Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">Manage your training sessions and profile</p>
+            </div>
             <div className="flex items-center space-x-4">
               <NotificationBell />
-              <span className="text-sm text-gray-700">{user?.email}</span>
+              <span className="text-sm text-muted-foreground">{user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
@@ -109,38 +112,42 @@ const TrainerDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <div className="w-full lg:w-64 space-y-2">
-            {[
-              { id: 'bookings', label: 'My Bookings', icon: Calendar },
-              { id: 'calendar', label: 'Availability Calendar', icon: Calendar },
-              { id: 'training-requests', label: 'Training Requests', icon: FileText },
-              { id: 'notifications', label: 'Notifications', icon: Bell },
-              { id: 'profile', label: 'Profile', icon: Users },
-              { id: 'earnings', label: 'Earnings', icon: DollarSign },
-              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-              { id: 'settings', label: 'Settings', icon: Settings },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
-                    activeTab === item.id
-                      ? 'bg-techblue-100 text-techblue-700 border border-techblue-200'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="hidden lg:block">{item.label}</span>
-                </button>
-              );
-            })}
+          <div className="w-full lg:w-72">
+            <div className="bg-card rounded-xl shadow-sm border p-4 space-y-2">
+              {[
+                { id: 'bookings', label: 'My Bookings', icon: Calendar },
+                { id: 'calendar', label: 'Availability Calendar', icon: Calendar },
+                { id: 'training-requests', label: 'Training Requests', icon: FileText },
+                { id: 'notifications', label: 'Notifications', icon: Bell },
+                { id: 'profile', label: 'Profile', icon: Users },
+                { id: 'earnings', label: 'Earnings', icon: DollarSign },
+                { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+                { id: 'settings', label: 'Settings', icon: Settings },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-all duration-200 ${
+                      activeTab === item.id
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="hidden lg:block font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {renderContent()}
+            <div className="animate-fade-in">
+              {renderContent()}
+            </div>
           </div>
         </div>
       </div>

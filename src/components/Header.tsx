@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import ThemeToggle from '@/components/ThemeToggle';
+
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -101,7 +101,6 @@ const Header = () => {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <ThemeToggle />
             {user ? (
               <div className="flex items-center space-x-3">
                 <NotificationBell />
