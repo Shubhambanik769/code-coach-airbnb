@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, User, DollarSign, Search, Copy, Eye } from 'lucide-react';
+import { Calendar, Clock, User, Search, Eye, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TrainerBookingsProps {
@@ -421,10 +421,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                   // Better client name handling with company info
                   const hasFullName = booking.client_profile?.full_name && booking.client_profile.full_name.trim();
                   const hasCompanyInfo = booking.client_profile?.company_name || booking.client_profile?.contact_person;
+                  const hasBasicInfo = hasFullName || hasCompanyInfo || booking.client_profile?.email;
                   const clientName = hasFullName ? booking.client_profile.full_name : 
                     (booking.client_profile?.contact_person || booking.client_profile?.email?.split('@')[0] || 'Client');
                   const clientEmail = booking.client_profile?.email || '';
-                  const isProfileComplete = hasFullName || hasCompanyInfo;
+                  // Only show incomplete if we have absolutely no useful information
+                  const isProfileIncomplete = !hasBasicInfo;
                   
                   return (
                     <TableRow key={booking.id}>
@@ -434,7 +436,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                           <div>
                             <p className="font-medium">
                               {clientName}
-                              {!isProfileComplete && (
+                              {isProfileIncomplete && (
                                 <span className="text-xs text-orange-600 ml-1">(Profile Incomplete)</span>
                               )}
                             </p>
@@ -475,8 +477,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                       <TableCell>{booking.duration_hours}h</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-green-600" />
-                          ${booking.total_amount}
+                          <span className="text-green-600 font-medium">₹</span>
+                          {booking.total_amount}
                         </div>
                       </TableCell>
                       <TableCell>

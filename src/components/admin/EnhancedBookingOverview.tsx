@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Download, Calendar, DollarSign, TrendingUp } from 'lucide-react';
+import { Search, Filter, Download, Calendar, TrendingUp } from 'lucide-react';
 
 const EnhancedBookingOverview = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,7 +109,7 @@ const EnhancedBookingOverview = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Confirmed Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <span className="text-green-600 font-medium">₹</span>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{bookingsData?.stats.total_revenue?.toFixed(2) || '0.00'}</div>
