@@ -331,7 +331,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const handleAgreementCompleted = () => {
     setIsAgreementModalOpen(false);
     setPendingConfirmBookingId(null);
+    // Refetch bookings to get updated status
     refetch();
+    // Also invalidate queries to ensure fresh data
+    queryClient.invalidateQueries({ queryKey: ['trainer-bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['agreement'] });
   };
 
   // Fetch agreement data for the pending booking

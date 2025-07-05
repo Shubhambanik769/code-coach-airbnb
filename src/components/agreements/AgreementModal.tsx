@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, FileText, Clock, DollarSign, User, Calendar, Building } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Clock, DollarSign, User, Calendar, Building, Download } from 'lucide-react';
 import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface AgreementModalProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ const AgreementModal = ({
   onSuccess 
 }: AgreementModalProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -158,6 +161,64 @@ const AgreementModal = ({
     }
   });
 
+  const generatePDF = async () => {
+    if (!agreementData?.agreement_terms) return;
+    
+    setIsGeneratingPdf(true);
+    try {
+      const element = document.getElementById('agreement-content');
+      if (!element) return;
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const terms = agreementData.agreement_terms;
+      const fileName = `Training_Agreement_${terms.booking_details?.training_topic.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      
+      pdf.save(fileName);
+      
+      toast({
+        title: "PDF Generated",
+        description: "Agreement PDF has been downloaded successfully."
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   if (!agreementData?.agreement_terms) {
     return null;
   }
@@ -179,7 +240,14 @@ const AgreementModal = ({
         </DialogHeader>
         
         <ScrollArea className="max-h-[70vh] pr-4">
-          <div className="space-y-6">
+          <div id="agreement-content" className="space-y-6 p-4 bg-white">
+            {/* Legal Header */}
+            <div className="text-center border-b pb-4">
+              <h1 className="text-2xl font-bold text-gray-900">PROFESSIONAL TRAINING SERVICE AGREEMENT</h1>
+              <p className="text-sm text-gray-600 mt-2">This agreement is legally binding between the parties</p>
+              <p className="text-xs text-gray-500">Agreement ID: {agreementData.id}</p>
+              <p className="text-xs text-gray-500">Generated on: {format(new Date(agreementData.created_at), 'PPP')}</p>
+            </div>
             {/* Agreement Status */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
               <div className="flex items-center justify-between">
@@ -273,32 +341,48 @@ const AgreementModal = ({
 
             <Separator />
 
-            {/* Terms and Conditions */}
+            {/* Legal Terms and Conditions */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Building className="h-5 w-5 text-orange-600" />
-                <h3 className="font-semibold text-lg">Terms & Conditions</h3>
+                <h3 className="font-semibold text-lg">LEGAL TERMS & CONDITIONS</h3>
               </div>
-              <div className="bg-orange-50 p-4 rounded-lg space-y-3">
+              <div className="bg-orange-50 p-4 rounded-lg space-y-4 text-sm">
                 <div>
-                  <strong>Cancellation Policy:</strong>
-                  <p className="text-sm mt-1">{terms.terms_and_conditions?.cancellation_policy}</p>
+                  <strong>1. SERVICE DELIVERY:</strong>
+                  <p className="mt-1">The Trainer agrees to provide professional training services as specified above. Services must be delivered with professional competence and in accordance with industry standards.</p>
                 </div>
                 <div>
-                  <strong>Payment Terms:</strong>
-                  <p className="text-sm mt-1">{terms.terms_and_conditions?.payment_terms}</p>
+                  <strong>2. PAYMENT TERMS:</strong>
+                  <p className="mt-1">Payment is due within 7 days of training completion. Late payments may incur interest charges of 1.5% per month. All amounts are in Indian Rupees (INR).</p>
                 </div>
                 <div>
-                  <strong>Professional Conduct:</strong>
-                  <p className="text-sm mt-1">{terms.terms_and_conditions?.liability}</p>
+                  <strong>3. CANCELLATION POLICY:</strong>
+                  <p className="mt-1">Either party may cancel with 24 hours written notice. Cancellations within 24 hours may incur charges of 50% of the total fee. Emergency cancellations will be handled case-by-case.</p>
                 </div>
                 <div>
-                  <strong>Intellectual Property:</strong>
-                  <p className="text-sm mt-1">{terms.terms_and_conditions?.intellectual_property}</p>
+                  <strong>4. INTELLECTUAL PROPERTY:</strong>
+                  <p className="mt-1">All training materials, methodologies, and proprietary content remain the property of the Trainer. Client may use materials for internal training purposes only.</p>
                 </div>
                 <div>
-                  <strong>Confidentiality:</strong>
-                  <p className="text-sm mt-1">{terms.terms_and_conditions?.confidentiality}</p>
+                  <strong>5. CONFIDENTIALITY:</strong>
+                  <p className="mt-1">Both parties agree to maintain strict confidentiality of all proprietary information disclosed during training sessions.</p>
+                </div>
+                <div>
+                  <strong>6. LIABILITY & INDEMNIFICATION:</strong>
+                  <p className="mt-1">Trainer's liability is limited to the total amount paid. Client agrees to indemnify Trainer against any claims arising from misuse of training content.</p>
+                </div>
+                <div>
+                  <strong>7. FORCE MAJEURE:</strong>
+                  <p className="mt-1">Neither party shall be liable for delays or failures due to circumstances beyond reasonable control, including natural disasters, government actions, or technical failures.</p>
+                </div>
+                <div>
+                  <strong>8. GOVERNING LAW:</strong>
+                  <p className="mt-1">This agreement shall be governed by the laws of India. Any disputes shall be subject to the jurisdiction of courts in Bangalore, Karnataka.</p>
+                </div>
+                <div>
+                  <strong>9. ENTIRE AGREEMENT:</strong>
+                  <p className="mt-1">This document constitutes the entire agreement between parties and supersedes all prior negotiations, representations, or agreements.</p>
                 </div>
               </div>
             </div>
@@ -363,7 +447,25 @@ const AgreementModal = ({
           </div>
         </ScrollArea>
         
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-between items-center pt-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={generatePDF}
+            disabled={isGeneratingPdf}
+            className="gap-2"
+          >
+            {isGeneratingPdf ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                Download PDF
+              </>
+            )}
+          </Button>
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
