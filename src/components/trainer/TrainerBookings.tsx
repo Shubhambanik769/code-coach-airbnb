@@ -35,6 +35,8 @@ interface BookingData {
   booking_type?: string;
   feedback_token?: string;
   is_training_request?: boolean;
+  client_name?: string;
+  client_email?: string;
   client_profile?: {
     id: string;
     full_name: string | null;
@@ -116,14 +118,29 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Get the profile data directly (it's an object, not an array)
-        const profileData = booking.profiles;
+        // Get the profile data - handle both array and single object cases
+        let profileData = null;
+        if (booking.profiles) {
+          // If profiles is an array, take the first element
+          if (Array.isArray(booking.profiles)) {
+            profileData = booking.profiles.length > 0 ? booking.profiles[0] : null;
+          } else {
+            // If profiles is already a single object
+            profileData = booking.profiles;
+          }
+        }
         
         console.log(`Booking ${booking.id} - profile data:`, profileData);
         
+        // Use client_name and client_email from booking if available, otherwise fall back to profile
+        const clientName = booking.client_name || profileData?.full_name || profileData?.contact_person || 'Unknown Client';
+        const clientEmail = booking.client_email || profileData?.email || 'No email provided';
+        
         return {
           ...booking,
-          client_profile: profileData || null,
+          client_profile: profileData,
+          client_name: clientName,
+          client_email: clientEmail,
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
@@ -212,7 +229,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     try {
       console.log('Creating optimized feedback link for booking:', bookingId);
       
-      // Check if feedback link already exists first
       const { data: existingLink, error: checkError } = await supabase
         .from('feedback_links')
         .select('id, token')
@@ -230,7 +246,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return existingLink;
       }
 
-      // Generate token using the database function
       const { data: tokenData, error: tokenError } = await supabase
         .rpc('generate_feedback_token');
 
@@ -239,14 +254,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         throw tokenError;
       }
 
-      // Create feedback link with generated token
       const { data, error } = await supabase
         .from('feedback_links')
         .insert({
           booking_id: bookingId,
           token: tokenData,
           is_active: true,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         })
         .select()
         .single();
@@ -264,7 +278,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     }
   };
 
-  // Manual feedback link creation mutation
   const createFeedbackLinkMutation = useMutation({
     mutationFn: createFeedbackLinkOptimized,
     onSuccess: () => {
@@ -293,7 +306,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const copyFeedbackLink = (token: string) => {
-    // Create a clean base64url token that works in URLs
     const cleanToken = token
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
@@ -320,14 +332,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking => {
-    // Get client information
-    const clientProfile = booking.client_profile;
-    const clientName = clientProfile?.full_name || 
-                      clientProfile?.contact_person || 
-                      booking.organization_name || 
-                      'Client';
-    const clientEmail = clientProfile?.email || '';
-    const companyName = clientProfile?.company_name || booking.organization_name || '';
+    const clientName = booking.client_name || 'Client';
+    const clientEmail = booking.client_email || '';
+    const companyName = booking.client_profile?.company_name || booking.organization_name || '';
     
     return (
       clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -405,14 +412,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  // Get client profile data
-                  const clientProfile = booking.client_profile;
-                  const clientName = clientProfile?.full_name || 
-                                   clientProfile?.contact_person || 
-                                   booking.organization_name || 
-                                   'Unknown Client';
-                  const clientEmail = clientProfile?.email || 'No email provided';
-                  const companyName = clientProfile?.company_name || booking.organization_name;
+                  const clientName = booking.client_name || 'Unknown Client';
+                  const clientEmail = booking.client_email || 'No email provided';
+                  const companyName = booking.client_profile?.company_name || booking.organization_name;
                   
                   return (
                     <TableRow key={booking.id}>
@@ -427,8 +429,8 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             {companyName && (
                               <p className="text-xs text-blue-600">{companyName}</p>
                             )}
-                            {clientProfile?.designation && (
-                              <p className="text-xs text-gray-500">{clientProfile.designation}</p>
+                            {booking.client_profile?.designation && (
+                              <p className="text-xs text-gray-500">{booking.client_profile.designation}</p>
                             )}
                             {booking.is_training_request && (
                               <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
@@ -477,7 +479,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             View
                           </Button>
 
-                          {/* Only show accept/decline for regular bookings, not training request bookings */}
                           {booking.status === 'pending' && !booking.is_training_request && (
                             <>
                               <Button
@@ -501,7 +502,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                             </>
                           )}
                           
-                          {/* Show auto-confirmed message for training request bookings */}
                           {booking.is_training_request && booking.status === 'confirmed' && (
                             <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
                               Auto-Confirmed
@@ -563,25 +563,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
-                    {(() => {
-                      const clientProfile = selectedBooking.client_profile;
-                      const clientName = clientProfile?.full_name || 
-                                       clientProfile?.contact_person || 
-                                       selectedBooking.organization_name || 
-                                       'Unknown Client';
-                      const clientEmail = clientProfile?.email || 'No email provided';
-                      const companyName = clientProfile?.company_name || selectedBooking.organization_name;
-                      
-                      return (
-                        <>
-                          <p className="font-medium">{clientName}</p>
-                          <p className="text-sm text-gray-500">{clientEmail}</p>
-                          {companyName && (
-                            <p className="text-sm text-blue-600">{companyName}</p>
-                          )}
-                        </>
-                      );
-                    })()}
+                    <p className="font-medium">{selectedBooking.client_name || 'Unknown Client'}</p>
+                    <p className="text-sm text-gray-500">{selectedBooking.client_email || 'No email provided'}</p>
+                    {(selectedBooking.client_profile?.company_name || selectedBooking.organization_name) && (
+                      <p className="text-sm text-blue-600">{selectedBooking.client_profile?.company_name || selectedBooking.organization_name}</p>
+                    )}
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
