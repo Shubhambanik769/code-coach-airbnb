@@ -35,15 +35,14 @@ interface BookingData {
   booking_type?: string;
   feedback_token?: string;
   is_training_request?: boolean;
-  // Client profile information from Supabase join
-  client_profile?: Array<{
+  client_profile?: {
     id: string;
     full_name: string | null;
     email: string | null;
     company_name: string | null;
     designation: string | null;
     contact_person: string | null;
-  }>;
+  } | null;
 }
 
 const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
@@ -54,7 +53,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch bookings with client details - simplified approach
+  // Fetch bookings with client details using proper JOIN
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ['trainer-bookings', trainerId, statusFilter],
     queryFn: async () => {
@@ -65,22 +64,32 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // Step 1: Fetch bookings
-      let bookingsQuery = supabase
+      // Use a single query with JOIN to get both booking and profile data
+      let query = supabase
         .from('bookings')
-        .select('*')
+        .select(`
+          *,
+          profiles!bookings_student_id_fkey (
+            id,
+            full_name,
+            email,
+            company_name,
+            designation,
+            contact_person
+          )
+        `)
         .eq('trainer_id', trainerId)
         .order('start_time', { ascending: false });
 
       if (statusFilter !== 'all') {
-        bookingsQuery = bookingsQuery.eq('status', statusFilter);
+        query = query.eq('status', statusFilter);
       }
 
-      const { data: bookingsData, error: bookingsError } = await bookingsQuery;
+      const { data: bookingsData, error } = await query;
       
-      if (bookingsError) {
-        console.error('Error fetching bookings:', bookingsError);
-        throw bookingsError;
+      if (error) {
+        console.error('Error fetching bookings with profiles:', error);
+        throw error;
       }
 
       if (!bookingsData || bookingsData.length === 0) {
@@ -88,24 +97,9 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      console.log('Raw bookings data:', bookingsData);
+      console.log('Raw bookings with profiles:', bookingsData);
 
-      // Step 2: Get unique student IDs and fetch their profiles
-      const studentIds = [...new Set(bookingsData.map(b => b.student_id))];
-      console.log('Fetching profiles for student IDs:', studentIds);
-      
-      const { data: clientProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, company_name, designation, contact_person')
-        .in('id', studentIds);
-
-      if (profilesError) {
-        console.error('Error fetching client profiles:', profilesError);
-      }
-
-      console.log('Client profiles fetched:', clientProfiles);
-
-      // Step 3: Get feedback links
+      // Get feedback links
       const bookingIds = bookingsData.map(b => b.id);
       const { data: feedbackData, error: feedbackError } = await supabase
         .from('feedback_links')
@@ -117,18 +111,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         console.error('Error fetching feedback links:', feedbackError);
       }
 
-      // Step 4: Combine bookings with client profiles
-      const enrichedBookings = bookingsData.map(booking => {
+      // Transform the data to match our interface
+      const enrichedBookings: BookingData[] = bookingsData.map(booking => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Find the client profile for this booking
-        const clientProfile = clientProfiles?.find(profile => profile.id === booking.student_id);
-        console.log(`Booking ${booking.id} - student_id: ${booking.student_id}, found profile:`, clientProfile);
+        // The profile data comes from the JOIN
+        const profileData = booking.profiles;
+        console.log(`Booking ${booking.id} - profile data:`, profileData);
         
         return {
           ...booking,
-          client_profile: clientProfile ? [clientProfile] : [], // Keep as array for compatibility
+          client_profile: profileData || null,
           feedback_token: feedbackLink?.token || null,
           is_training_request: isTrainingRequestBooking
         };
@@ -162,6 +156,29 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         }
 
         console.log('Booking updated successfully:', data);
+
+        // Create notification for the client
+        const booking = bookings?.find(b => b.id === bookingId);
+        if (booking?.client_profile) {
+          const notificationType = status === 'confirmed' ? 'booking_confirmed' : 
+                                 status === 'cancelled' ? 'booking_cancelled' : 
+                                 status === 'completed' ? 'booking_completed' : null;
+          
+          if (notificationType) {
+            await supabase.rpc('create_notification', {
+              p_user_id: booking.student_id,
+              p_type: notificationType,
+              p_title: `Booking ${status === 'confirmed' ? 'Confirmed' : status === 'cancelled' ? 'Cancelled' : 'Completed'}`,
+              p_message: `Your training session "${booking.training_topic}" has been ${status}.`,
+              p_data: {
+                booking_id: bookingId,
+                training_topic: booking.training_topic,
+                trainer_action: true
+              }
+            });
+          }
+        }
+
         return { bookingId, status };
       } catch (error) {
         console.error('Error in updateBookingStatusMutation:', error);
@@ -169,9 +186,13 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
       }
     },
     onSuccess: (data) => {
+      const statusText = data.status === 'confirmed' ? 'confirmed' : 
+                        data.status === 'cancelled' ? 'cancelled' : 
+                        data.status === 'completed' ? 'marked as complete' : data.status;
+      
       toast({
         title: "Success",
-        description: `Booking ${data.status} successfully`
+        description: `Booking ${statusText} successfully. The client has been notified.`
       });
       refetch();
       queryClient.invalidateQueries({ queryKey: ['trainer-bookings'] });
@@ -186,7 +207,6 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
     }
   });
 
-  // Fixed feedback link creation using database function for token generation
   const createFeedbackLinkOptimized = async (bookingId: string) => {
     try {
       console.log('Creating optimized feedback link for booking:', bookingId);
@@ -299,16 +319,20 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   };
 
   const filteredBookings = bookings?.filter(booking => {
-    // Get the first client profile from the array (should only be one)
-    const clientProfile = Array.isArray(booking.client_profile) ? booking.client_profile[0] : booking.client_profile;
-    const clientName = clientProfile?.full_name || clientProfile?.contact_person || 'Client';
+    // Get client information
+    const clientProfile = booking.client_profile;
+    const clientName = clientProfile?.full_name || 
+                      clientProfile?.contact_person || 
+                      booking.organization_name || 
+                      'Client';
     const clientEmail = clientProfile?.email || '';
+    const companyName = clientProfile?.company_name || booking.organization_name || '';
     
     return (
       clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       clientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.organization_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.training_topic?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
 
@@ -380,13 +404,14 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  // Get client profile - handle array from Supabase join
-                  const clientProfileData = Array.isArray(booking.client_profile) ? booking.client_profile[0] : booking.client_profile;
-                  const clientName = clientProfileData?.full_name || 
-                                   clientProfileData?.contact_person || 
-                                   clientProfileData?.email?.split('@')[0] || 
+                  // Get client profile data
+                  const clientProfile = booking.client_profile;
+                  const clientName = clientProfile?.full_name || 
+                                   clientProfile?.contact_person || 
+                                   booking.organization_name || 
                                    'Unknown Client';
-                  const clientEmail = clientProfileData?.email || 'No email provided';
+                  const clientEmail = clientProfile?.email || 'No email provided';
+                  const companyName = clientProfile?.company_name || booking.organization_name;
                   
                   return (
                     <TableRow key={booking.id}>
@@ -398,14 +423,11 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               {clientName}
                             </p>
                             <p className="text-sm text-muted-foreground">{clientEmail}</p>
-                            {clientProfileData?.company_name && (
-                              <p className="text-xs text-blue-600">{clientProfileData.company_name}</p>
+                            {companyName && (
+                              <p className="text-xs text-blue-600">{companyName}</p>
                             )}
-                            {clientProfileData?.designation && (
-                              <p className="text-xs text-gray-500">{clientProfileData.designation}</p>
-                            )}
-                            {booking.organization_name && (
-                              <p className="text-xs text-blue-600">{booking.organization_name}</p>
+                            {clientProfile?.designation && (
+                              <p className="text-xs text-gray-500">{clientProfile.designation}</p>
                             )}
                             {booking.is_training_request && (
                               <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
@@ -462,7 +484,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                                 size="sm"
                                 onClick={() => updateBookingStatus(booking.id, 'confirmed')}
                                 disabled={updateBookingStatusMutation.isPending}
-                                className="bg-green-50 text-green-700 border-green-200"
+                                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                               >
                                 Accept
                               </Button>
@@ -471,7 +493,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                                 size="sm"
                                 onClick={() => updateBookingStatus(booking.id, 'cancelled')}
                                 disabled={updateBookingStatusMutation.isPending}
-                                className="bg-red-50 text-red-700 border-red-200"
+                                className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
                               >
                                 Decline
                               </Button>
@@ -491,7 +513,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               size="sm"
                               onClick={() => updateBookingStatus(booking.id, 'completed')}
                               disabled={updateBookingStatusMutation.isPending}
-                              className="bg-blue-50 text-blue-700 border-blue-200"
+                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                             >
                               Mark Complete
                             </Button>
@@ -502,7 +524,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               variant="outline"
                               size="sm"
                               onClick={() => copyFeedbackLink(booking.feedback_token!)}
-                              className="bg-purple-50 text-purple-700 border-purple-200"
+                              className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
                             >
                               <Copy className="h-4 w-4 mr-1" />
                               Copy Feedback Link
@@ -514,7 +536,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                               size="sm"
                               onClick={() => createFeedbackLink(booking.id)}
                               disabled={createFeedbackLinkMutation.isPending}
-                              className="bg-purple-50 text-purple-700 border-purple-200"
+                              className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
                             >
                               Generate Link
                             </Button>
@@ -541,19 +563,21 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">CLIENT</h4>
                     {(() => {
-                      const clientProfile = Array.isArray(selectedBooking.client_profile) 
-                        ? selectedBooking.client_profile[0] 
-                        : selectedBooking.client_profile;
-                      
+                      const clientProfile = selectedBooking.client_profile;
                       const clientName = clientProfile?.full_name || 
-                                       clientProfile?.email?.split('@')[0] || 
-                                       'Client';
-                      const clientEmail = clientProfile?.email || '';
+                                       clientProfile?.contact_person || 
+                                       selectedBooking.organization_name || 
+                                       'Unknown Client';
+                      const clientEmail = clientProfile?.email || 'No email provided';
+                      const companyName = clientProfile?.company_name || selectedBooking.organization_name;
                       
                       return (
                         <>
                           <p className="font-medium">{clientName}</p>
                           <p className="text-sm text-gray-500">{clientEmail}</p>
+                          {companyName && (
+                            <p className="text-sm text-blue-600">{companyName}</p>
+                          )}
                         </>
                       );
                     })()}
@@ -569,16 +593,30 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                   <h4 className="font-semibold text-sm text-gray-600">TRAINING TOPIC</h4>
                   <p>{selectedBooking.training_topic}</p>
                 </div>
-                {selectedBooking.organization_name && (
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold text-sm text-gray-600">ORGANIZATION</h4>
-                    <p>{selectedBooking.organization_name}</p>
+                    <h4 className="font-semibold text-sm text-gray-600">DATE & TIME</h4>
+                    <p>{format(new Date(selectedBooking.start_time), 'PPP')}</p>
+                    <p className="text-sm text-gray-500">
+                      {format(new Date(selectedBooking.start_time), 'HH:mm')} - {format(new Date(selectedBooking.end_time), 'HH:mm')}
+                    </p>
                   </div>
-                )}
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-600">DURATION & AMOUNT</h4>
+                    <p>{selectedBooking.duration_hours} hours</p>
+                    <p className="text-green-600 font-medium">₹{selectedBooking.total_amount}</p>
+                  </div>
+                </div>
                 {selectedBooking.special_requirements && (
                   <div>
                     <h4 className="font-semibold text-sm text-gray-600">SPECIAL REQUIREMENTS</h4>
                     <p className="bg-gray-50 p-3 rounded-md">{selectedBooking.special_requirements}</p>
+                  </div>
+                )}
+                {selectedBooking.notes && (
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-600">NOTES</h4>
+                    <p className="bg-gray-50 p-3 rounded-md">{selectedBooking.notes}</p>
                   </div>
                 )}
               </div>
