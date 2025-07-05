@@ -125,6 +125,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
       if (profilesError) {
         console.error('Error fetching client profiles:', profilesError);
+        // Don't throw, continue with empty profiles
       }
 
       console.log('Client profiles fetched:', clientProfiles);
@@ -146,24 +147,18 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         const feedbackLink = feedbackData?.find(f => f.booking_id === booking.id);
         const isTrainingRequestBooking = booking.booking_type === 'training_request';
         
-        // Find the client profile for this booking
+        // Find the client profile for this booking using student_id
         const clientProfile = clientProfiles?.find(profile => profile.id === booking.student_id);
+        console.log(`Booking ${booking.id} student_id: ${booking.student_id}, found profile:`, clientProfile);
         
-        // Create a meaningful client profile with better completeness detection
-        const effectiveClientProfile = clientProfile ? {
-          id: clientProfile.id,
-          full_name: clientProfile.full_name,
-          email: clientProfile.email,
-          company_name: clientProfile.company_name,
-          designation: clientProfile.designation,
-          contact_person: clientProfile.contact_person
-        } : {
+        // Create client profile object with actual database values
+        const effectiveClientProfile = {
           id: booking.student_id,
-          full_name: null,
-          email: null,
-          company_name: null,
-          designation: null,
-          contact_person: null
+          full_name: clientProfile?.full_name || null,
+          email: clientProfile?.email || null,
+          company_name: clientProfile?.company_name || null,
+          designation: clientProfile?.designation || null,
+          contact_person: clientProfile?.contact_person || null
         };
         
         return {
@@ -418,15 +413,26 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
                 </TableRow>
               ) : (
                 filteredBookings?.map((booking) => {
-                  // Better client name handling with company info
-                  const hasFullName = booking.client_profile?.full_name && booking.client_profile.full_name.trim();
-                  const hasCompanyInfo = booking.client_profile?.company_name || booking.client_profile?.contact_person;
-                  const hasBasicInfo = hasFullName || hasCompanyInfo || booking.client_profile?.email;
-                  const clientName = hasFullName ? booking.client_profile.full_name : 
-                    (booking.client_profile?.contact_person || booking.client_profile?.email?.split('@')[0] || 'Client');
-                  const clientEmail = booking.client_profile?.email || '';
-                  // Only show incomplete if we have absolutely no useful information
-                  const isProfileIncomplete = !hasBasicInfo;
+                  // Client name handling with proper fallback logic
+                  const clientProfile = booking.client_profile;
+                  const hasFullName = clientProfile?.full_name && clientProfile.full_name.trim();
+                  const hasEmail = clientProfile?.email && clientProfile.email.trim();
+                  const hasContactPerson = clientProfile?.contact_person && clientProfile.contact_person.trim();
+                  const hasCompanyName = clientProfile?.company_name && clientProfile.company_name.trim();
+                  
+                  // Determine the best name to display
+                  let clientName = 'Client';
+                  if (hasFullName) {
+                    clientName = clientProfile.full_name;
+                  } else if (hasContactPerson) {
+                    clientName = clientProfile.contact_person;
+                  } else if (hasEmail) {
+                    clientName = clientProfile.email.split('@')[0];
+                  }
+                  
+                  const clientEmail = hasEmail ? clientProfile.email : '';
+                  const hasAnyInfo = hasFullName || hasEmail || hasContactPerson || hasCompanyName;
+                  const isProfileIncomplete = !hasAnyInfo;
                   
                   return (
                     <TableRow key={booking.id}>
