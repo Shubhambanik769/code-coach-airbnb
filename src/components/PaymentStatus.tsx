@@ -75,11 +75,8 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
 
       const approvalUrl = PayPalIntegration.getApprovalUrl(orderData);
       if (approvalUrl) {
-        window.open(approvalUrl, '_blank');
-        toast({
-          title: "Redirected to PayPal",
-          description: "Complete your payment to confirm the booking"
-        });
+        // Redirect to PayPal for direct checkout
+        window.location.href = approvalUrl;
       } else {
         throw new Error('No approval URL received from PayPal');
       }

@@ -65,7 +65,7 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Create PayPal order
+    // Create PayPal order with direct checkout configuration
     const orderData = {
       intent: 'CAPTURE',
       purchase_units: [
@@ -80,12 +80,20 @@ serve(async (req) => {
         },
       ],
       application_context: {
-        brand_name: 'Skilloop',
-        landing_page: 'NO_PREFERENCE',
+        brand_name: 'Skilloop Training Platform',
+        landing_page: 'BILLING', // Direct to billing page for guest checkout
         user_action: 'PAY_NOW',
-        return_url: `${req.headers.get('origin')}/payment/success?booking_id=${bookingId}`,
+        payment_method: {
+          payee_preferred: 'IMMEDIATE_PAYMENT_REQUIRED',
+          payer_selected: 'PAYPAL'
+        },
+        shipping_preference: 'NO_SHIPPING', // No shipping for digital services
+        return_url: `${req.headers.get('origin')}/payment/success?booking_id=${bookingId}&order_id={order_id}`,
         cancel_url: `${req.headers.get('origin')}/payment/cancel?booking_id=${bookingId}`,
       },
+      payer: {
+        payment_method: 'paypal'
+      }
     };
 
     const orderResponse = await fetch(

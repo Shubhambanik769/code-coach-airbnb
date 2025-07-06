@@ -20,6 +20,8 @@ import TrainingMarketplace from "./pages/TrainingMarketplace";
 import TechnologyPage from "./pages/TechnologyPage";
 import FeedbackForm from "./pages/FeedbackForm";
 import FeedbackSuccess from "./pages/FeedbackSuccess";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancel from "./pages/PaymentCancel";
 import AboutUs from "./pages/AboutUs";
 import Careers from "./pages/Careers";
 import TrainerResources from "./pages/TrainerResources";
@@ -62,8 +64,18 @@ const App = () => (
                   {/* Updated feedback route to properly handle base64 encoded tokens */}
                   <Route path="/feedback/:token" element={<FeedbackForm />} />
                   <Route path="/feedback-success" element={<FeedbackSuccess />} />
+                  <Route path="/payment/success" element={<PaymentSuccess />} />
+                  <Route path="/payment/cancel" element={<PaymentCancel />} />
                   <Route 
                     path="/dashboard" 
+                    element={
+                      <ProtectedRoute requiredRole="user">
+                        <UserDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/user-dashboard" 
                     element={
                       <ProtectedRoute requiredRole="user">
                         <UserDashboard />

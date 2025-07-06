@@ -30,9 +30,14 @@ const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: Payment
 
   const handlePaymentClick = async () => {
     if (booking.payment_url) {
+      // Open existing payment URL
       window.open(booking.payment_url, '_blank');
+      toast({
+        title: "Redirected to PayPal",
+        description: "Complete your payment to confirm the booking"
+      });
     } else {
-      // Create new PayPal order
+      // Create new PayPal order for direct checkout
       setIsProcessing(true);
       try {
         const orderData = await PayPalIntegration.createOrder({
@@ -49,7 +54,8 @@ const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: Payment
 
         const approvalUrl = PayPalIntegration.getApprovalUrl(orderData);
         if (approvalUrl) {
-          window.open(approvalUrl, '_blank');
+          // Redirect to PayPal for direct checkout
+          window.location.href = approvalUrl;
         } else {
           throw new Error('No approval URL received from PayPal');
         }
