@@ -65,18 +65,18 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Create PayPal order with correct schema
+    // Create PayPal order with strict schema compliance
     const orderData = {
       intent: 'CAPTURE',
       purchase_units: [
         {
-          reference_id: reference,
-          description: description,
+          reference_id: reference ? reference.substring(0, 256) : `REF-${bookingId.substring(0, 8)}`,
+          description: description ? description.substring(0, 127) : `Training Session - ${bookingId.substring(0, 8)}`,
           amount: {
             currency_code: currency,
             value: amount.toFixed(2),
           },
-          custom_id: bookingId,
+          custom_id: bookingId.substring(0, 127), // Max 127 characters
         },
       ],
       application_context: {
@@ -84,10 +84,12 @@ serve(async (req) => {
         landing_page: 'BILLING',
         user_action: 'PAY_NOW',
         shipping_preference: 'NO_SHIPPING',
-        return_url: `${req.headers.get('origin')}/payment/success?booking_id=${bookingId}&token={token}`,
+        return_url: `${req.headers.get('origin')}/payment/success?booking_id=${bookingId}`,
         cancel_url: `${req.headers.get('origin')}/payment/cancel?booking_id=${bookingId}`,
       },
     };
+
+    console.log('PayPal order data to be sent:', JSON.stringify(orderData, null, 2));
 
     const orderResponse = await fetch(
       `https://api-m.${paypalEnvironment === 'live' ? '' : 'sandbox.'}paypal.com/v2/checkout/orders`,
