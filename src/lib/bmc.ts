@@ -37,7 +37,8 @@ export class BMCIntegration {
       currency: data.currency || 'INR'
     });
 
-    return `https://www.buymeacoffee.com/widget/page/your-username?${params.toString()}`;
+    // Replace with your actual Buy Me Coffee username
+    return `https://www.buymeacoffee.com/skilloop?${params.toString()}`;
   }
 
   /**
