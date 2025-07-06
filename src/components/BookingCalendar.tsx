@@ -13,10 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { useAgreements } from '@/hooks/useAgreements';
 import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { format, parseISO, addHours } from 'date-fns';
-import AgreementModal from '@/components/agreements/AgreementModal';
+import PaymentDialog from '@/components/PaymentDialog';
 import { BMCIntegration, formatINR, createBookingReference } from '@/lib/bmc';
 
 interface BookingCalendarProps {
@@ -44,8 +43,8 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
-  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
-  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [createdBooking, setCreatedBooking] = useState<any>(null);
   const [trainingTopic, setTrainingTopic] = useState('');
   const [selectedClientName, setSelectedClientName] = useState('');
   const [selectedClientEmail, setSelectedClientEmail] = useState('');
@@ -56,7 +55,6 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { createAgreementForBooking, fetchAgreement } = useAgreements();
 
   // Fetch client profile for the dropdown
   const { data: clientProfile } = useQuery({
@@ -162,16 +160,25 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
       return { ...data, bmc_payment_url: bmcPaymentUrl };
     },
     onSuccess: (bookingData) => {
-      // Create agreement and show agreement modal instead of completing booking
-      setPendingBookingId(bookingData.id);
-      createAgreementForBooking.mutate({ 
-        bookingId: bookingData.id, 
-        userType: 'client' 
+      // Show payment dialog immediately after booking creation
+      setCreatedBooking({
+        ...bookingData,
+        trainer_name: trainerName
       });
+      setIsPaymentDialogOpen(true);
       queryClient.invalidateQueries({ queryKey: ['trainer-available-slots'] });
       setIsBookingDialogOpen(false);
       
-      // Show success message with payment instructions
+      // Clear form state
+      setSelectedSlot(null);
+      setTrainingTopic('');
+      setSelectedClientName('');
+      setSelectedClientEmail('');
+      setOrganizationName('');
+      setSpecialRequirements('');
+      setDurationHours(1);
+      
+      // Show success message
       toast({
         title: "Booking Created Successfully!",
         description: "Complete your payment to confirm the session.",
@@ -186,53 +193,15 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
     }
   });
 
-  // Handle agreement creation success
-  const handleAgreementCreated = () => {
-    if (pendingBookingId) {
-      setIsAgreementModalOpen(true);
-    }
-  };
-
-  // Handle agreement completion
-  const handleAgreementCompleted = async () => {
-    setIsAgreementModalOpen(false);
+  const handlePaymentCompleted = () => {
+    setIsPaymentDialogOpen(false);
+    setCreatedBooking(null);
     
-    // Get the booking with BMC payment URL
-    if (pendingBookingId) {
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select('bmc_payment_url, total_amount')
-        .eq('id', pendingBookingId)
-        .single();
-      
-      if (booking?.bmc_payment_url) {
-        toast({
-          title: "Agreement Signed Successfully!",
-          description: "Redirecting to payment page to complete your booking...",
-        });
-        
-        // Redirect to BMC payment page
-        setTimeout(() => {
-          window.open(booking.bmc_payment_url, '_blank');
-        }, 1500);
-      }
-    }
-    
-    setPendingBookingId(null);
-    setSelectedSlot(null);
-    setTrainingTopic('');
-    setSelectedClientName('');
-    setSelectedClientEmail('');
-    setOrganizationName('');
-    setSpecialRequirements('');
-    setDurationHours(1);
+    toast({
+      title: "Payment Completed!",
+      description: "Your booking has been confirmed. The trainer will contact you soon.",
+    });
   };
-
-  // Fetch agreement data for the modal
-  const { data: agreementData } = fetchAgreement(pendingBookingId || '');
-
-  // Watch for agreement creation success
-  createAgreementForBooking.isSuccess && !isAgreementModalOpen && pendingBookingId && handleAgreementCreated();
 
   const handleSlotSelect = (slot: AvailabilitySlot) => {
     if (!user) {
@@ -590,15 +559,13 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
         </DialogContent>
       </Dialog>
 
-      {/* Agreement Modal */}
-      {pendingBookingId && agreementData && (
-        <AgreementModal
-          isOpen={isAgreementModalOpen}
-          onClose={() => setIsAgreementModalOpen(false)}
-          bookingId={pendingBookingId}
-          userType="client"
-          agreementData={agreementData}
-          onSuccess={handleAgreementCompleted}
+      {/* Payment Dialog */}
+      {createdBooking && (
+        <PaymentDialog
+          isOpen={isPaymentDialogOpen}
+          onClose={() => setIsPaymentDialogOpen(false)}
+          booking={createdBooking}
+          onPaymentCompleted={handlePaymentCompleted}
         />
       )}
     </div>
