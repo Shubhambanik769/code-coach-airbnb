@@ -14,9 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useAgreements } from '@/hooks/useAgreements';
-import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { format, parseISO, addHours } from 'date-fns';
 import AgreementModal from '@/components/agreements/AgreementModal';
+import { BMCIntegration, formatINR, createBookingReference } from '@/lib/bmc';
 
 interface BookingCalendarProps {
   trainerId: string;
@@ -102,6 +103,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
       const endTime = addHours(startTime, durationHours);
       const totalAmount = hourlyRate * durationHours;
 
+      // Create booking first
       const { data, error } = await supabase
         .from('bookings')
         .insert({
@@ -117,12 +119,37 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
           duration_hours: durationHours,
           total_amount: totalAmount,
           status: 'pending',
-          payment_status: 'pending'
+          payment_status: 'pending',
+          bmc_payment_status: 'pending'
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Generate BMC payment URL
+      const bmc = new BMCIntegration(''); // Token handled server-side
+      const paymentMessage = BMCIntegration.formatPaymentMessage({
+        training_topic: trainingTopic,
+        trainer_name: trainerName,
+        start_time: startTime.toISOString()
+      });
+      
+      const bookingReference = createBookingReference(data.id);
+      const bmcPaymentUrl = bmc.generatePaymentUrl({
+        amount: totalAmount,
+        message: paymentMessage,
+        reference: bookingReference,
+        currency: 'INR'
+      });
+
+      // Update booking with BMC payment URL
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({ bmc_payment_url: bmcPaymentUrl })
+        .eq('id', data.id);
+
+      if (updateError) throw updateError;
 
       // Update the availability slot to mark it as booked
       if (selectedSlot) {
@@ -132,7 +159,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
           .eq('id', selectedSlot.id);
       }
 
-      return data;
+      return { ...data, bmc_payment_url: bmcPaymentUrl };
     },
     onSuccess: (bookingData) => {
       // Create agreement and show agreement modal instead of completing booking
@@ -143,6 +170,12 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
       });
       queryClient.invalidateQueries({ queryKey: ['trainer-available-slots'] });
       setIsBookingDialogOpen(false);
+      
+      // Show success message with payment instructions
+      toast({
+        title: "Booking Created Successfully!",
+        description: "Complete your payment to confirm the session.",
+      });
     },
     onError: (error: any) => {
       toast({
@@ -161,8 +194,30 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
   };
 
   // Handle agreement completion
-  const handleAgreementCompleted = () => {
+  const handleAgreementCompleted = async () => {
     setIsAgreementModalOpen(false);
+    
+    // Get the booking with BMC payment URL
+    if (pendingBookingId) {
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select('bmc_payment_url, total_amount')
+        .eq('id', pendingBookingId)
+        .single();
+      
+      if (booking?.bmc_payment_url) {
+        toast({
+          title: "Agreement Signed Successfully!",
+          description: "Redirecting to payment page to complete your booking...",
+        });
+        
+        // Redirect to BMC payment page
+        setTimeout(() => {
+          window.open(booking.bmc_payment_url, '_blank');
+        }, 1500);
+      }
+    }
+    
     setPendingBookingId(null);
     setSelectedSlot(null);
     setTrainingTopic('');
@@ -171,11 +226,6 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
     setOrganizationName('');
     setSpecialRequirements('');
     setDurationHours(1);
-    
-    toast({
-      title: "Booking Request Submitted!",
-      description: "Your agreement has been signed. Waiting for trainer acceptance."
-    });
   };
 
   // Fetch agreement data for the modal
