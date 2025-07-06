@@ -70,11 +70,24 @@ export class PayPalIntegration {
   static async createOrder(paymentData: PayPalPaymentData): Promise<PayPalOrderResponse> {
     console.log('PayPal.createOrder called with:', paymentData);
     
+    // Convert INR to USD for PayPal (PayPal doesn't support INR)
+    const usdAmount = paymentData.currency === 'INR' 
+      ? Math.round(paymentData.amount * 0.012 * 100) / 100 // Convert INR to USD
+      : paymentData.amount;
+    
+    const paypalPaymentData = {
+      ...paymentData,
+      amount: usdAmount,
+      currency: 'USD' // PayPal requires USD for most transactions
+    };
+    
+    console.log('Converted payment data for PayPal:', paypalPaymentData);
+    
     const { supabase } = await import('@/integrations/supabase/client');
     
     console.log('Calling create-paypal-order edge function...');
     const { data, error } = await supabase.functions.invoke('create-paypal-order', {
-      body: paymentData
+      body: paypalPaymentData
     });
 
     console.log('Edge function response:', { data, error });
