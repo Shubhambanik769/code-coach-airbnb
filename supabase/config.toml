@@ -1,1 +1,17 @@
 project_id = "rnovcrcvhaeuudqkymiw"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[functions.verify-bmc-payment]
+verify_jwt = false
+
+[functions.create-paypal-order]
+verify_jwt = true
+
+[functions.capture-paypal-payment]
+verify_jwt = true

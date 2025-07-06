@@ -92,10 +92,6 @@ export type Database = {
       bookings: {
         Row: {
           agreement_id: string | null
-          bmc_payment_confirmed_at: string | null
-          bmc_payment_status: string | null
-          bmc_payment_url: string | null
-          bmc_transaction_id: string | null
           booking_type: string | null
           client_email: string | null
           client_name: string | null
@@ -106,7 +102,12 @@ export type Database = {
           meeting_link: string | null
           notes: string | null
           organization_name: string | null
+          payment_confirmed_at: string | null
+          payment_provider: string | null
           payment_status: string | null
+          payment_transaction_id: string | null
+          payment_url: string | null
+          paypal_order_id: string | null
           platform_commission_amount: number | null
           platform_commission_rate: number | null
           requires_agreement: boolean
@@ -122,10 +123,6 @@ export type Database = {
         }
         Insert: {
           agreement_id?: string | null
-          bmc_payment_confirmed_at?: string | null
-          bmc_payment_status?: string | null
-          bmc_payment_url?: string | null
-          bmc_transaction_id?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -136,7 +133,12 @@ export type Database = {
           meeting_link?: string | null
           notes?: string | null
           organization_name?: string | null
+          payment_confirmed_at?: string | null
+          payment_provider?: string | null
           payment_status?: string | null
+          payment_transaction_id?: string | null
+          payment_url?: string | null
+          paypal_order_id?: string | null
           platform_commission_amount?: number | null
           platform_commission_rate?: number | null
           requires_agreement?: boolean
@@ -152,10 +154,6 @@ export type Database = {
         }
         Update: {
           agreement_id?: string | null
-          bmc_payment_confirmed_at?: string | null
-          bmc_payment_status?: string | null
-          bmc_payment_url?: string | null
-          bmc_transaction_id?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -166,7 +164,12 @@ export type Database = {
           meeting_link?: string | null
           notes?: string | null
           organization_name?: string | null
+          payment_confirmed_at?: string | null
+          payment_provider?: string | null
           payment_status?: string | null
+          payment_transaction_id?: string | null
+          payment_url?: string | null
+          paypal_order_id?: string | null
           platform_commission_amount?: number | null
           platform_commission_rate?: number | null
           requires_agreement?: boolean

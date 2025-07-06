@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Calendar as CalendarIcon, Clock, User, CheckCircle, MapPin, Star, BookOpen, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { format, parseISO, addHours } from 'date-fns';
 import PaymentDialog from '@/components/PaymentDialog';
-import { BMCIntegration, formatINR, createBookingReference } from '@/lib/bmc';
+import { PayPalIntegration, formatINR, createBookingReference } from '@/lib/paypal';
 
 interface BookingCalendarProps {
   trainerId: string;
@@ -118,36 +118,15 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
           total_amount: totalAmount,
           status: 'pending',
           payment_status: 'pending',
-          bmc_payment_status: 'pending'
+          payment_provider: 'paypal'
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Generate BMC payment URL
-      const bmc = new BMCIntegration(''); // Token handled server-side
-      const paymentMessage = BMCIntegration.formatPaymentMessage({
-        training_topic: trainingTopic,
-        trainer_name: trainerName,
-        start_time: startTime.toISOString()
-      });
-      
-      const bookingReference = createBookingReference(data.id);
-      const bmcPaymentUrl = bmc.generatePaymentUrl({
-        amount: totalAmount,
-        message: paymentMessage,
-        reference: bookingReference,
-        currency: 'INR'
-      });
-
-      // Update booking with BMC payment URL
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({ bmc_payment_url: bmcPaymentUrl })
-        .eq('id', data.id);
-
-      if (updateError) throw updateError;
+      // PayPal payment will be created when user clicks pay
+      // No need to create order here, we'll do it on-demand
 
       // Update the availability slot to mark it as booked
       if (selectedSlot) {
@@ -157,7 +136,7 @@ const BookingCalendar = ({ trainerId, trainerName, hourlyRate = 0 }: BookingCale
           .eq('id', selectedSlot.id);
       }
 
-      return { ...data, bmc_payment_url: bmcPaymentUrl };
+      return data;
     },
     onSuccess: (bookingData) => {
       // Show payment dialog immediately after booking creation

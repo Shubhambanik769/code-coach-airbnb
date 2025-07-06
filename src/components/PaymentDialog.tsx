@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, CreditCard, CheckCircle, Clock } from 'lucide-react';
-import { formatINR } from '@/lib/bmc';
+import { formatINR, PayPalIntegration } from '@/lib/paypal';
 import { format } from 'date-fns';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -15,22 +17,57 @@ interface PaymentDialogProps {
     total_amount: number;
     start_time: string;
     duration_hours: number;
-    bmc_payment_url: string | null;
-    bmc_payment_status: string | null;
+    payment_url: string | null;
+    payment_status: string | null;
     trainer_name: string;
   };
   onPaymentCompleted?: () => void;
 }
 
 const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: PaymentDialogProps) => {
-  const handlePaymentClick = () => {
-    if (booking.bmc_payment_url) {
-      window.open(booking.bmc_payment_url, '_blank');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
+
+  const handlePaymentClick = async () => {
+    if (booking.payment_url) {
+      window.open(booking.payment_url, '_blank');
+    } else {
+      // Create new PayPal order
+      setIsProcessing(true);
+      try {
+        const orderData = await PayPalIntegration.createOrder({
+          amount: booking.total_amount,
+          currency: 'INR',
+          description: PayPalIntegration.formatPaymentDescription({
+            training_topic: booking.training_topic,
+            trainer_name: booking.trainer_name,
+            start_time: booking.start_time
+          }),
+          reference: `BK-${booking.id.slice(0, 8).toUpperCase()}`,
+          bookingId: booking.id
+        });
+
+        const approvalUrl = PayPalIntegration.getApprovalUrl(orderData);
+        if (approvalUrl) {
+          window.open(approvalUrl, '_blank');
+        } else {
+          throw new Error('No approval URL received from PayPal');
+        }
+      } catch (error) {
+        console.error('PayPal payment error:', error);
+        toast({
+          title: "Payment Error",
+          description: "Failed to create PayPal payment. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
   const getStatusIcon = () => {
-    switch (booking.bmc_payment_status) {
+    switch (booking.payment_status) {
       case 'confirmed':
         return <CheckCircle className="h-5 w-5 text-green-600" />;
       case 'pending':
@@ -41,7 +78,7 @@ const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: Payment
   };
 
   const getStatusText = () => {
-    switch (booking.bmc_payment_status) {
+    switch (booking.payment_status) {
       case 'confirmed':
         return 'Payment Confirmed';
       case 'pending':
@@ -52,7 +89,7 @@ const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: Payment
   };
 
   const getStatusColor = () => {
-    switch (booking.bmc_payment_status) {
+    switch (booking.payment_status) {
       case 'confirmed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'pending':
@@ -107,7 +144,7 @@ const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: Payment
               <span className="font-semibold">{getStatusText()}</span>
             </div>
             
-            {booking.bmc_payment_status === 'confirmed' ? (
+            {booking.payment_status === 'confirmed' ? (
               <div className="space-y-3">
                 <p className="text-sm">Your booking has been confirmed! The trainer will contact you soon.</p>
                 <Button 
@@ -124,22 +161,30 @@ const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: Payment
             ) : (
               <div className="space-y-3">
                 <p className="text-sm">
-                  {booking.bmc_payment_status === 'pending' 
+                  {booking.payment_status === 'pending' 
                     ? 'Complete your payment to confirm this booking.'
                     : 'Click below to complete your payment and confirm this booking.'
                   }
                 </p>
                 
-                {booking.bmc_payment_url && (
-                  <Button 
-                    onClick={handlePaymentClick}
-                    className="w-full"
-                    size="lg"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Pay {formatINR(booking.total_amount)}
-                  </Button>
-                )}
+                <Button 
+                  onClick={handlePaymentClick}
+                  disabled={isProcessing}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Pay {formatINR(booking.total_amount)} via PayPal
+                    </>
+                  )}
+                </Button>
                 
                 <Button 
                   variant="outline" 
@@ -154,7 +199,7 @@ const PaymentDialog = ({ isOpen, onClose, booking, onPaymentCompleted }: Payment
 
           {/* Payment Note */}
           <div className="text-xs text-gray-500 text-center">
-            Secure payment powered by Buy Me a Coffee. You'll be redirected to complete your payment.
+            Secure payment powered by PayPal. You'll be redirected to complete your payment in INR.
           </div>
         </div>
       </DialogContent>

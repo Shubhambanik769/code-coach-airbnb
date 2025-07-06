@@ -16,7 +16,7 @@ interface BookingData {
   platform_commission_rate: number;
   platform_commission_amount: number;
   trainer_payout_amount: number;
-  bmc_payment_status: string;
+  payment_status: string;
 }
 
 interface PayoutData {
@@ -43,7 +43,7 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
           platform_commission_rate,
           platform_commission_amount,
           trainer_payout_amount,
-          bmc_payment_status
+          payment_status
         `)
         .eq('trainer_id', trainerId)
         .eq('status', 'completed');

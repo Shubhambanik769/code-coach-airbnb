@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { PayPalIntegration } from '@/lib/paypal';
 import { CheckCircle, AlertCircle, ExternalLink, RefreshCw } from 'lucide-react';
-import { formatINR } from '@/lib/bmc';
+import { formatINR } from '@/lib/paypal';
 
 interface PaymentStatusProps {
   bookingId: string;
@@ -16,10 +17,9 @@ interface BookingWithPayment {
   id: string;
   training_topic: string;
   total_amount: number;
-  bmc_payment_url: string | null;
-  bmc_payment_status: string | null;
-  bmc_transaction_id: string | null;
+  payment_url: string | null;
   payment_status: string | null;
+  payment_transaction_id: string | null;
   status: string | null;
   start_time: string;
   trainers: {
@@ -41,10 +41,9 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
           id,
           training_topic,
           total_amount,
-          bmc_payment_url,
-          bmc_payment_status,
-          bmc_transaction_id,
+          payment_url,
           payment_status,
+          payment_transaction_id,
           status,
           start_time,
           trainers!inner (name)
@@ -59,8 +58,45 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
     refetchInterval: 30000, // Poll every 30s for pending payments
   });
 
+  const handlePayPayPal = async () => {
+    setIsVerifying(true);
+    try {
+      const orderData = await PayPalIntegration.createOrder({
+        amount: booking.total_amount,
+        currency: 'INR',
+        description: PayPalIntegration.formatPaymentDescription({
+          training_topic: booking.training_topic,
+          trainer_name: booking.trainers.name,
+          start_time: booking.start_time
+        }),
+        reference: `BK-${booking.id.slice(0, 8).toUpperCase()}`,
+        bookingId: booking.id
+      });
+
+      const approvalUrl = PayPalIntegration.getApprovalUrl(orderData);
+      if (approvalUrl) {
+        window.open(approvalUrl, '_blank');
+        toast({
+          title: "Redirected to PayPal",
+          description: "Complete your payment to confirm the booking"
+        });
+      } else {
+        throw new Error('No approval URL received from PayPal');
+      }
+    } catch (error: any) {
+      console.error('PayPal payment error:', error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "Failed to create PayPal payment",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleVerifyPayment = async () => {
-    if (!booking?.bmc_transaction_id) {
+    if (!booking?.payment_transaction_id) {
       toast({
         title: "No Transaction ID",
         description: "Please complete the payment first",
@@ -71,28 +107,20 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
 
     setIsVerifying(true);
     try {
-      const { data, error } = await supabase.functions.invoke('verify-bmc-payment', {
+      const { data, error } = await supabase.functions.invoke('capture-paypal-payment', {
         body: { 
-          transactionId: booking.bmc_transaction_id, 
+          orderId: booking.payment_transaction_id, 
           bookingId: booking.id 
         }
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        toast({
-          title: "Payment Verified!",
-          description: "Your booking has been confirmed"
-        });
-        refetch();
-      } else {
-        toast({
-          title: "Payment Not Found",
-          description: data.message || "Please check your payment status",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Payment Verified!",
+        description: "Your booking has been confirmed"
+      });
+      refetch();
     } catch (error: any) {
       console.error('Payment verification error:', error);
       toast({
@@ -153,8 +181,8 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Payment Status
-          <Badge className={getStatusColor(booking.bmc_payment_status)}>
-            {getStatusText(booking.bmc_payment_status)}
+          <Badge className={getStatusColor(booking.payment_status)}>
+            {getStatusText(booking.payment_status)}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -171,20 +199,28 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
         </div>
 
         {/* Payment Status */}
-        {booking.bmc_payment_status === 'pending' && (
+        {booking.payment_status === 'pending' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-yellow-600">
               <AlertCircle className="h-5 w-5" />
               <span className="font-medium">Payment Required</span>
             </div>
             
-            {booking.bmc_payment_url && (
+            {booking.payment_url ? (
               <Button 
                 className="w-full" 
-                onClick={() => window.open(booking.bmc_payment_url!, '_blank')}
+                onClick={() => window.open(booking.payment_url!, '_blank')}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Complete Payment ({formatINR(booking.total_amount)})
+                Continue Payment ({formatINR(booking.total_amount)})
+              </Button>
+            ) : (
+              <Button 
+                className="w-full" 
+                onClick={handlePayPayPal}
+                disabled={isVerifying}
+              >
+                {isVerifying ? 'Creating PayPal Order...' : 'Pay with PayPal'}
               </Button>
             )}
 
@@ -209,7 +245,7 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
           </div>
         )}
 
-        {booking.bmc_payment_status === 'confirmed' && (
+        {booking.payment_status === 'confirmed' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle className="h-5 w-5" />
@@ -220,9 +256,9 @@ const PaymentStatus = ({ bookingId }: PaymentStatusProps) => {
               <p className="text-green-800">
                 Your booking has been confirmed! The trainer will contact you soon.
               </p>
-              {booking.bmc_transaction_id && (
+              {booking.payment_transaction_id && (
                 <p className="text-sm text-green-600 mt-2">
-                  Transaction ID: {booking.bmc_transaction_id}
+                  Transaction ID: {booking.payment_transaction_id}
                 </p>
               )}
             </div>
