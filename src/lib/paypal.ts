@@ -68,17 +68,23 @@ export class PayPalIntegration {
    * Create PayPal order via Supabase edge function
    */
   static async createOrder(paymentData: PayPalPaymentData): Promise<PayPalOrderResponse> {
+    console.log('PayPal.createOrder called with:', paymentData);
+    
     const { supabase } = await import('@/integrations/supabase/client');
     
+    console.log('Calling create-paypal-order edge function...');
     const { data, error } = await supabase.functions.invoke('create-paypal-order', {
       body: paymentData
     });
+
+    console.log('Edge function response:', { data, error });
 
     if (error) {
       console.error('PayPal order creation error:', error);
       throw new Error(error.message || 'Failed to create PayPal order');
     }
 
+    console.log('PayPal order created successfully:', data);
     return data;
   }
 

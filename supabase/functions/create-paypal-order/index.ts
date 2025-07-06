@@ -13,7 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency, description, reference, bookingId } = await req.json();
+    console.log('PayPal order creation function called');
+    const requestBody = await req.json();
+    console.log('Request body:', requestBody);
+    
+    const { amount, currency, description, reference, bookingId } = requestBody;
+
+    if (!amount || !currency || !bookingId) {
+      console.error('Missing required fields:', { amount, currency, bookingId });
+      throw new Error('Missing required fields: amount, currency, or bookingId');
+    }
 
     console.log('Creating PayPal order for booking:', bookingId, 'Amount:', amount, currency);
 
@@ -22,8 +31,18 @@ serve(async (req) => {
     const paypalClientSecret = Deno.env.get('PAYPAL_CLIENT_SECRET');
     const paypalEnvironment = Deno.env.get('PAYPAL_ENVIRONMENT') || 'sandbox';
 
+    console.log('PayPal credentials check:', {
+      hasClientId: !!paypalClientId,
+      hasClientSecret: !!paypalClientSecret,
+      environment: paypalEnvironment
+    });
+
     if (!paypalClientId || !paypalClientSecret) {
-      throw new Error('PayPal credentials not configured');
+      console.error('PayPal credentials missing:', { 
+        paypalClientId: paypalClientId ? 'SET' : 'MISSING',
+        paypalClientSecret: paypalClientSecret ? 'SET' : 'MISSING'
+      });
+      throw new Error('PayPal credentials not configured. Please check PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in Supabase secrets.');
     }
 
     // Get PayPal access token
