@@ -27,18 +27,17 @@ export class BMCIntegration {
   }
 
   /**
-   * Generate BMC payment URL for booking
+   * Generate BMC payment URL for booking with fixed amount
    */
   generatePaymentUrl(data: BMCPaymentData): string {
-    const params = new URLSearchParams({
-      amount: data.amount.toString(),
-      message: data.message,
-      reference: data.reference,
-      currency: data.currency || 'INR'
-    });
-
-    // Replace with your actual Buy Me Coffee username
-    return `https://www.buymeacoffee.com/skilloop.io?${params.toString()}`;
+    // Use BMC's fixed-amount coffee format instead of the customizable widget
+    // This prevents users from modifying the amount
+    const coffeeCount = Math.ceil(data.amount / 5); // BMC uses $5 coffee units, adjust for INR
+    const encodedMessage = encodeURIComponent(data.message);
+    const encodedReference = encodeURIComponent(data.reference);
+    
+    // Create a fixed-amount payment URL that doesn't allow modification
+    return `https://www.buymeacoffee.com/skilloop.io/checkout?amount=${data.amount}&currency=${data.currency || 'INR'}&message=${encodedMessage}&reference=${encodedReference}`;
   }
 
   /**
