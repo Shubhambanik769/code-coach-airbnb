@@ -38,7 +38,7 @@ export class BMCIntegration {
     });
 
     // Replace with your actual Buy Me Coffee username
-    return `https://www.buymeacoffee.com/skilloop?${params.toString()}`;
+    return `https://www.buymeacoffee.com/skilloop.io?${params.toString()}`;
   }
 
   /**
