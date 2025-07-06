@@ -13,15 +13,38 @@ interface BookingData {
   total_amount: number;
   start_time: string;
   status: string;
+  platform_commission_rate: number;
+  platform_commission_amount: number;
+  trainer_payout_amount: number;
+  bmc_payment_status: string;
+}
+
+interface PayoutData {
+  id: string;
+  gross_amount: number;
+  platform_commission: number;
+  net_amount: number;
+  payout_status: string;
+  created_at: string;
+  paid_at: string | null;
 }
 
 const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
-  const { data: earnings, isLoading } = useQuery({
+  // Fetch completed bookings with BMC payment info
+  const { data: earnings, isLoading: earningsLoading } = useQuery({
     queryKey: ['trainer-earnings', trainerId],
     queryFn: async (): Promise<BookingData[]> => {
       const { data, error } = await supabase
         .from('bookings')
-        .select('total_amount, start_time, status')
+        .select(`
+          total_amount, 
+          start_time, 
+          status, 
+          platform_commission_rate,
+          platform_commission_amount,
+          trainer_payout_amount,
+          bmc_payment_status
+        `)
         .eq('trainer_id', trainerId)
         .eq('status', 'completed');
 
@@ -31,8 +54,33 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
     enabled: !!trainerId
   });
 
+  // Fetch trainer payouts for detailed breakdown
+  const { data: payouts, isLoading: payoutsLoading } = useQuery({
+    queryKey: ['trainer-payouts', trainerId],
+    queryFn: async (): Promise<PayoutData[]> => {
+      const { data, error } = await supabase
+        .from('trainer_payouts')
+        .select('*')
+        .eq('trainer_id', trainerId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!trainerId
+  });
+
+  const isLoading = earningsLoading || payoutsLoading;
+
   const calculateEarnings = () => {
-    if (!earnings || !Array.isArray(earnings)) return { total: 0, thisMonth: 0, lastMonth: 0, thisWeek: 0 };
+    if (!earnings || !Array.isArray(earnings)) return { 
+      grossTotal: 0, 
+      netTotal: 0, 
+      commissionTotal: 0, 
+      thisMonth: 0, 
+      lastMonth: 0, 
+      thisWeek: 0 
+    };
 
     const now = new Date();
     const thisMonth = startOfMonth(now);
@@ -40,60 +88,89 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
     const lastMonthEnd = endOfMonth(subMonths(now, 1));
     const thisWeekStart = new Date(now.setDate(now.getDate() - now.getDay()));
 
-    const total = earnings.reduce((sum, booking) => sum + Number(booking.total_amount), 0);
+    // Calculate gross (total client payments) and net (trainer receives)
+    const grossTotal = earnings.reduce((sum, booking) => sum + Number(booking.total_amount || 0), 0);
+    const netTotal = earnings.reduce((sum, booking) => sum + Number(booking.trainer_payout_amount || booking.total_amount * 0.8), 0);
+    const commissionTotal = grossTotal - netTotal;
     
-    const thisMonthEarnings = earnings
+    const thisMonthNet = earnings
       .filter(booking => new Date(booking.start_time) >= thisMonth)
-      .reduce((sum, booking) => sum + Number(booking.total_amount), 0);
+      .reduce((sum, booking) => sum + Number(booking.trainer_payout_amount || booking.total_amount * 0.8), 0);
 
-    const lastMonthEarnings = earnings
+    const lastMonthNet = earnings
       .filter(booking => {
         const date = new Date(booking.start_time);
         return date >= lastMonth && date <= lastMonthEnd;
       })
-      .reduce((sum, booking) => sum + Number(booking.total_amount), 0);
+      .reduce((sum, booking) => sum + Number(booking.trainer_payout_amount || booking.total_amount * 0.8), 0);
 
-    const thisWeekEarnings = earnings
+    const thisWeekNet = earnings
       .filter(booking => new Date(booking.start_time) >= thisWeekStart)
-      .reduce((sum, booking) => sum + Number(booking.total_amount), 0);
+      .reduce((sum, booking) => sum + Number(booking.trainer_payout_amount || booking.total_amount * 0.8), 0);
 
     return {
-      total,
-      thisMonth: thisMonthEarnings,
-      lastMonth: lastMonthEarnings,
-      thisWeek: thisWeekEarnings
+      grossTotal,
+      netTotal,
+      commissionTotal,
+      thisMonth: thisMonthNet,
+      lastMonth: lastMonthNet,
+      thisWeek: thisWeekNet
+    };
+  };
+
+  const calculatePayoutStats = () => {
+    if (!payouts || !Array.isArray(payouts)) return {
+      pendingAmount: 0,
+      paidAmount: 0,
+      pendingCount: 0,
+      paidCount: 0
+    };
+
+    const pending = payouts.filter(p => p.payout_status === 'pending');
+    const paid = payouts.filter(p => p.payout_status === 'paid');
+
+    return {
+      pendingAmount: pending.reduce((sum, p) => sum + Number(p.net_amount), 0),
+      paidAmount: paid.reduce((sum, p) => sum + Number(p.net_amount), 0),
+      pendingCount: pending.length,
+      paidCount: paid.length
     };
   };
 
   const earningsData = calculateEarnings();
+  const payoutStats = calculatePayoutStats();
   const monthlyGrowth = earningsData.lastMonth > 0 
     ? ((earningsData.thisMonth - earningsData.lastMonth) / earningsData.lastMonth) * 100 
     : 0;
 
   const earningCards = [
     {
-      title: 'Total Earnings',
-      value: `₹${earningsData.total.toFixed(2)}`,
+      title: 'Net Earnings (Your Share)',
+      value: `₹${earningsData.netTotal.toFixed(2)}`,
       icon: DollarSign,
-      description: 'All time earnings'
+      description: 'After platform commission',
+      color: 'text-green-600'
     },
     {
-      title: 'This Month',
-      value: `₹${earningsData.thisMonth.toFixed(2)}`,
+      title: 'Pending Payouts',
+      value: `₹${payoutStats.pendingAmount.toFixed(2)}`,
       icon: Calendar,
-      description: format(new Date(), 'MMMM yyyy')
+      description: `${payoutStats.pendingCount} sessions awaiting payout`,
+      color: 'text-orange-600'
     },
     {
-      title: 'This Week',
-      value: `₹${earningsData.thisWeek.toFixed(2)}`,
+      title: 'This Month Net',
+      value: `₹${earningsData.thisMonth.toFixed(2)}`,
       icon: CreditCard,
-      description: 'Current week'
+      description: format(new Date(), 'MMMM yyyy'),
+      color: 'text-blue-600'
     },
     {
       title: 'Monthly Growth',
       value: `${monthlyGrowth >= 0 ? '+' : ''}${monthlyGrowth.toFixed(1)}%`,
       icon: TrendingUp,
-      description: 'Compared to last month'
+      description: 'Compared to last month',
+      color: monthlyGrowth >= 0 ? 'text-green-600' : 'text-red-600'
     }
   ];
 
@@ -144,10 +221,22 @@ const TrainerEarnings = ({ trainerId }: TrainerEarningsProps) => {
               <span className="font-medium">Total Sessions Completed</span>
               <span className="text-lg font-bold">{earnings?.length || 0}</span>
             </div>
+            <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+              <span className="font-medium">Gross Revenue (Client Payments)</span>
+              <span className="text-lg font-bold text-green-700">₹{earningsData.grossTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-4 bg-orange-50 rounded-lg">
+              <span className="font-medium">Platform Commission</span>
+              <span className="text-lg font-bold text-orange-700">-₹{earningsData.commissionTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+              <span className="font-medium">Your Net Earnings</span>
+              <span className="text-lg font-bold text-blue-700">₹{earningsData.netTotal.toFixed(2)}</span>
+            </div>
             <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-              <span className="font-medium">Average per Session</span>
+              <span className="font-medium">Average Net per Session</span>
               <span className="text-lg font-bold">
-                ₹{earnings && earnings.length > 0 ? (earningsData.total / earnings.length).toFixed(2) : '0.00'}
+                ₹{earnings && earnings.length > 0 ? (earningsData.netTotal / earnings.length).toFixed(2) : '0.00'}
               </span>
             </div>
           </div>

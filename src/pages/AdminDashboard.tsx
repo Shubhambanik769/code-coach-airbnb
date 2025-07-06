@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { BarChart3, Users, GraduationCap, Calendar, TrendingUp, Settings, Star, Briefcase, FileText } from 'lucide-react';
+import { BarChart3, Users, GraduationCap, Calendar, TrendingUp, Settings, Star, Briefcase, FileText, DollarSign } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 import EnhancedBookingOverview from '@/components/admin/EnhancedBookingOverview';
 import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
@@ -11,6 +11,7 @@ import JobManagement from '@/components/admin/JobManagement';
 import SystemSettings from '@/components/admin/SystemSettings';
 import SuccessStoryManagement from '@/components/admin/SuccessStoryManagement';
 import AdminTrainingRequests from '@/components/admin/AdminTrainingRequests';
+import PayoutManagement from '@/components/admin/PayoutManagement';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminDashboard = () => {
@@ -29,6 +30,8 @@ const AdminDashboard = () => {
         return <BookingManagement />;
       case 'training-requests':
         return <AdminTrainingRequests />;
+      case 'payouts':
+        return <PayoutManagement />;
       case 'analytics':
         return <Analytics />;
       case 'stories':
@@ -61,6 +64,7 @@ const AdminDashboard = () => {
               { id: 'trainers', label: 'Trainers', icon: GraduationCap },
               { id: 'bookings', label: 'Bookings', icon: Calendar },
               { id: 'training-requests', label: 'Training Requests', icon: FileText },
+              { id: 'payouts', label: 'Payouts', icon: DollarSign },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp },
               { id: 'stories', label: 'Success Stories', icon: Star },
               { id: 'jobs', label: 'Jobs', icon: Briefcase },

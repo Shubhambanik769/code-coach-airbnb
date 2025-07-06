@@ -92,6 +92,10 @@ export type Database = {
       bookings: {
         Row: {
           agreement_id: string | null
+          bmc_payment_confirmed_at: string | null
+          bmc_payment_status: string | null
+          bmc_payment_url: string | null
+          bmc_transaction_id: string | null
           booking_type: string | null
           client_email: string | null
           client_name: string | null
@@ -103,6 +107,8 @@ export type Database = {
           notes: string | null
           organization_name: string | null
           payment_status: string | null
+          platform_commission_amount: number | null
+          platform_commission_rate: number | null
           requires_agreement: boolean
           special_requirements: string | null
           start_time: string
@@ -110,11 +116,16 @@ export type Database = {
           student_id: string
           total_amount: number
           trainer_id: string
+          trainer_payout_amount: number | null
           training_topic: string
           updated_at: string | null
         }
         Insert: {
           agreement_id?: string | null
+          bmc_payment_confirmed_at?: string | null
+          bmc_payment_status?: string | null
+          bmc_payment_url?: string | null
+          bmc_transaction_id?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -126,6 +137,8 @@ export type Database = {
           notes?: string | null
           organization_name?: string | null
           payment_status?: string | null
+          platform_commission_amount?: number | null
+          platform_commission_rate?: number | null
           requires_agreement?: boolean
           special_requirements?: string | null
           start_time: string
@@ -133,11 +146,16 @@ export type Database = {
           student_id: string
           total_amount: number
           trainer_id: string
+          trainer_payout_amount?: number | null
           training_topic: string
           updated_at?: string | null
         }
         Update: {
           agreement_id?: string | null
+          bmc_payment_confirmed_at?: string | null
+          bmc_payment_status?: string | null
+          bmc_payment_url?: string | null
+          bmc_transaction_id?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
@@ -149,6 +167,8 @@ export type Database = {
           notes?: string | null
           organization_name?: string | null
           payment_status?: string | null
+          platform_commission_amount?: number | null
+          platform_commission_rate?: number | null
           requires_agreement?: boolean
           special_requirements?: string | null
           start_time?: string
@@ -156,6 +176,7 @@ export type Database = {
           student_id?: string
           total_amount?: number
           trainer_id?: string
+          trainer_payout_amount?: number | null
           training_topic?: string
           updated_at?: string | null
         }
@@ -433,6 +454,53 @@ export type Database = {
           },
         ]
       }
+      payout_batches: {
+        Row: {
+          batch_name: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          payout_count: number
+          processed_at: string | null
+          status: string | null
+          total_amount: number
+          trainer_count: number
+        }
+        Insert: {
+          batch_name: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payout_count: number
+          processed_at?: string | null
+          status?: string | null
+          total_amount: number
+          trainer_count: number
+        }
+        Update: {
+          batch_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payout_count?: number
+          processed_at?: string | null
+          status?: string | null
+          total_amount?: number
+          trainer_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string
@@ -666,6 +734,70 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "trainer_availability_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainer_payouts: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          gross_amount: number
+          id: string
+          net_amount: number
+          notes: string | null
+          paid_at: string | null
+          payout_batch_id: string | null
+          payout_status: string | null
+          platform_commission: number
+          trainer_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          gross_amount: number
+          id?: string
+          net_amount: number
+          notes?: string | null
+          paid_at?: string | null
+          payout_batch_id?: string | null
+          payout_status?: string | null
+          platform_commission: number
+          trainer_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          paid_at?: string | null
+          payout_batch_id?: string | null
+          payout_status?: string | null
+          platform_commission?: number
+          trainer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_trainer_payouts_batch"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_payouts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_payouts_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
             referencedRelation: "trainers"
@@ -970,6 +1102,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_trainer_payout: {
+        Args: { p_booking_id: string; p_commission_rate?: number }
+        Returns: Json
+      }
       create_notification: {
         Args: {
           p_user_id: string
@@ -978,6 +1114,10 @@ export type Database = {
           p_message: string
           p_data?: Json
         }
+        Returns: string
+      }
+      create_trainer_payout: {
+        Args: { p_booking_id: string }
         Returns: string
       }
       generate_agreement_terms: {
