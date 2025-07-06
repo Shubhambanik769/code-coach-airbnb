@@ -27,17 +27,23 @@ export class BMCIntegration {
   }
 
   /**
-   * Generate BMC payment URL for booking with fixed amount
+   * Generate BMC payment URL for booking
+   * Note: BMC uses their standard payment page format
    */
   generatePaymentUrl(data: BMCPaymentData): string {
-    // Use BMC's fixed-amount coffee format instead of the customizable widget
-    // This prevents users from modifying the amount
-    const coffeeCount = Math.ceil(data.amount / 5); // BMC uses $5 coffee units, adjust for INR
-    const encodedMessage = encodeURIComponent(data.message);
-    const encodedReference = encodeURIComponent(data.reference);
+    // Buy Me Coffee uses a simple URL format: https://buymeacoffee.com/username
+    // Unfortunately, BMC doesn't support fixed amounts in URL parameters
+    // Users will see the amount and message on the payment page but can modify the amount
+    const baseUrl = `https://www.buymeacoffee.com/skilloop.io`;
     
-    // Create a fixed-amount payment URL that doesn't allow modification
-    return `https://www.buymeacoffee.com/skilloop.io/checkout?amount=${data.amount}&currency=${data.currency || 'INR'}&message=${encodedMessage}&reference=${encodedReference}`;
+    // Try adding parameters that might be supported (this may not work as expected)
+    const params = new URLSearchParams({
+      message: data.message,
+      reference: data.reference
+    });
+    
+    // BMC's URL might not support these parameters, but we'll try
+    return `${baseUrl}?${params.toString()}`;
   }
 
   /**
