@@ -65,7 +65,7 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Create PayPal order with direct checkout configuration
+    // Create PayPal order with correct schema
     const orderData = {
       intent: 'CAPTURE',
       purchase_units: [
@@ -81,19 +81,12 @@ serve(async (req) => {
       ],
       application_context: {
         brand_name: 'Skilloop Training Platform',
-        landing_page: 'BILLING', // Direct to billing page for guest checkout
+        landing_page: 'BILLING',
         user_action: 'PAY_NOW',
-        payment_method: {
-          payee_preferred: 'IMMEDIATE_PAYMENT_REQUIRED',
-          payer_selected: 'PAYPAL'
-        },
-        shipping_preference: 'NO_SHIPPING', // No shipping for digital services
-        return_url: `${req.headers.get('origin')}/payment/success?booking_id=${bookingId}&order_id={order_id}`,
+        shipping_preference: 'NO_SHIPPING',
+        return_url: `${req.headers.get('origin')}/payment/success?booking_id=${bookingId}&token={token}`,
         cancel_url: `${req.headers.get('origin')}/payment/cancel?booking_id=${bookingId}`,
       },
-      payer: {
-        payment_method: 'paypal'
-      }
     };
 
     const orderResponse = await fetch(
@@ -111,7 +104,12 @@ serve(async (req) => {
     if (!orderResponse.ok) {
       const errorData = await orderResponse.json();
       console.error('PayPal order creation failed:', errorData);
-      throw new Error('Failed to create PayPal order');
+      console.error('PayPal error details:', JSON.stringify(errorData, null, 2));
+      
+      // Log the request data that caused the error
+      console.error('Request data that failed:', JSON.stringify(orderData, null, 2));
+      
+      throw new Error(`PayPal API Error: ${errorData.message || 'Failed to create PayPal order'}`);
     }
 
     const order = await orderResponse.json();
