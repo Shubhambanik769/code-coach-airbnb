@@ -17,6 +17,7 @@ import TrainerTrainingRequests from '@/components/trainer/TrainerTrainingRequest
 import TrainerCalendar from '@/components/trainer/TrainerCalendar';
 import NotificationsPage from '@/components/notifications/NotificationsPage';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import TrainerFeedback from '@/components/trainer/TrainerFeedback';
 
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -77,8 +78,8 @@ const TrainerDashboard = () => {
         return <TrainerEarnings trainerId={trainerData.id} />;
       case 'analytics':
         return <TrainerAnalytics />;
-      case 'settings':
-        return <TrainerSettings trainerId={trainerData.id} />;
+      case 'feedback':
+        return <TrainerFeedback trainerId={trainerData.id} />;
       default:
         return <TrainerBookings trainerId={trainerData.id} />;
     }
@@ -118,6 +119,7 @@ const TrainerDashboard = () => {
                 { id: 'bookings', label: 'My Bookings', icon: Calendar },
                 { id: 'calendar', label: 'Availability Calendar', icon: Calendar },
                 { id: 'training-requests', label: 'Training Requests', icon: FileText },
+                { id: 'feedback', label: 'Feedback Received', icon: MessageSquare },
                 { id: 'notifications', label: 'Notifications', icon: Bell },
                 { id: 'profile', label: 'Profile', icon: Users },
                 { id: 'earnings', label: 'Earnings', icon: DollarSign },

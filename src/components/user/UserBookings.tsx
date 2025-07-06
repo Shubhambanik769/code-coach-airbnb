@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,10 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar, Clock, User, DollarSign, Eye, MapPin, FileText } from 'lucide-react';
+import { Calendar, Clock, User, DollarSign, Eye, MapPin, FileText, MessageSquare, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface BookingWithTrainer {
   id: string;
@@ -27,6 +27,11 @@ interface BookingWithTrainer {
   special_requirements: string | null;
   meeting_link: string | null;
   notes: string | null;
+  feedback_link: {
+    id: string;
+    token: string;
+    is_active: boolean;
+  } | null;
   trainer_profile?: {
     id: string;
     full_name: string | null;
@@ -36,6 +41,7 @@ interface BookingWithTrainer {
 
 const UserBookings = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedBooking, setSelectedBooking] = useState<BookingWithTrainer | null>(null);
 
   const { data: bookings, isLoading, error } = useQuery({
@@ -102,13 +108,33 @@ const UserBookings = () => {
 
       console.log('Profiles data:', profilesData);
 
+      // Get feedback links for completed bookings
+      const completedBookingIds = bookingsData.filter(b => b.status === 'completed').map(b => b.id);
+      let feedbackLinksData = [];
+      
+      if (completedBookingIds.length > 0) {
+        const { data: feedbackData, error: feedbackError } = await supabase
+          .from('feedback_links')
+          .select('id, booking_id, token, is_active')
+          .in('booking_id', completedBookingIds)
+          .eq('is_active', true);
+        
+        if (feedbackError) {
+          console.error('Error fetching feedback links:', feedbackError);
+        } else {
+          feedbackLinksData = feedbackData || [];
+        }
+      }
+
       // Combine data
       const bookingsWithTrainers: BookingWithTrainer[] = bookingsData.map(booking => {
         const trainer = trainersData?.find(t => t.id === booking.trainer_id);
         const profile = trainer ? profilesData.find(p => p.id === trainer.user_id) : null;
+        const feedbackLink = feedbackLinksData.find(f => f.booking_id === booking.id);
         
         return {
           ...booking,
+          feedback_link: feedbackLink || null,
           trainer_profile: profile ? {
             id: profile.id,
             full_name: profile.full_name,
@@ -141,6 +167,16 @@ const UserBookings = () => {
       case 'cancelled': return 'Session cancelled';
       default: return 'Unknown status';
     }
+  };
+
+  const openFeedbackLink = (token: string) => {
+    const cleanToken = token
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    
+    const feedbackUrl = `${window.location.origin}/feedback/${cleanToken}`;
+    window.open(feedbackUrl, '_blank');
   };
 
   if (isLoading) {
@@ -259,124 +295,159 @@ const UserBookings = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
+                        <div className="flex gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedBooking(booking)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View Details
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Booking Details</DialogTitle>
+                              </DialogHeader>
+                              {selectedBooking && (
+                                <div className="space-y-6">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">TRAINER</h4>
+                                      <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4 text-gray-400" />
+                                        <div>
+                                          <p className="font-medium">{selectedBooking.trainer_profile?.full_name || 'N/A'}</p>
+                                          <p className="text-sm text-gray-500">{selectedBooking.trainer_profile?.email || 'N/A'}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
+                                      <Badge className={getStatusColor(selectedBooking.status || 'pending')}>
+                                        {selectedBooking.status || 'pending'}
+                                      </Badge>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <h4 className="font-semibold text-sm text-gray-600">TRAINING TOPIC</h4>
+                                    <p className="text-sm">{selectedBooking.training_topic}</p>
+                                  </div>
+
+                                  {selectedBooking.organization_name && (
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">ORGANIZATION</h4>
+                                      <div className="flex items-center gap-2">
+                                        <MapPin className="h-4 w-4 text-gray-400" />
+                                        <p className="text-sm">{selectedBooking.organization_name}</p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">DATE & TIME</h4>
+                                      <div className="flex items-center gap-2">
+                                        <Clock className="h-4 w-4 text-gray-400" />
+                                        <div>
+                                          <p className="text-sm font-medium">
+                                            {format(new Date(selectedBooking.start_time), 'MMM dd, yyyy')}
+                                          </p>
+                                          <p className="text-sm text-gray-500">
+                                            {format(new Date(selectedBooking.start_time), 'HH:mm')} - {format(new Date(selectedBooking.end_time), 'HH:mm')}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">DURATION & AMOUNT</h4>
+                                      <div>
+                                        <p className="text-sm">{selectedBooking.duration_hours} hours</p>
+                                        <div className="flex items-center gap-1">
+                                          <DollarSign className="h-4 w-4 text-green-600" />
+                                          <p className="text-sm font-medium">${selectedBooking.total_amount}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {selectedBooking.special_requirements && (
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">SPECIAL REQUIREMENTS</h4>
+                                      <div className="flex items-start gap-2">
+                                        <FileText className="h-4 w-4 text-gray-400 mt-1" />
+                                        <p className="text-sm bg-gray-50 p-3 rounded-md">{selectedBooking.special_requirements}</p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {selectedBooking.meeting_link && (
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">MEETING LINK</h4>
+                                      <a 
+                                        href={selectedBooking.meeting_link} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 underline text-sm"
+                                      >
+                                        {selectedBooking.meeting_link}
+                                      </a>
+                                    </div>
+                                  )}
+
+                                  {selectedBooking.notes && (
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm text-gray-600">NOTES</h4>
+                                      <p className="text-sm bg-gray-50 p-3 rounded-md">{selectedBooking.notes}</p>
+                                    </div>
+                                  )}
+
+                                  {selectedBooking.status === 'completed' && selectedBooking.feedback_link && (
+                                    <div className="pt-4 border-t">
+                                      <div className="bg-green-50 p-4 rounded-lg">
+                                        <h4 className="font-semibold text-sm text-green-800 mb-2">
+                                          <MessageSquare className="h-4 w-4 inline mr-1" />
+                                          Feedback Available
+                                        </h4>
+                                        <p className="text-sm text-green-700 mb-3">
+                                          Your training session is complete! Please share your feedback to help improve the trainer's service.
+                                        </p>
+                                        <Button
+                                          onClick={() => openFeedbackLink(selectedBooking.feedback_link!.token)}
+                                          className="bg-green-600 text-white hover:bg-green-700"
+                                          size="sm"
+                                        >
+                                          <ExternalLink className="h-4 w-4 mr-1" />
+                                          Give Feedback
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="pt-4 border-t">
+                                    <p className="text-xs text-gray-500">
+                                      Booking created: {selectedBooking.created_at ? format(new Date(selectedBooking.created_at), 'MMM dd, yyyy HH:mm') : 'N/A'}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                          {booking.status === 'completed' && booking.feedback_link && (
+                            <Button
+                              variant="outline"
                               size="sm"
-                              onClick={() => setSelectedBooking(booking)}
+                              onClick={() => openFeedbackLink(booking.feedback_link!.token)}
+                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                             >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Details
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              Give Feedback
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Booking Details</DialogTitle>
-                            </DialogHeader>
-                            {selectedBooking && (
-                              <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">TRAINER</h4>
-                                    <div className="flex items-center gap-2">
-                                      <User className="h-4 w-4 text-gray-400" />
-                                      <div>
-                                        <p className="font-medium">{selectedBooking.trainer_profile?.full_name || 'N/A'}</p>
-                                        <p className="text-sm text-gray-500">{selectedBooking.trainer_profile?.email || 'N/A'}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">STATUS</h4>
-                                    <Badge className={getStatusColor(selectedBooking.status || 'pending')}>
-                                      {selectedBooking.status || 'pending'}
-                                    </Badge>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <h4 className="font-semibold text-sm text-gray-600">TRAINING TOPIC</h4>
-                                  <p className="text-sm">{selectedBooking.training_topic}</p>
-                                </div>
-
-                                {selectedBooking.organization_name && (
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">ORGANIZATION</h4>
-                                    <div className="flex items-center gap-2">
-                                      <MapPin className="h-4 w-4 text-gray-400" />
-                                      <p className="text-sm">{selectedBooking.organization_name}</p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">DATE & TIME</h4>
-                                    <div className="flex items-center gap-2">
-                                      <Clock className="h-4 w-4 text-gray-400" />
-                                      <div>
-                                        <p className="text-sm font-medium">
-                                          {format(new Date(selectedBooking.start_time), 'MMM dd, yyyy')}
-                                        </p>
-                                        <p className="text-sm text-gray-500">
-                                          {format(new Date(selectedBooking.start_time), 'HH:mm')} - {format(new Date(selectedBooking.end_time), 'HH:mm')}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">DURATION & AMOUNT</h4>
-                                    <div>
-                                      <p className="text-sm">{selectedBooking.duration_hours} hours</p>
-                                      <div className="flex items-center gap-1">
-                                        <DollarSign className="h-4 w-4 text-green-600" />
-                                        <p className="text-sm font-medium">${selectedBooking.total_amount}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {selectedBooking.special_requirements && (
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">SPECIAL REQUIREMENTS</h4>
-                                    <div className="flex items-start gap-2">
-                                      <FileText className="h-4 w-4 text-gray-400 mt-1" />
-                                      <p className="text-sm bg-gray-50 p-3 rounded-md">{selectedBooking.special_requirements}</p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {selectedBooking.meeting_link && (
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">MEETING LINK</h4>
-                                    <a 
-                                      href={selectedBooking.meeting_link} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 underline text-sm"
-                                    >
-                                      {selectedBooking.meeting_link}
-                                    </a>
-                                  </div>
-                                )}
-
-                                {selectedBooking.notes && (
-                                  <div className="space-y-2">
-                                    <h4 className="font-semibold text-sm text-gray-600">NOTES</h4>
-                                    <p className="text-sm bg-gray-50 p-3 rounded-md">{selectedBooking.notes}</p>
-                                  </div>
-                                )}
-
-                                <div className="pt-4 border-t">
-                                  <p className="text-xs text-gray-500">
-                                    Booking created: {selectedBooking.created_at ? format(new Date(selectedBooking.created_at), 'MMM dd, yyyy HH:mm') : 'N/A'}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
