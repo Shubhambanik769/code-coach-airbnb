@@ -63,10 +63,19 @@ const Header = () => {
               alt="Skilloop.io Logo" 
               className="w-10 h-10 rounded-lg"
             />
-            <div className="flex flex-col">
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-                Skilloop.io
-              </span>
+            <div className="flex flex-col relative">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                  Skilloop.io
+                </span>
+                {/* Beautiful Beta Badge */}
+                <div className="relative">
+                  <span className="inline-flex items-center px-2 py-1 text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-lg animate-pulse">
+                    BETA
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full blur-sm opacity-30 animate-pulse"></div>
+                </div>
+              </div>
               <span className="text-xs text-gray-500 -mt-1">by Gyanyodha</span>
             </div>
           </Link>
