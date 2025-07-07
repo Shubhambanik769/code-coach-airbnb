@@ -56,32 +56,51 @@ const ApplyTrainer = () => {
 
   const submitApplicationMutation = useMutation({
     mutationFn: async (data: typeof formData & { userId: string }) => {
-      // First, update user role to trainer
+      console.log('Starting trainer application submission for user:', data.userId);
+      
+      // First, update user role to trainer in profiles table
       const { error: roleError } = await supabase
         .from('profiles')
         .update({ role: 'trainer' })
         .eq('id', data.userId);
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error('Error updating user role:', roleError);
+        throw new Error(`Failed to update user role: ${roleError.message}`);
+      }
 
-      // Then create trainer profile
-      const { error: trainerError } = await supabase
+      console.log('User role updated to trainer successfully');
+
+      // Then create trainer profile with all required fields
+      const trainerData = {
+        user_id: data.userId,
+        name: data.name,
+        title: data.title,
+        bio: data.bio || '',
+        specialization: data.specialization || '',
+        experience_years: data.experience_years || 0,
+        hourly_rate: data.hourly_rate || 0,
+        skills: data.skills || [],
+        location: data.location || '',
+        timezone: data.timezone || 'UTC',
+        status: 'approved' // Auto-approve for smoother flow
+      };
+
+      console.log('Creating trainer profile with data:', trainerData);
+
+      const { error: trainerError, data: trainerResult } = await supabase
         .from('trainers')
-        .insert({
-          user_id: data.userId,
-          name: data.name,
-          title: data.title,
-          bio: data.bio,
-          specialization: data.specialization,
-          experience_years: data.experience_years,
-          hourly_rate: data.hourly_rate,
-          skills: data.skills,
-          location: data.location,
-          timezone: data.timezone,
-          status: 'approved' // Auto-approve for smoother flow
-        });
+        .insert(trainerData)
+        .select()
+        .single();
       
-      if (trainerError) throw trainerError;
+      if (trainerError) {
+        console.error('Error creating trainer profile:', trainerError);
+        throw new Error(`Failed to create trainer profile: ${trainerError.message}`);
+      }
+
+      console.log('Trainer profile created successfully:', trainerResult);
+      return trainerResult;
     },
     onSuccess: () => {
       toast({
@@ -95,10 +114,10 @@ const ApplyTrainer = () => {
       }, 2000);
     },
     onError: (error: any) => {
-      console.error('Application error:', error);
+      console.error('Application submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to create trainer profile. Please try again.",
+        description: error.message || "Failed to create trainer profile. Please try again.",
         variant: "destructive"
       });
     }
@@ -159,6 +178,7 @@ const ApplyTrainer = () => {
       return;
     }
 
+    // Enhanced validation
     if (!formData.name.trim()) {
       toast({
         title: "Error",
@@ -176,6 +196,9 @@ const ApplyTrainer = () => {
       });
       return;
     }
+
+    console.log('Submitting trainer application with form data:', formData);
+    console.log('Current user:', user);
 
     submitApplicationMutation.mutate({
       ...formData,
