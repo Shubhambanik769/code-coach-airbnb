@@ -1165,6 +1165,8 @@ export type Database = {
         | "system_announcement"
         | "booking_created"
         | "booking_status_changed"
+        | "system_alert"
+        | "trainer_application"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1307,6 +1309,8 @@ export const Constants = {
         "system_announcement",
         "booking_created",
         "booking_status_changed",
+        "system_alert",
+        "trainer_application",
       ],
     },
   },
