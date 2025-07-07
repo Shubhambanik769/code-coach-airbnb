@@ -11,10 +11,12 @@ interface AuthContextType {
   session: Session | null;
   userRole: string | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  requiresMFA: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: any; requiresMFA?: boolean }>;
   signUp: (email: string, password: string, fullName: string, role?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  completeMFAChallenge: () => void;
   isAdmin: boolean;
   isTrainer: boolean;
   isUser: boolean;
@@ -35,6 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [requiresMFA, setRequiresMFA] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -51,14 +54,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer the role fetch to avoid blocking the auth state change
+          // Check MFA requirement
           setTimeout(async () => {
             if (mounted) {
               await fetchUserRole(session.user.id);
+              await checkMFARequirement();
             }
           }, 0);
         } else {
           setUserRole(null);
+          setRequiresMFA(false);
         }
         
         if (mounted) {
@@ -83,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           if (session?.user) {
             await fetchUserRole(session.user.id);
+            await checkMFARequirement();
           }
           
           setLoading(false);
@@ -124,6 +130,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Check MFA requirement
+  const checkMFARequirement = async () => {
+    try {
+      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      
+      if (error) {
+        console.error('Error checking MFA requirement:', error);
+        return;
+      }
+
+      const requiresMFAVerification = data.nextLevel === 'aal2' && data.currentLevel === 'aal1';
+      setRequiresMFA(requiresMFAVerification);
+      
+      console.log('MFA Status:', {
+        currentLevel: data.currentLevel,
+        nextLevel: data.nextLevel,
+        requiresMFA: requiresMFAVerification
+      });
+    } catch (error) {
+      console.error('Error checking MFA requirement:', error);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -135,9 +164,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         showErrorToast(error, 'Sign in');
+        return { error };
       }
+
+      // Check if MFA is required after successful password authentication
+      await checkMFARequirement();
       
-      return { error };
+      return { error: null, requiresMFA };
     } catch (error) {
       const apiError = handleApiError(error, 'Sign in');
       showErrorToast(apiError);
@@ -213,6 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setUserRole(null);
+      setRequiresMFA(false);
       
       // Clear any cached data
       if (typeof window !== 'undefined') {
@@ -239,15 +273,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Complete MFA challenge (called after successful MFA verification)
+  const completeMFAChallenge = () => {
+    setRequiresMFA(false);
+  };
+
   const value = {
     user,
     session,
     userRole,
     loading,
+    requiresMFA,
     signIn,
     signUp,
     signOut,
     resetPassword,
+    completeMFAChallenge,
     isAdmin: userRole === 'admin',
     isTrainer: userRole === 'trainer',
     isUser: userRole === 'user'
