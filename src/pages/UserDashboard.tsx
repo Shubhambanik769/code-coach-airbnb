@@ -12,6 +12,7 @@ import UserBilling from '@/components/user/UserBilling';
 import UserTrainingRequests from '@/components/user/UserTrainingRequests';
 import NotificationsPage from '@/components/notifications/NotificationsPage';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import MFASettings from '@/components/user/MFASettings';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('bookings');
@@ -45,7 +46,7 @@ const UserDashboard = () => {
       case 'billing':
         return <UserBilling />;
       case 'settings':
-        return <div className="p-6">Account settings coming soon...</div>;
+        return <MFASettings />;
       default:
         return <UserBookings />;
     }

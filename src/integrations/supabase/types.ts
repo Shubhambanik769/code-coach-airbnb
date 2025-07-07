@@ -1140,6 +1140,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_user_mfa_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          email: string
+          full_name: string
+          has_mfa: boolean
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: string
@@ -1147,6 +1156,10 @@ export type Database = {
       mark_notifications_read: {
         Args: { notification_ids: string[] }
         Returns: number
+      }
+      user_has_mfa: {
+        Args: { user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
