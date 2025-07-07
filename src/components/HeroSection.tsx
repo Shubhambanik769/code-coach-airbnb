@@ -14,10 +14,10 @@ const HeroSection = () => {
 
       <div className="relative max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 pt-24 sm:pt-32 lg:pt-40 pb-20 sm:pb-24">
         <div className="text-center mb-16 animate-fade-in">
-          <h1 className="heading-xl text-gray-900 mb-8 max-w-4xl mx-auto">
+          <h1 className="heading-xl text-foreground mb-8 max-w-4xl mx-auto">
             Master Technology with <span className="text-gradient">Expert-Led Training</span>
           </h1>
-          <p className="body-lg text-gray-600 max-w-2xl mx-auto mb-12">
+          <p className="body-lg text-muted-foreground max-w-2xl mx-auto mb-12">
             Connect with world-class technology trainers who deliver personalized learning experiences. 
             From cutting-edge frameworks to enterprise solutions.
           </p>
@@ -40,7 +40,7 @@ const HeroSection = () => {
               <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-techblue-600 mb-3 group-hover:scale-110 transition-transform duration-300">
                 {stat.number}
               </div>
-              <div className="text-gray-600 text-sm sm:text-base font-medium">
+              <div className="text-muted-foreground text-sm sm:text-base font-medium">
                 {stat.label}
               </div>
             </div>
