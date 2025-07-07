@@ -53,47 +53,47 @@ const Header = () => {
   };
 
   return (
-    <header className="apple-blur border-b border-border/50 sticky top-0 z-50">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-20">
+    <header className="bg-white shadow-md relative z-50">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-4 group">
+          <Link to="/" className="flex items-center space-x-3">
             <img 
               src="/lovable-uploads/47af27d3-23ea-4024-aa71-701579305a9b.png" 
               alt="Skilloop.io Logo" 
-              className="w-12 h-12 rounded-2xl shadow-sm group-hover:scale-105 transition-transform duration-300"
+              className="w-10 h-10 rounded-lg"
             />
             <div className="flex flex-col">
-              <span className="text-2xl font-bold text-gradient">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
                 Skilloop.io
               </span>
-              <span className="text-xs text-muted-foreground -mt-1">by Gyanyodha</span>
+              <span className="text-xs text-gray-500 -mt-1">by Gyanyodha</span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-10">
+          <nav className="hidden md:flex items-center space-x-8">
             <Link 
               to="/trainers" 
-              className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               Find Trainers
             </Link>
             <Link 
               to="/training-marketplace" 
-              className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               Training Marketplace
             </Link>
             <Link 
               to="/about" 
-              className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               About
             </Link>
             <Link 
               to="/careers" 
-              className="text-foreground/80 hover:text-foreground transition-colors font-medium"
+              className="text-gray-700 hover:text-blue-600 transition-colors"
             >
               Careers
             </Link>
@@ -102,58 +102,58 @@ const Header = () => {
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <NotificationBell />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-2xl hover:bg-secondary/80">
-                      <Avatar className="h-10 w-10">
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
                         <AvatarImage src={user.user_metadata?.avatar_url} />
-                        <AvatarFallback className="text-sm font-semibold">
+                        <AvatarFallback>
                           {user.email?.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-64 mt-2 apple-blur border-border/50" align="end" forceMount>
-                    <div className="flex items-center justify-start gap-3 p-4">
+                  <DropdownMenuContent className="w-56 mt-2 bg-white" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-2 p-2">
                       <div className="flex flex-col space-y-1 leading-none">
-                        <p className="font-semibold text-foreground">{user.email}</p>
+                        <p className="font-medium">{user.email}</p>
                         {userRole && (
-                          <Badge variant="secondary" className="w-fit text-xs rounded-full">
+                          <Badge variant="secondary" className="w-fit text-xs">
                             {userRole}
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <div className="h-px bg-border my-1" />
+                    <div className="h-px bg-gray-200 my-1" />
                     <DropdownMenuItem asChild>
-                      <Link to={getDashboardLink()} className="flex items-center py-3 px-4">
-                        <BarChart3 className="mr-3 h-5 w-5" />
+                      <Link to={getDashboardLink()} className="flex items-center">
+                        <BarChart3 className="mr-2 h-4 w-4" />
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/trainer-status" className="flex items-center py-3 px-4">
-                        <User className="mr-3 h-5 w-5" />
+                      <Link to="/trainer-status" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
                         Profile
                       </Link>
                     </DropdownMenuItem>
-                    <div className="h-px bg-border my-1" />
-                    <DropdownMenuItem onClick={handleSignOut} className="py-3 px-4">
-                      <LogOut className="mr-3 h-5 w-5" />
+                    <div className="h-px bg-gray-200 my-1" />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
                       Sign out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             ) : (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <Link to="/apply-trainer">
-                  <Button variant="ghost" className="btn-secondary">Become a Trainer</Button>
+                  <Button variant="outline">Become a Trainer</Button>
                 </Link>
                 <Link to="/auth">
-                  <Button className="btn-primary">Sign In</Button>
+                  <Button>Sign In</Button>
                 </Link>
               </div>
             )}
@@ -171,69 +171,67 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden apple-blur border-t border-border/50 py-6">
-            <nav className="flex flex-col space-y-6">
+          <div className="md:hidden bg-white border-t border-gray-200 py-4">
+            <nav className="flex flex-col space-y-4">
               <Link 
                 to="/trainers" 
-                className="text-foreground/80 hover:text-foreground transition-colors px-6 font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Find Trainers
               </Link>
               <Link 
                 to="/training-marketplace" 
-                className="text-foreground/80 hover:text-foreground transition-colors px-6 font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Training Marketplace
               </Link>
               <Link 
                 to="/about" 
-                className="text-foreground/80 hover:text-foreground transition-colors px-6 font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 About
               </Link>
               <Link 
                 to="/careers" 
-                className="text-foreground/80 hover:text-foreground transition-colors px-6 font-medium"
+                className="text-gray-700 hover:text-blue-600 transition-colors px-4"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Careers
               </Link>
               
               {user ? (
-                <div className="flex flex-col space-y-4 px-6 pt-6 border-t border-border/50">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <Avatar className="h-8 w-8">
+                <div className="flex flex-col space-y-2 px-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Avatar className="h-6 w-6">
                       <AvatarImage src={user.user_metadata?.avatar_url} />
-                      <AvatarFallback className="text-sm font-semibold">
+                      <AvatarFallback className="text-xs">
                         {user.email?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-foreground">{user.email}</span>
-                      {userRole && (
-                        <Badge variant="secondary" className="text-xs rounded-full w-fit">
-                          {userRole}
-                        </Badge>
-                      )}
-                    </div>
+                    <span className="text-sm font-medium">{user.email}</span>
+                    {userRole && (
+                      <Badge variant="secondary" className="text-xs">
+                        {userRole}
+                      </Badge>
+                    )}
                   </div>
                   <Link 
                     to={getDashboardLink()} 
-                    className="text-foreground/80 hover:text-foreground transition-colors flex items-center py-2"
+                    className="text-gray-700 hover:text-blue-600 transition-colors flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <BarChart3 className="mr-3 h-5 w-5" />
+                    <BarChart3 className="mr-2 h-4 w-4" />
                     Dashboard
                   </Link>
                   <Link 
                     to="/trainer-status" 
-                    className="text-foreground/80 hover:text-foreground transition-colors flex items-center py-2"
+                    className="text-gray-700 hover:text-blue-600 transition-colors flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <User className="mr-3 h-5 w-5" />
+                    <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>
                   <button 
@@ -241,19 +239,19 @@ const Header = () => {
                       handleSignOut();
                       setIsMenuOpen(false);
                     }}
-                    className="text-foreground/80 hover:text-foreground transition-colors flex items-center text-left py-2"
+                    className="text-gray-700 hover:text-blue-600 transition-colors flex items-center text-left"
                   >
-                    <LogOut className="mr-3 h-5 w-5" />
+                    <LogOut className="mr-2 h-4 w-4" />
                     Sign out
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col space-y-4 px-6 pt-6 border-t border-border/50">
+                <div className="flex flex-col space-y-2 px-4 pt-4 border-t border-gray-200">
                   <Link to="/apply-trainer" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full btn-secondary">Become a Trainer</Button>
+                    <Button variant="outline" className="w-full">Become a Trainer</Button>
                   </Link>
                   <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full btn-primary">Sign In</Button>
+                    <Button className="w-full">Sign In</Button>
                   </Link>
                 </div>
               )}

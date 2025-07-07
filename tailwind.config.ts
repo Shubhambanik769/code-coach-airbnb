@@ -66,19 +66,6 @@ export default {
                     600: 'hsl(var(--blue-600))',
                     700: 'hsl(var(--blue-700))'
                 },
-                rose: {
-                    50: 'hsl(var(--rose-50))',
-                    100: 'hsl(var(--rose-100))',
-                    500: 'hsl(var(--rose-500))',
-                    600: 'hsl(var(--rose-600))',
-                    700: 'hsl(var(--rose-700))'
-                },
-                emerald: {
-                    50: 'hsl(var(--emerald-50))',
-                    100: 'hsl(var(--emerald-100))',
-                    500: 'hsl(var(--emerald-500))',
-                    600: 'hsl(var(--emerald-600))'
-                },
                 success: {
                     DEFAULT: 'hsl(var(--success))',
                     foreground: 'hsl(var(--success-foreground))'

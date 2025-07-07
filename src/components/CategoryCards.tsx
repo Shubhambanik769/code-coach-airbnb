@@ -74,45 +74,50 @@ const CategoryCards = () => {
   };
 
   return (
-    <section className="py-24 bg-background">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="text-center mb-20">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight">
+    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
             Popular <span className="text-gradient">Training Categories</span>
           </h2>
-          <p className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Explore our most in-demand technology training areas
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {categories.map((category, index) => {
             const IconComponent = category.icon;
             return (
               <Card 
                 key={category.title} 
-                className="card-minimal group cursor-pointer card-hover animate-fade-in"
+                className={`group cursor-pointer card-hover border ${category.borderColor} shadow-lg bg-gradient-to-br ${category.bgGradient} hover:shadow-xl transition-all duration-300 animate-fade-in backdrop-blur-sm`}
                 style={{ animationDelay: `${index * 0.1}s` }}
                 onClick={() => handleCategoryClick(category.slug)}
               >
-                <CardContent className="p-8 relative overflow-hidden">
-                  <div className={`w-16 h-16 rounded-3xl bg-gradient-to-r ${category.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 airbnb-shadow`}>
-                    <IconComponent className="w-8 h-8 text-white" />
+                <CardContent className="p-6 sm:p-8 relative overflow-hidden">
+                  {/* Subtle background pattern */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className={`w-full h-full bg-gradient-to-br ${category.color}`}></div>
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-foreground mb-4 group-hover:text-rose-600 transition-colors duration-300">
+                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r ${category.color} flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg relative z-10`}>
+                    <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                  
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3 group-hover:text-techblue-600 transition-colors relative z-10">
                     {category.title}
                   </h3>
                   
-                  <p className="text-muted-foreground mb-6 leading-relaxed text-lg">
+                  <p className="text-gray-600 mb-3 sm:mb-4 leading-relaxed text-sm sm:text-base relative z-10">
                     {category.description}
                   </p>
                   
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-rose-600 bg-rose-50 px-4 py-2 rounded-full">
+                  <div className="flex items-center justify-between relative z-10">
+                    <span className="text-xs sm:text-sm font-semibold text-techblue-600 bg-white/80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full shadow-sm">
                       {category.count}
                     </span>
-                    <span className="text-sm text-muted-foreground group-hover:text-rose-600 font-medium transition-colors duration-300 group-hover:translate-x-1">
+                    <span className="text-xs sm:text-sm text-gray-500 group-hover:text-techblue-600 font-medium transition-colors">
                       Explore →
                     </span>
                   </div>
