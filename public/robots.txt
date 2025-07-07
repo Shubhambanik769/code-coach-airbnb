@@ -1,21 +1,8 @@
-# Robots.txt for Skilloop.io - Technology Training Platform
-# Allow all crawlers to access all content
-
 User-agent: Googlebot
 Allow: /
-Crawl-delay: 1
 
-User-agent: Bingbot  
+User-agent: Bingbot
 Allow: /
-Crawl-delay: 1
-
-User-agent: Slurp
-Allow: /
-Crawl-delay: 2
-
-User-agent: DuckDuckBot
-Allow: /
-Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -23,29 +10,5 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: LinkedInBot
-Allow: /
-
-User-agent: WhatsApp
-Allow: /
-
-User-agent: Applebot
-Allow: /
-
 User-agent: *
 Allow: /
-Crawl-delay: 2
-
-# Disallow admin and private areas
-User-agent: *
-Disallow: /admin/
-Disallow: /dashboard/
-Disallow: /user-dashboard/
-Disallow: /trainer-dashboard/
-Disallow: /api/
-Disallow: /payment/
-Disallow: /*.pdf$
-Disallow: /*?*
-
-# Sitemap location
-Sitemap: https://skilloop.io/sitemap.xml
