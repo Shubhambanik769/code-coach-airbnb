@@ -4,47 +4,46 @@ import { Card } from '@/components/ui/card';
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-[70vh] sm:min-h-[80vh] bg-gradient-to-br from-techblue-50 via-purple-50 to-pink-50 overflow-hidden">
-      {/* Background decorative elements */}
+    <section className="relative min-h-[85vh] bg-background overflow-hidden">
+      {/* Subtle background elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-10 sm:top-20 left-5 sm:left-10 w-20 h-20 sm:w-32 sm:h-32 bg-techblue-200 rounded-full opacity-20 animate-float"></div>
-        <div className="absolute top-20 sm:top-40 right-10 sm:right-20 w-12 h-12 sm:w-20 sm:h-20 bg-purple-200 rounded-full opacity-30 animate-float" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-10 sm:bottom-20 left-1/4 w-16 h-16 sm:w-24 sm:h-24 bg-pink-200 rounded-full opacity-25 animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-rose-100/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-blue-100/30 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 lg:pt-20 pb-12 sm:pb-16">
-        <div className="text-center mb-8 sm:mb-12 animate-fade-in">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight px-2">
-            Master Technology with <span className="bg-gradient-to-r from-techblue-600 to-purple-600 bg-clip-text text-transparent">Expert-Led Training</span>
+      <div className="relative max-w-7xl mx-auto px-6 lg:px-8 pt-20 lg:pt-28 pb-20">
+        <div className="text-center mb-16 animate-fade-in">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground mb-8 leading-tight tracking-tight">
+            Master Technology with <span className="text-gradient">Expert-Led Training</span>
           </h1>
-          <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto mb-6 sm:mb-8 px-4 leading-relaxed">
+          <p className="text-xl sm:text-2xl text-muted-foreground max-w-4xl mx-auto mb-12 leading-relaxed">
             Connect with world-class technology trainers who deliver personalized learning experiences. 
             From cutting-edge frameworks to enterprise solutions - we've got you covered.
           </p>
         </div>
 
         {/* Search Card */}
-        <Card className="max-w-4xl mx-auto p-6 shadow-2xl bg-white/95 backdrop-blur-sm animate-scale-in glow-effect">
+        <Card className="max-w-5xl mx-auto p-8 airbnb-shadow apple-blur animate-scale-in border-0">
           <SearchButton />
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 mt-12 sm:mt-16 animate-fade-in px-4">
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-techblue-600 mb-1 sm:mb-2">2,500+</div>
-            <div className="text-gray-600 text-sm sm:text-base">Expert Trainers</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mt-20 animate-fade-in">
+          <div className="text-center group">
+            <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-rose-600 mb-3 group-hover:scale-110 transition-transform duration-300">2,500+</div>
+            <div className="text-muted-foreground text-base sm:text-lg font-medium">Expert Trainers</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-techblue-600 mb-1 sm:mb-2">50+</div>
-            <div className="text-gray-600 text-sm sm:text-base">Technologies</div>
+          <div className="text-center group">
+            <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-rose-600 mb-3 group-hover:scale-110 transition-transform duration-300">50+</div>
+            <div className="text-muted-foreground text-base sm:text-lg font-medium">Technologies</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-techblue-600 mb-1 sm:mb-2">98%</div>
-            <div className="text-gray-600 text-sm sm:text-base">Success Rate</div>
+          <div className="text-center group">
+            <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-rose-600 mb-3 group-hover:scale-110 transition-transform duration-300">98%</div>
+            <div className="text-muted-foreground text-base sm:text-lg font-medium">Success Rate</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-techblue-600 mb-1 sm:mb-2">24/7</div>
-            <div className="text-gray-600 text-sm sm:text-base">Support</div>
+          <div className="text-center group">
+            <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-rose-600 mb-3 group-hover:scale-110 transition-transform duration-300">24/7</div>
+            <div className="text-muted-foreground text-base sm:text-lg font-medium">Support</div>
           </div>
         </div>
       </div>

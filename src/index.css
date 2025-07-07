@@ -8,40 +8,51 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
+    --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 220.9 39.3% 11%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 224 71.4% 4.1%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Enhanced color system */
-    --primary-50: 220 43% 97%;
-    --primary-100: 220 43% 94%;
-    --primary-500: 220.9 39.3% 11%;
-    --primary-600: 221 39% 8%;
+    /* Airbnb/Apple inspired color system */
+    --primary-50: 0 0% 98%;
+    --primary-100: 0 0% 96%;
+    --primary-500: 0 0% 9%;
+    --primary-600: 0 0% 6%;
+    
+    --rose-50: 355 100% 97%;
+    --rose-100: 355 100% 93%;
+    --rose-500: 351 95% 71%;
+    --rose-600: 347 77% 50%;
+    --rose-700: 342 75% 40%;
+    
+    --emerald-50: 152 81% 96%;
+    --emerald-100: 149 80% 90%;
+    --emerald-500: 160 84% 39%;
+    --emerald-600: 158 64% 52%;
     
     --blue-50: 214 100% 97%;
     --blue-100: 214 95% 93%;
@@ -49,14 +60,14 @@
     --blue-600: 221 83% 53%;
     --blue-700: 224 76% 48%;
     
-    --success: 142 76% 36%;
-    --success-foreground: 210 20% 98%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 98%;
     
     --warning: 38 92% 50%;
     --warning-foreground: 48 96% 89%;
     
-    --info: 199 89% 48%;
-    --info-foreground: 210 20% 98%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 98%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -119,33 +130,42 @@
 }
 
 @layer utilities {
+  /* Airbnb/Apple inspired gradients */
   .text-gradient {
-    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-rose-500 to-rose-600 bg-clip-text text-transparent;
   }
   
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+    @apply transition-all duration-500 hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-2;
   }
   
-  .glow-effect {
-    @apply shadow-lg shadow-blue-500/20;
+  .card-minimal {
+    @apply bg-card border border-border/50 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300;
   }
 
   .glass-effect {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+    @apply bg-white/90 backdrop-blur-xl border border-white/20 shadow-lg;
   }
 
-  .gradient-border {
-    @apply relative before:absolute before:inset-0 before:p-[1px] before:bg-gradient-to-r before:from-blue-500 before:to-purple-500 before:rounded-lg before:-z-10;
+  .airbnb-shadow {
+    @apply shadow-xl shadow-black/5;
   }
 
-  /* Enhanced button styles */
+  .apple-blur {
+    @apply backdrop-blur-2xl bg-white/80;
+  }
+
+  /* Airbnb/Apple button styles */
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 rounded-xl font-medium;
   }
 
   .btn-secondary {
-    @apply bg-white border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700 shadow-sm hover:shadow-md transition-all duration-200;
+    @apply bg-white border border-border hover:bg-secondary text-foreground shadow-md hover:shadow-lg transition-all duration-300 rounded-xl font-medium;
+  }
+
+  .btn-rose {
+    @apply bg-gradient-to-r from-rose-500 to-rose-600 text-white hover:from-rose-600 hover:to-rose-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 rounded-xl font-medium;
   }
 
   /* Mobile-first responsive utilities */

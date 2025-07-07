@@ -14,108 +14,108 @@ import { Link } from 'react-router-dom';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+    <div className="min-h-screen bg-background">
       <Header />
       <HeroSection />
       <CategoryCards />
       
       {/* Training Marketplace Section */}
-      <section className="py-20 bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 bg-rose-50 text-rose-700 px-6 py-3 rounded-full text-sm font-medium mb-6 border border-rose-100">
               <Star className="h-4 w-4" />
               Training Marketplace
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-5xl lg:text-6xl font-bold text-foreground mb-8 tracking-tight">
               Connect. Learn. <span className="text-gradient">Grow Together.</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
               Our marketplace connects skilled trainers with organizations seeking expert-led training programs. 
               Whether you're looking to teach or learn, we've got you covered.
             </p>
           </div>
           
-          <div className="grid lg:grid-cols-2 gap-8 items-stretch">
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-blue-600 p-4 rounded-2xl shadow-lg">
-                    <Briefcase className="h-8 w-8 text-white" />
+          <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            <Card className="card-minimal group card-hover border-0 bg-gradient-to-br from-rose-50/50 to-rose-100/30 overflow-hidden">
+              <CardContent className="p-10">
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-5 rounded-3xl shadow-lg">
+                    <Briefcase className="h-10 w-10 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900">For Expert Trainers</h3>
-                    <p className="text-gray-600 text-lg">Share your expertise and earn</p>
+                    <h3 className="text-3xl font-bold text-foreground">For Expert Trainers</h3>
+                    <p className="text-muted-foreground text-lg">Share your expertise and earn</p>
                   </div>
                 </div>
                 
-                <ul className="space-y-4 text-gray-700 mb-8">
-                  <li className="flex items-center gap-3">
-                    <div className="bg-green-100 p-1 rounded-full">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                <ul className="space-y-5 text-foreground mb-10">
+                  <li className="flex items-center gap-4">
+                    <div className="bg-emerald-100 p-2 rounded-full">
+                      <CheckCircle className="h-6 w-6 text-emerald-600" />
                     </div>
-                    <span className="text-base">Browse hundreds of training requests</span>
+                    <span className="text-lg">Browse hundreds of training requests</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <div className="bg-green-100 p-1 rounded-full">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                  <li className="flex items-center gap-4">
+                    <div className="bg-emerald-100 p-2 rounded-full">
+                      <CheckCircle className="h-6 w-6 text-emerald-600" />
                     </div>
-                    <span className="text-base">Set your own rates and schedule</span>
+                    <span className="text-lg">Set your own rates and schedule</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <div className="bg-green-100 p-1 rounded-full">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                  <li className="flex items-center gap-4">
+                    <div className="bg-emerald-100 p-2 rounded-full">
+                      <CheckCircle className="h-6 w-6 text-emerald-600" />
                     </div>
-                    <span className="text-base">Build your professional network</span>
+                    <span className="text-lg">Build your professional network</span>
                   </li>
                 </ul>
                 
                 <Link to="/training-marketplace">
-                  <Button className="w-full btn-primary text-lg font-semibold h-12 group-hover:scale-105 transition-transform">
+                  <Button className="w-full btn-rose text-lg font-semibold h-14 group-hover:scale-[1.02] transition-all duration-300">
                     Explore Opportunities
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-3 h-6 w-6" />
                   </Button>
                 </Link>
               </CardContent>
             </Card>
             
-            <Card className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-purple-50 to-pink-100 overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-purple-600 p-4 rounded-2xl shadow-lg">
-                    <Users className="h-8 w-8 text-white" />
+            <Card className="card-minimal group card-hover border-0 bg-gradient-to-br from-blue-50/50 to-blue-100/30 overflow-hidden">
+              <CardContent className="p-10">
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-5 rounded-3xl shadow-lg">
+                    <Users className="h-10 w-10 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900">For Organizations</h3>
-                    <p className="text-gray-600 text-lg">Find the perfect training partner</p>
+                    <h3 className="text-3xl font-bold text-foreground">For Organizations</h3>
+                    <p className="text-muted-foreground text-lg">Find the perfect training partner</p>
                   </div>
                 </div>
                 
-                <ul className="space-y-4 text-gray-700 mb-8">
-                  <li className="flex items-center gap-3">
-                    <div className="bg-green-100 p-1 rounded-full">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                <ul className="space-y-5 text-foreground mb-10">
+                  <li className="flex items-center gap-4">
+                    <div className="bg-emerald-100 p-2 rounded-full">
+                      <CheckCircle className="h-6 w-6 text-emerald-600" />
                     </div>
-                    <span className="text-base">Post detailed training requirements</span>
+                    <span className="text-lg">Post detailed training requirements</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <div className="bg-green-100 p-1 rounded-full">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                  <li className="flex items-center gap-4">
+                    <div className="bg-emerald-100 p-2 rounded-full">
+                      <CheckCircle className="h-6 w-6 text-emerald-600" />
                     </div>
-                    <span className="text-base">Review qualified trainer applications</span>
+                    <span className="text-lg">Review qualified trainer applications</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <div className="bg-green-100 p-1 rounded-full">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                  <li className="flex items-center gap-4">
+                    <div className="bg-emerald-100 p-2 rounded-full">
+                      <CheckCircle className="h-6 w-6 text-emerald-600" />
                     </div>
-                    <span className="text-base">Choose the best fit for your team</span>
+                    <span className="text-lg">Choose the best fit for your team</span>
                   </li>
                 </ul>
                 
                 <Link to="/auth">
-                  <Button className="w-full btn-secondary text-lg font-semibold h-12 group-hover:scale-105 transition-transform">
+                  <Button className="w-full btn-secondary text-lg font-semibold h-14 group-hover:scale-[1.02] transition-all duration-300">
                     Post Training Request
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-3 h-6 w-6" />
                   </Button>
                 </Link>
               </CardContent>
