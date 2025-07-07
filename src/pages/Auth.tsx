@@ -25,20 +25,13 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, user, userRole, requiresMFA } = useAuth();
+  const { signIn, signUp, user, userRole } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Handle MFA requirement
-    if (user && requiresMFA) {
-      console.log('MFA required, redirecting to MFA flow');
-      navigate('/mfa');
-      return;
-    }
-
     // Redirect authenticated users to their appropriate dashboard based on role
-    if (user && userRole && !requiresMFA) {
+    if (user && userRole) {
       console.log('User authenticated with role:', userRole);
       switch (userRole) {
         case 'admin':
@@ -53,7 +46,7 @@ const Auth = () => {
           break;
       }
     }
-  }, [user, userRole, requiresMFA, navigate]);
+  }, [user, userRole, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,7 +8,6 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import Index from "./pages/Index";
-import MFAFlow from "./pages/MFAFlow";
 import Auth from "./pages/Auth";
 import ApplyTrainer from "./pages/ApplyTrainer";
 import UserDashboard from "./pages/UserDashboard";
@@ -49,7 +48,6 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
-                  <Route path="/mfa" element={<MFAFlow />} />
                   <Route path="/about" element={<AboutUs />} />
                   <Route path="/careers" element={<Careers />} />
                   <Route path="/trainer-resources" element={<TrainerResources />} />
