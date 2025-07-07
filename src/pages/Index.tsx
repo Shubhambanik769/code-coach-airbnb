@@ -7,14 +7,57 @@ import TrustSection from '@/components/TrustSection';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import SEOHead from '@/components/SEOHead';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Briefcase, Users, Search, Star, ArrowRight, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Skilloop.io",
+    "alternateName": "Skilloop",
+    "url": "https://skilloop.io",
+    "description": "Professional technology training platform connecting expert trainers with learners worldwide.",
+    "mainEntity": {
+      "@type": "EducationalOrganization",
+      "name": "Skilloop.io",
+      "offers": [
+        {
+          "@type": "Course",
+          "name": "Python Programming Training",
+          "description": "Comprehensive Python programming training with expert instructors"
+        },
+        {
+          "@type": "Course",
+          "name": "React Development Training", 
+          "description": "Advanced React development training for modern web applications"
+        },
+        {
+          "@type": "Course",
+          "name": "AI & Machine Learning Training",
+          "description": "Cutting-edge AI and machine learning training programs"
+        }
+      ]
+    },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://skilloop.io/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead 
+        title="Skilloop.io - Master Technology with Expert-Led Training | Find Tech Trainers"
+        description="Transform your tech skills with Skilloop.io - Connect with world-class technology trainers for personalized learning experiences. Book certified trainers in Python, React, AI, DevOps & more."
+        keywords="technology training, tech trainers, programming courses, software development training, Python training, React training, AI training, DevOps training, corporate training, online tech education, skilled trainers, expert trainers"
+        url="https://skilloop.io/"
+        structuredData={structuredData}
+      />
       <Header />
       <HeroSection />
       <CategoryCards />
