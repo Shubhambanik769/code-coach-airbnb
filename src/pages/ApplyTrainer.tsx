@@ -58,18 +58,50 @@ const ApplyTrainer = () => {
     mutationFn: async (data: typeof formData & { userId: string }) => {
       console.log('Starting trainer application submission for user:', data.userId);
       
-      // First, update user role to trainer in profiles table
-      const { error: roleError } = await supabase
-        .from('profiles')
-        .update({ role: 'trainer' })
-        .eq('id', data.userId);
+      // First, ensure user profile exists and update role to trainer
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-      if (roleError) {
-        console.error('Error updating user role:', roleError);
-        throw new Error(`Failed to update user role: ${roleError.message}`);
+      // Check if profile exists, create if it doesn't
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', data.userId)
+        .single();
+
+      if (profileCheckError && profileCheckError.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        console.log('Creating user profile...');
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.userId,
+            email: user.email!,
+            full_name: data.name,
+            role: 'trainer'
+          });
+
+        if (createProfileError) {
+          console.error('Error creating user profile:', createProfileError);
+          throw new Error(`Failed to create user profile: ${createProfileError.message}`);
+        }
+      } else if (profileCheckError) {
+        console.error('Error checking user profile:', profileCheckError);
+        throw new Error(`Failed to check user profile: ${profileCheckError.message}`);
+      } else {
+        // Profile exists, update role to trainer
+        const { error: roleError } = await supabase
+          .from('profiles')
+          .update({ role: 'trainer' })
+          .eq('id', data.userId);
+
+        if (roleError) {
+          console.error('Error updating user role:', roleError);
+          throw new Error(`Failed to update user role: ${roleError.message}`);
+        }
       }
 
-      console.log('User role updated to trainer successfully');
+      console.log('User profile and role updated successfully');
 
       // Then create trainer profile with all required fields
       const trainerData = {
