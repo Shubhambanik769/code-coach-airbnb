@@ -74,50 +74,50 @@ const CategoryCards = () => {
   };
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
+    <section className="section-padding bg-gray-50">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="text-center mb-16">
+          <h2 className="heading-lg text-gray-900 mb-6">
             Popular <span className="text-gradient">Training Categories</span>
           </h2>
-          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
+          <p className="body-lg text-gray-600 max-w-2xl mx-auto">
             Explore our most in-demand technology training areas
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {categories.map((category, index) => {
             const IconComponent = category.icon;
             return (
               <Card 
                 key={category.title} 
-                className={`group cursor-pointer card-hover border ${category.borderColor} shadow-lg bg-gradient-to-br ${category.bgGradient} hover:shadow-xl transition-all duration-300 animate-fade-in backdrop-blur-sm`}
+                className="group cursor-pointer card-soft hover:shadow-2xl transition-all duration-500 animate-fade-in border-0"
                 style={{ animationDelay: `${index * 0.1}s` }}
                 onClick={() => handleCategoryClick(category.slug)}
               >
-                <CardContent className="p-6 sm:p-8 relative overflow-hidden">
-                  {/* Subtle background pattern */}
-                  <div className="absolute inset-0 opacity-5">
-                    <div className={`w-full h-full bg-gradient-to-br ${category.color}`}></div>
+                <CardContent className="p-8 relative">
+                  {/* Subtle background gradient */}
+                  <div className="absolute inset-0 opacity-3 rounded-2xl">
+                    <div className={`w-full h-full bg-gradient-to-br ${category.color} rounded-2xl`}></div>
                   </div>
                   
-                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-r ${category.color} flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg relative z-10`}>
-                    <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  <div className={`w-16 h-16 rounded-3xl bg-gradient-to-r ${category.color} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg relative z-10`}>
+                    <IconComponent className="w-8 h-8 text-white" />
                   </div>
                   
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3 group-hover:text-techblue-600 transition-colors relative z-10">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-techblue-600 transition-colors relative z-10">
                     {category.title}
                   </h3>
                   
-                  <p className="text-gray-600 mb-3 sm:mb-4 leading-relaxed text-sm sm:text-base relative z-10">
+                  <p className="text-gray-600 mb-6 leading-relaxed body-md relative z-10">
                     {category.description}
                   </p>
                   
                   <div className="flex items-center justify-between relative z-10">
-                    <span className="text-xs sm:text-sm font-semibold text-techblue-600 bg-white/80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full shadow-sm">
+                    <span className="text-sm font-semibold text-techblue-600 bg-techblue-50 px-4 py-2 rounded-full">
                       {category.count}
                     </span>
-                    <span className="text-xs sm:text-sm text-gray-500 group-hover:text-techblue-600 font-medium transition-colors">
+                    <span className="text-sm text-gray-500 group-hover:text-techblue-600 font-medium transition-colors group-hover:translate-x-1 duration-300">
                       Explore →
                     </span>
                   </div>

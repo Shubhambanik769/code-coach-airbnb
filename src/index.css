@@ -35,7 +35,16 @@
     --input: 220 13% 91%;
     --ring: 224 71.4% 4.1%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
+
+    /* Airbnb/Apple inspired spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+    --spacing-2xl: 4rem;
+    --spacing-3xl: 6rem;
 
     /* Enhanced color system */
     --primary-50: 220 43% 97%;
@@ -123,29 +132,60 @@
     @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
   }
   
+  /* Airbnb-inspired card styling */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+    @apply transition-all duration-300 ease-out hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02];
+  }
+  
+  .card-soft {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300;
   }
   
   .glow-effect {
-    @apply shadow-lg shadow-blue-500/20;
+    @apply shadow-xl shadow-blue-500/10;
   }
 
   .glass-effect {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+    @apply bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl;
   }
 
   .gradient-border {
-    @apply relative before:absolute before:inset-0 before:p-[1px] before:bg-gradient-to-r before:from-blue-500 before:to-purple-500 before:rounded-lg before:-z-10;
+    @apply relative before:absolute before:inset-0 before:p-[1px] before:bg-gradient-to-r before:from-blue-500 before:to-purple-500 before:rounded-2xl before:-z-10;
   }
 
-  /* Enhanced button styles */
+  /* Apple-inspired button styles */
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200;
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ease-out px-8 py-4;
   }
 
   .btn-secondary {
-    @apply bg-white border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-700 shadow-sm hover:shadow-md transition-all duration-200;
+    @apply bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-800 font-medium rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ease-out px-8 py-4;
+  }
+
+  /* Airbnb-style section spacing */
+  .section-padding {
+    @apply py-16 sm:py-20 lg:py-24;
+  }
+
+  /* Apple-style typography */
+  .heading-xl {
+    @apply text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight;
+  }
+
+  .heading-lg {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight;
+  }
+
+  .heading-md {
+    @apply text-2xl sm:text-3xl font-semibold tracking-tight;
+  }
+
+  .body-lg {
+    @apply text-lg sm:text-xl leading-relaxed;
+  }
+
+  .body-md {
+    @apply text-base sm:text-lg leading-relaxed;
   }
 
   /* Mobile-first responsive utilities */
