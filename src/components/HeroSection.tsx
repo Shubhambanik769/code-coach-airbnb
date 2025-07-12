@@ -18,38 +18,59 @@ const HeroSection = () => {
     'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur'
   ];
 
+  const trainingCategories = [
+    { name: "Technology & IT Skills", icon: "💻" },
+    { name: "Business & Entrepreneurship", icon: "💼" },
+    { name: "Soft Skills & Personality Development", icon: "👥" },
+    { name: "Tools & Productivity Software", icon: "🔧" },
+    { name: "Language & Communication", icon: "🗣️" },
+    { name: "Career Skills & Placement Prep", icon: "🎯" },
+    { name: "Faculty Development / Train-the-Trainer", icon: "👨‍🏫" },
+    { name: "Creative Skills", icon: "🎨" },
+    { name: "Wellness & Productivity", icon: "🧘" },
+    { name: "Finance & Investing", icon: "💰" },
+    { name: "HR & Leadership", icon: "👑" }
+  ];
+
   return (
-    <section 
-      className="relative min-h-[600px] bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158')`
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
-        <div className="flex items-center min-h-[500px]">
-          <div className="w-full lg:w-1/2 text-white">
-            <div className="mb-6">
-              <span className="text-sm font-medium tracking-widest uppercase opacity-90">
-                TRAINING COMPANY
-              </span>
-            </div>
-            
-            <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight">
-              Quality training services, on demand
+    <section className="bg-white min-h-screen">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Left Side - Content and Categories */}
+          <div>
+            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              Training services at your doorstep
             </h1>
             
-            <p className="text-xl mb-12 opacity-90 leading-relaxed max-w-md">
-              Experienced, hand-picked Professionals to serve you at your doorstep
-            </p>
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-700 mb-6">
+                What are you looking for?
+              </h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {trainingCategories.map((category, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+                    onClick={() => navigate(`/services?category=${encodeURIComponent(category.name)}`)}
+                  >
+                    <span className="text-2xl mr-3">{category.icon}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {category.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Location selector */}
-            <div className="bg-white rounded-lg p-6 max-w-md">
+            <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-gray-900 font-semibold mb-4">
-                Where do you need a service?
+                Where do you need training?
               </h3>
               
               <Select value={location} onValueChange={setLocation}>
-                <SelectTrigger className="w-full h-12 text-gray-600">
+                <SelectTrigger className="w-full h-12 text-gray-600 bg-white">
                   <SelectValue placeholder="Select your city" />
                 </SelectTrigger>
                 <SelectContent>
@@ -64,11 +85,39 @@ const HeroSection = () => {
               {location && (
                 <button
                   onClick={handleSearch}
-                  className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                  className="w-full mt-4 bg-black hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
                 >
                   Continue
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* Right Side - Images */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <img
+                src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop"
+                alt="Corporate training session"
+                className="w-full h-48 object-cover rounded-lg"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=300&h=250&fit=crop"
+                alt="Online training"
+                className="w-full h-60 object-cover rounded-lg"
+              />
+            </div>
+            <div className="space-y-4 pt-8">
+              <img
+                src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=250&fit=crop"
+                alt="Skills development"
+                className="w-full h-60 object-cover rounded-lg"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop"
+                alt="Professional training"
+                className="w-full h-48 object-cover rounded-lg"
+              />
             </div>
           </div>
         </div>
