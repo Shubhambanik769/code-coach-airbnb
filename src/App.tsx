@@ -30,6 +30,7 @@ import TrainerResources from "./pages/TrainerResources";
 import CommunityStandards from "./pages/CommunityStandards";
 import TrainerProtection from "./pages/TrainerProtection";
 import SuccessStories from "./pages/SuccessStories";
+import CategoryPage from "./pages/CategoryPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -64,6 +65,7 @@ const App = () => (
                   <Route path="/services" element={<Services />} />
                   <Route path="/services/:categorySlug" element={<Services />} />
                   <Route path="/book/:categorySlug" element={<BookService />} />
+                  <Route path="/category/:slug" element={<CategoryPage />} />
                   <Route path="/technology/:slug" element={<TechnologyPage />} />
                   <Route path="/trainer/:id" element={<TrainerProfile />} />
                   {/* Updated feedback route to properly handle base64 encoded tokens */}

@@ -56,12 +56,21 @@ const HeroSection = () => {
               </h2>
               
               <div className="grid grid-cols-2 gap-4">
-                {trainingCategories.map((category, index) => <div key={index} className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all">
+                {trainingCategories.map((category, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+                    onClick={() => {
+                      const slug = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      window.location.href = `/category/${slug}`;
+                    }}
+                  >
                     <span className="text-2xl mr-3">{category.icon}</span>
                     <span className="text-sm font-medium text-gray-700">
                       {category.name}
                     </span>
-                  </div>)}
+                  </div>
+                ))}
               </div>
             </div>
 
