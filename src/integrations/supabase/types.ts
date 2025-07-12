@@ -97,13 +97,17 @@ export type Database = {
       bookings: {
         Row: {
           agreement_id: string | null
+          auto_assigned_at: string | null
           booking_type: string | null
           client_email: string | null
           client_name: string | null
+          client_payment_amount: number | null
           created_at: string | null
           duration_hours: number
           end_time: string
           id: string
+          location_area: string | null
+          location_city: string | null
           meeting_link: string | null
           notes: string | null
           organization_name: string | null
@@ -115,26 +119,37 @@ export type Database = {
           paypal_order_id: string | null
           platform_commission_amount: number | null
           platform_commission_rate: number | null
+          platform_fee_amount: number | null
+          platform_fee_percentage: number | null
           requires_agreement: boolean
+          service_category: string | null
+          service_completion_status: string | null
           special_requirements: string | null
           start_time: string
           status: string | null
           student_id: string
+          team_size: number | null
           total_amount: number
+          trainer_assignment_status: string | null
           trainer_id: string
           trainer_payout_amount: number | null
           training_topic: string
           updated_at: string | null
+          urgency_level: string | null
         }
         Insert: {
           agreement_id?: string | null
+          auto_assigned_at?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
+          client_payment_amount?: number | null
           created_at?: string | null
           duration_hours: number
           end_time: string
           id?: string
+          location_area?: string | null
+          location_city?: string | null
           meeting_link?: string | null
           notes?: string | null
           organization_name?: string | null
@@ -146,26 +161,37 @@ export type Database = {
           paypal_order_id?: string | null
           platform_commission_amount?: number | null
           platform_commission_rate?: number | null
+          platform_fee_amount?: number | null
+          platform_fee_percentage?: number | null
           requires_agreement?: boolean
+          service_category?: string | null
+          service_completion_status?: string | null
           special_requirements?: string | null
           start_time: string
           status?: string | null
           student_id: string
+          team_size?: number | null
           total_amount: number
+          trainer_assignment_status?: string | null
           trainer_id: string
           trainer_payout_amount?: number | null
           training_topic: string
           updated_at?: string | null
+          urgency_level?: string | null
         }
         Update: {
           agreement_id?: string | null
+          auto_assigned_at?: string | null
           booking_type?: string | null
           client_email?: string | null
           client_name?: string | null
+          client_payment_amount?: number | null
           created_at?: string | null
           duration_hours?: number
           end_time?: string
           id?: string
+          location_area?: string | null
+          location_city?: string | null
           meeting_link?: string | null
           notes?: string | null
           organization_name?: string | null
@@ -177,16 +203,23 @@ export type Database = {
           paypal_order_id?: string | null
           platform_commission_amount?: number | null
           platform_commission_rate?: number | null
+          platform_fee_amount?: number | null
+          platform_fee_percentage?: number | null
           requires_agreement?: boolean
+          service_category?: string | null
+          service_completion_status?: string | null
           special_requirements?: string | null
           start_time?: string
           status?: string | null
           student_id?: string
+          team_size?: number | null
           total_amount?: number
+          trainer_assignment_status?: string | null
           trainer_id?: string
           trainer_payout_amount?: number | null
           training_topic?: string
           updated_at?: string | null
+          urgency_level?: string | null
         }
         Relationships: [
           {
@@ -509,6 +542,69 @@ export type Database = {
           },
         ]
       }
+      platform_payments: {
+        Row: {
+          amount_paid: number
+          booking_id: string | null
+          client_id: string | null
+          created_at: string | null
+          held_until: string | null
+          id: string
+          payment_provider: string | null
+          payment_status: string | null
+          payment_transaction_id: string | null
+          platform_fee: number
+          released_at: string | null
+          trainer_payout: number
+          updated_at: string | null
+        }
+        Insert: {
+          amount_paid: number
+          booking_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          held_until?: string | null
+          id?: string
+          payment_provider?: string | null
+          payment_status?: string | null
+          payment_transaction_id?: string | null
+          platform_fee: number
+          released_at?: string | null
+          trainer_payout: number
+          updated_at?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          booking_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          held_until?: string | null
+          id?: string
+          payment_provider?: string | null
+          payment_status?: string | null
+          payment_transaction_id?: string | null
+          platform_fee?: number
+          released_at?: string | null
+          trainer_payout?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string
@@ -660,6 +756,45 @@ export type Database = {
           },
         ]
       }
+      service_categories: {
+        Row: {
+          base_price: number | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon_name: string
+          id: string
+          is_active: boolean | null
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon_name: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       success_stories: {
         Row: {
           client_avatar_url: string | null
@@ -705,6 +840,63 @@ export type Database = {
         }
         Relationships: []
       }
+      trainer_assignments: {
+        Row: {
+          accepted_at: string | null
+          assignment_status: string | null
+          booking_id: string | null
+          created_at: string | null
+          decline_reason: string | null
+          declined_at: string | null
+          id: string
+          offered_at: string | null
+          response_deadline: string | null
+          trainer_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          assignment_status?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          id?: string
+          offered_at?: string | null
+          response_deadline?: string | null
+          trainer_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          assignment_status?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          id?: string
+          offered_at?: string | null
+          response_deadline?: string | null
+          trainer_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_assignments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainer_assignments_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainer_availability: {
         Row: {
           created_at: string
@@ -742,6 +934,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "trainer_availability_trainer_id_fkey"
+            columns: ["trainer_id"]
+            isOneToOne: false
+            referencedRelation: "trainers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainer_locations: {
+        Row: {
+          area: string | null
+          city: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          trainer_id: string | null
+          travel_radius_km: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          area?: string | null
+          city: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          trainer_id?: string | null
+          travel_radius_km?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          area?: string | null
+          city?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          trainer_id?: string | null
+          travel_radius_km?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_locations_trainer_id_fkey"
             columns: ["trainer_id"]
             isOneToOne: false
             referencedRelation: "trainers"
@@ -855,8 +1088,10 @@ export type Database = {
         Row: {
           achievements: string[] | null
           availability: Json | null
+          average_response_time: number | null
           bio: string | null
           certification_documents: string[] | null
+          completion_rate: number | null
           created_at: string | null
           demo_video_url: string | null
           education: string[] | null
@@ -864,12 +1099,16 @@ export type Database = {
           github_profile: string | null
           hourly_rate: number | null
           id: string
+          instant_booking_available: boolean | null
           languages_spoken: string[] | null
+          last_active_at: string | null
           linkedin_profile: string | null
           location: string | null
+          minimum_booking_hours: number | null
           name: string
           portfolio_url: string | null
           rating: number | null
+          response_time_hours: number | null
           skills: string[] | null
           specialization: string | null
           status: string | null
@@ -884,8 +1123,10 @@ export type Database = {
         Insert: {
           achievements?: string[] | null
           availability?: Json | null
+          average_response_time?: number | null
           bio?: string | null
           certification_documents?: string[] | null
+          completion_rate?: number | null
           created_at?: string | null
           demo_video_url?: string | null
           education?: string[] | null
@@ -893,12 +1134,16 @@ export type Database = {
           github_profile?: string | null
           hourly_rate?: number | null
           id?: string
+          instant_booking_available?: boolean | null
           languages_spoken?: string[] | null
+          last_active_at?: string | null
           linkedin_profile?: string | null
           location?: string | null
+          minimum_booking_hours?: number | null
           name: string
           portfolio_url?: string | null
           rating?: number | null
+          response_time_hours?: number | null
           skills?: string[] | null
           specialization?: string | null
           status?: string | null
@@ -913,8 +1158,10 @@ export type Database = {
         Update: {
           achievements?: string[] | null
           availability?: Json | null
+          average_response_time?: number | null
           bio?: string | null
           certification_documents?: string[] | null
+          completion_rate?: number | null
           created_at?: string | null
           demo_video_url?: string | null
           education?: string[] | null
@@ -922,12 +1169,16 @@ export type Database = {
           github_profile?: string | null
           hourly_rate?: number | null
           id?: string
+          instant_booking_available?: boolean | null
           languages_spoken?: string[] | null
+          last_active_at?: string | null
           linkedin_profile?: string | null
           location?: string | null
+          minimum_booking_hours?: number | null
           name?: string
           portfolio_url?: string | null
           rating?: number | null
+          response_time_hours?: number | null
           skills?: string[] | null
           specialization?: string | null
           status?: string | null

@@ -18,6 +18,8 @@ import SearchResults from "./pages/SearchResults";
 import TrainerSearch from "./pages/TrainerSearch";
 import TrainingMarketplace from "./pages/TrainingMarketplace";
 import TechnologyPage from "./pages/TechnologyPage";
+import Services from "./pages/Services";
+import BookService from "./pages/BookService";
 import FeedbackForm from "./pages/FeedbackForm";
 import FeedbackSuccess from "./pages/FeedbackSuccess";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -59,6 +61,9 @@ const App = () => (
                   <Route path="/search" element={<SearchResults />} />
                   <Route path="/trainers" element={<TrainerSearch />} />
                   <Route path="/training-marketplace" element={<TrainingMarketplace />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/services/:categorySlug" element={<Services />} />
+                  <Route path="/book/:categorySlug" element={<BookService />} />
                   <Route path="/technology/:slug" element={<TechnologyPage />} />
                   <Route path="/trainer/:id" element={<TrainerProfile />} />
                   {/* Updated feedback route to properly handle base64 encoded tokens */}
