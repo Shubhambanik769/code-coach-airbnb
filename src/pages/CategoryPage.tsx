@@ -1,28 +1,79 @@
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
-import { Star, Clock, Users, CheckCircle, ShoppingCart, Badge } from 'lucide-react';
+import { Star, Clock, Users, CheckCircle, ShoppingCart, Badge, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import Header from '@/components/Header';
+import PackageCustomizer from '@/components/PackageCustomizer';
 
 const CategoryPage = () => {
   const { slug } = useParams();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [cart, setCart] = useState([]);
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [customizingPackage, setCustomizingPackage] = useState(null);
 
   // Convert slug back to readable category name
   const categoryName = slug?.split('-').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ') || 'Training';
 
-  // Sample subcategories based on the selected category
-  const subcategories = [
-    { name: 'Bootcamp Programs', icon: '🚀' },
-    { name: 'Individual Training', icon: '👤' },
-    { name: 'Corporate Training', icon: '🏢' },
-    { name: 'Weekend Batches', icon: '📅' },
-    { name: 'Online Sessions', icon: '💻' },
-    { name: 'Certification Prep', icon: '🎓' }
-  ];
+  // Sample course fields based on the selected category
+  const getCourseFields = (category) => {
+    const fieldMap = {
+      'Web Development': [
+        { name: 'Full Stack Development', icon: '💻' },
+        { name: 'React & Angular', icon: '⚛️' },
+        { name: 'Node.js & Express', icon: '🟢' },
+        { name: 'Database Design', icon: '🗄️' },
+        { name: 'DevOps & Deployment', icon: '🚀' },
+        { name: 'API Development', icon: '🔌' }
+      ],
+      'Data Science': [
+        { name: 'Python for Data Science', icon: '🐍' },
+        { name: 'Machine Learning', icon: '🤖' },
+        { name: 'Data Visualization', icon: '📊' },
+        { name: 'Deep Learning', icon: '🧠' },
+        { name: 'Statistical Analysis', icon: '📈' },
+        { name: 'Big Data Analytics', icon: '💾' }
+      ],
+      'Cybersecurity': [
+        { name: 'Ethical Hacking', icon: '🔒' },
+        { name: 'Network Security', icon: '🌐' },
+        { name: 'Cloud Security', icon: '☁️' },
+        { name: 'Penetration Testing', icon: '🔍' },
+        { name: 'Security Operations', icon: '🛡️' },
+        { name: 'Incident Response', icon: '🚨' }
+      ],
+      'Cloud Computing': [
+        { name: 'AWS Fundamentals', icon: '☁️' },
+        { name: 'Azure Services', icon: '🔵' },
+        { name: 'Google Cloud Platform', icon: '🟠' },
+        { name: 'Kubernetes & Docker', icon: '🐳' },
+        { name: 'Serverless Computing', icon: '⚡' },
+        { name: 'Cloud Architecture', icon: '🏗️' }
+      ],
+      'Finance': [
+        { name: 'Financial Modeling', icon: '📊' },
+        { name: 'Investment Analysis', icon: '💰' },
+        { name: 'Risk Management', icon: '⚖️' },
+        { name: 'Corporate Finance', icon: '🏢' },
+        { name: 'Financial Planning', icon: '📈' },
+        { name: 'Blockchain Finance', icon: '⛓️' }
+      ]
+    };
+    
+    return fieldMap[category] || [
+      { name: 'Foundation Course', icon: '📚' },
+      { name: 'Advanced Topics', icon: '🎓' },
+      { name: 'Practical Projects', icon: '🔨' },
+      { name: 'Industry Certification', icon: '🏆' },
+      { name: 'Career Guidance', icon: '🎯' },
+      { name: 'Mock Interviews', icon: '💼' }
+    ];
+  };
+
+  const subcategories = getCourseFields(categoryName);
 
   // Sample training packages
   const packages = [
@@ -65,19 +116,29 @@ const CategoryPage = () => {
     setCart([...cart, pkg]);
   };
 
+  const handleCustomizePackage = (pkg) => {
+    setCustomizingPackage(pkg);
+    setShowCustomizer(true);
+  };
+
+  const handleAddCustomizedToCart = (customizedPackage) => {
+    setCart([...cart, customizedPackage]);
+  };
+
   const getTotalSavings = () => {
     return cart.reduce((total, item) => total + item.savings, 0);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Sidebar - Categories */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-4">Select a service</h3>
+              <h3 className="text-lg font-semibold mb-4">Select a Course</h3>
               <div className="space-y-3">
                 {subcategories.map((subcat, index) => (
                   <div 
@@ -162,7 +223,12 @@ const CategoryPage = () => {
                       )}
                     </div>
 
-                    <Button variant="outline" className="w-full mt-4">
+                    <Button 
+                      variant="outline" 
+                      className="w-full mt-4"
+                      onClick={() => handleCustomizePackage(pkg)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
                       Customize your package
                     </Button>
                   </CardContent>
@@ -238,6 +304,14 @@ const CategoryPage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Package Customizer Modal */}
+      <PackageCustomizer
+        isOpen={showCustomizer}
+        onClose={() => setShowCustomizer(false)}
+        packageData={customizingPackage}
+        onAddToCart={handleAddCustomizedToCart}
+      />
     </div>
   );
 };

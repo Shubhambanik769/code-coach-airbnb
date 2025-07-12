@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { BarChart3, Users, GraduationCap, Calendar, TrendingUp, Settings, Star, Briefcase, FileText, DollarSign } from 'lucide-react';
+import { BarChart3, Users, GraduationCap, Calendar, TrendingUp, Settings, Star, Briefcase, FileText, DollarSign, Layers, Package } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 import EnhancedBookingOverview from '@/components/admin/EnhancedBookingOverview';
 import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
@@ -12,6 +12,8 @@ import SystemSettings from '@/components/admin/SystemSettings';
 import SuccessStoryManagement from '@/components/admin/SuccessStoryManagement';
 import AdminTrainingRequests from '@/components/admin/AdminTrainingRequests';
 import PayoutManagement from '@/components/admin/PayoutManagement';
+import CategoryManagement from '@/components/admin/CategoryManagement';
+import PackageManagement from '@/components/admin/PackageManagement';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminDashboard = () => {
@@ -32,6 +34,10 @@ const AdminDashboard = () => {
         return <AdminTrainingRequests />;
       case 'payouts':
         return <PayoutManagement />;
+      case 'categories':
+        return <CategoryManagement />;
+      case 'packages':
+        return <PackageManagement />;
       case 'analytics':
         return <Analytics />;
       case 'stories':
@@ -65,6 +71,8 @@ const AdminDashboard = () => {
               { id: 'bookings', label: 'Bookings', icon: Calendar },
               { id: 'training-requests', label: 'Training Requests', icon: FileText },
               { id: 'payouts', label: 'Payouts', icon: DollarSign },
+              { id: 'categories', label: 'Categories', icon: Layers },
+              { id: 'packages', label: 'Packages', icon: Package },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp },
               { id: 'stories', label: 'Success Stories', icon: Star },
               { id: 'jobs', label: 'Jobs', icon: Briefcase },
