@@ -112,7 +112,7 @@ const FeaturedTrainers = () => {
 
   if (isLoading) {
     return (
-      <section className="py-16 lg:py-24 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+      <section className="py-16 lg:py-24 bg-gradient-to-br from-gray-50 via-white to-gray-100/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
@@ -139,7 +139,7 @@ const FeaturedTrainers = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Meet Our <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Elite Trainers</span>
+            Meet Our <span className="bg-gradient-to-r from-gray-800 via-black to-gray-700 bg-clip-text text-transparent">Elite Trainers</span>
           </h2>
           <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
             Learn from industry experts with the highest ratings and proven expertise
@@ -167,7 +167,7 @@ const FeaturedTrainers = () => {
               >
                 <CardContent className="p-0 relative">
                   {/* Elegant gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-blue-50/30 pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-gray-50/30 pointer-events-none"></div>
                   
                   {/* Header Section */}
                   <div className="relative p-6 pb-4">
@@ -193,11 +193,11 @@ const FeaturedTrainers = () => {
                         </div>
                         
                         <div className="flex-1">
-                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-1">
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-gray-700 transition-colors mb-1">
                             {displayName}
                           </h3>
                           <p className="text-sm text-slate-600 mb-2">{trainer.title}</p>
-                          <p className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          <p className="text-sm font-semibold bg-gradient-to-r from-gray-700 to-black bg-clip-text text-transparent">
                             {trainer.specialization}
                           </p>
                         </div>
@@ -253,9 +253,9 @@ const FeaturedTrainers = () => {
                         <div className="font-bold text-slate-900 text-sm">{totalReviews}</div>
                         <div className="text-xs text-slate-600">Reviews</div>
                       </div>
-                      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100">
-                        <div className="font-bold text-blue-700 text-sm">₹{trainer.hourly_rate || 0}</div>
-                        <div className="text-xs text-blue-600">per hour</div>
+                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200">
+                        <div className="font-bold text-gray-800 text-sm">₹{trainer.hourly_rate || 0}</div>
+                        <div className="text-xs text-gray-600">per hour</div>
                       </div>
                     </div>
                   </div>
@@ -264,7 +264,7 @@ const FeaturedTrainers = () => {
                   <div className="px-6 pb-6">
                     <Button 
                       onClick={() => handleViewProfile(trainer.id)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-[1.02]"
+                      className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-[1.02] border border-gray-200 hover:border-gray-300"
                     >
                       {user ? 'View Profile' : 'Login to View Profile'}
                     </Button>
@@ -280,7 +280,7 @@ const FeaturedTrainers = () => {
             onClick={handleViewAllTrainers}
             size="lg" 
             variant="outline" 
-            className="px-8 py-3 font-semibold border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
+            className="px-8 py-3 font-semibold border-2 border-gray-300 text-gray-800 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
           >
             View All Trainers
           </Button>
