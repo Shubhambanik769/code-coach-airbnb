@@ -1,22 +1,170 @@
-import { useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Star, Clock, Users, CheckCircle, ShoppingCart, Badge, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Header from '@/components/Header';
 import PackageCustomizer from '@/components/PackageCustomizer';
+import { useCart } from '@/contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const CategoryPage = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [cart, setCart] = useState([]);
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [customizingPackage, setCustomizingPackage] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToCart, getTotalItems, getTotalPrice, getTotalSavings } = useCart();
 
   // Convert slug back to readable category name
   const categoryName = slug?.split('-').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ') || 'Training';
+
+  // Sample training packages
+  const packages = [
+    {
+      id: 1,
+      title: `Complete ${categoryName} Bootcamp`,
+      rating: 4.85,
+      reviews: 3900,
+      originalPrice: 15000,
+      discountedPrice: 12000,
+      duration: '8 weeks',
+      includes: [
+        'Live interactive sessions',
+        'Hands-on projects',
+        'Industry certification',
+        'Job placement assistance'
+      ],
+      excludes: ['Hardware/Software licenses', 'Personal mentoring'],
+      savings: 3000
+    },
+    {
+      id: 2,
+      title: `${categoryName} Fundamentals`,
+      rating: 4.72,
+      reviews: 2100,
+      originalPrice: 8000,
+      discountedPrice: 6500,
+      duration: '4 weeks',
+      includes: [
+        'Foundation concepts',
+        'Practice exercises',
+        'Course completion certificate'
+      ],
+      excludes: ['Advanced modules', 'Job placement'],
+      savings: 1500
+    }
+  ];
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (!slug) return;
+      
+      setLoading(true);
+      try {
+        const { data: categories, error } = await supabase
+          .from('service_categories')
+          .select('*')
+          .eq('slug', slug)
+          .is_active(true);
+
+        if (error) {
+          console.error('Error fetching category:', error);
+          return;
+        }
+
+        if (categories && categories.length > 0) {
+          // For now, we'll use sample courses
+          // In a real implementation, you'd fetch courses related to this category
+          setCourses(getSampleCoursesForCategory(slug));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, [slug]);
+
+  const getSampleCoursesForCategory = (categorySlug) => {
+    const coursesByCategory = {
+      'technology-it-skills': [
+        'Cloud Computing', 'Data Structures & Algorithms', 'Cybersecurity',
+        'Web Development', 'Mobile App Development', 'DevOps & CI/CD',
+        'Machine Learning', 'Blockchain Development'
+      ],
+      'business-entrepreneurship': [
+        'Financial Planning', 'Digital Marketing', 'Project Management',
+        'Leadership Skills', 'Business Analytics', 'Startup Management',
+        'Investment & Trading', 'Operations Management'
+      ],
+      'creative-design': [
+        'UI/UX Design', 'Graphic Design', 'Video Editing',
+        'Photography', 'Motion Graphics', 'Brand Design',
+        'Web Design', 'Product Design'
+      ],
+      'health-wellness': [
+        'Nutrition & Diet', 'Fitness Training', 'Mental Health',
+        'Yoga & Meditation', 'Sports Training', 'Healthcare Management',
+        'Alternative Medicine', 'Personal Development'
+      ],
+      'languages-communication': [
+        'English Speaking', 'Public Speaking', 'Business Writing',
+        'Foreign Languages', 'Presentation Skills', 'Communication Skills',
+        'Creative Writing', 'Interview Skills'
+      ],
+      'professional-skills': [
+        'Excel Mastery', 'Data Analysis', 'Time Management',
+        'Career Development', 'Soft Skills', 'Sales Training',
+        'Customer Service', 'Team Management'
+      ]
+    };
+    
+    return coursesByCategory[categorySlug] || [];
+  };
+
+  const handleAddToCart = (pkg) => {
+    const cartItem = {
+      id: `${Date.now()}-${pkg.id}`,
+      title: pkg.title,
+      originalPrice: pkg.originalPrice,
+      discountedPrice: pkg.discountedPrice,
+      savings: pkg.savings,
+      duration: pkg.duration,
+      includes: pkg.includes,
+      excludes: pkg.excludes
+    };
+    
+    addToCart(cartItem);
+  };
+
+  const handleCustomizePackage = (pkg) => {
+    setCustomizingPackage(pkg);
+    setShowCustomizer(true);
+  };
+
+  const handleAddCustomizedToCart = (customizedPackage) => {
+    const cartItem = {
+      id: `${Date.now()}-${customizedPackage.id}`,
+      title: customizedPackage.title,
+      originalPrice: customizedPackage.originalPrice || customizedPackage.basePrice,
+      discountedPrice: customizedPackage.discountedPrice,
+      finalPrice: customizedPackage.finalPrice,
+      savings: customizedPackage.savings,
+      duration: customizedPackage.duration,
+      includes: customizedPackage.includes,
+      excludes: customizedPackage.excludes,
+      customization: customizedPackage.customization
+    };
+    
+    addToCart(cartItem);
+  };
 
   // Mock data that matches admin category management structure
   const categoriesData = [
@@ -126,63 +274,6 @@ const CategoryPage = () => {
 
   // Find current category and get its courses
   const currentCategory = categoriesData.find(cat => cat.slug === slug);
-  const courses = currentCategory?.courses || [];
-
-  
-
-  // Sample training packages
-  const packages = [
-    {
-      id: 1,
-      title: `Complete ${categoryName} Bootcamp`,
-      rating: 4.85,
-      reviews: 3900,
-      originalPrice: 15000,
-      discountedPrice: 12000,
-      duration: '8 weeks',
-      includes: [
-        'Live interactive sessions',
-        'Hands-on projects',
-        'Industry certification',
-        'Job placement assistance'
-      ],
-      excludes: ['Hardware/Software licenses', 'Personal mentoring'],
-      savings: 3000
-    },
-    {
-      id: 2,
-      title: `${categoryName} Fundamentals`,
-      rating: 4.72,
-      reviews: 2100,
-      originalPrice: 8000,
-      discountedPrice: 6500,
-      duration: '4 weeks',
-      includes: [
-        'Foundation concepts',
-        'Practice exercises',
-        'Course completion certificate'
-      ],
-      excludes: ['Advanced modules', 'Job placement'],
-      savings: 1500
-    }
-  ];
-
-  const addToCart = (pkg) => {
-    setCart([...cart, pkg]);
-  };
-
-  const handleCustomizePackage = (pkg) => {
-    setCustomizingPackage(pkg);
-    setShowCustomizer(true);
-  };
-
-  const handleAddCustomizedToCart = (customizedPackage) => {
-    setCart([...cart, customizedPackage]);
-  };
-
-  const getTotalSavings = () => {
-    return cart.reduce((total, item) => total + item.savings, 0);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -190,21 +281,29 @@ const CategoryPage = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Left Sidebar - Categories */}
+          {/* Left Sidebar - Courses */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-semibold mb-4">Select Course</h3>
-              <div className="space-y-3">
-                {courses.map((course, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center p-3 rounded-lg border hover:border-primary cursor-pointer transition-colors"
-                  >
-                    <span className="text-2xl mr-3">{currentCategory?.icon || '📚'}</span>
-                    <span className="text-sm font-medium">{course}</span>
-                  </div>
-                ))}
-              </div>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {courses.map((course, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center p-3 rounded-lg border hover:border-primary cursor-pointer transition-colors"
+                    >
+                      <span className="text-2xl mr-3">💻</span>
+                      <span className="text-sm font-medium">{course}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -214,7 +313,7 @@ const CategoryPage = () => {
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{categoryName} Packages</h1>
               <p className="text-gray-600">Choose the perfect training program for your goals</p>
             </div>
-
+            
             <div className="space-y-6">
               {packages.map((pkg) => (
                 <Card key={pkg.id} className="bg-white">
@@ -243,12 +342,6 @@ const CategoryPage = () => {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        onClick={() => addToCart(pkg)}
-                        className="ml-4"
-                      >
-                        Add
-                      </Button>
                     </div>
 
                     <div className="space-y-3">
@@ -278,14 +371,21 @@ const CategoryPage = () => {
                       )}
                     </div>
 
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4"
-                      onClick={() => handleCustomizePackage(pkg)}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Customize your package
-                    </Button>
+                    <div className="flex gap-2 mt-4">
+                      <Button 
+                        onClick={() => handleAddToCart(pkg)}
+                        className="flex-1"
+                      >
+                        Add to Cart
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleCustomizePackage(pkg)}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Customize
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -297,22 +397,16 @@ const CategoryPage = () => {
             <div className="bg-white rounded-lg p-6 shadow-sm sticky top-8">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                Cart
+                Cart ({getTotalItems()})
               </h3>
               
-              {cart.length === 0 ? (
+              {getTotalItems() === 0 ? (
                 <p className="text-gray-500 text-sm">No items in cart</p>
               ) : (
                 <div className="space-y-4">
-                  {cart.map((item, index) => (
-                    <div key={index} className="border-b pb-3">
-                      <h4 className="font-medium text-sm">{item.title}</h4>
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-gray-500">1 program</span>
-                        <span className="font-medium">₹{item.discountedPrice.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))}
+                  <div className="text-sm text-gray-600">
+                    {getTotalItems()} item{getTotalItems() > 1 ? 's' : ''} added
+                  </div>
                   
                   {getTotalSavings() > 0 && (
                     <div className="bg-green-50 p-3 rounded-lg">
@@ -323,8 +417,11 @@ const CategoryPage = () => {
                     </div>
                   )}
                   
-                  <Button className="w-full">
-                    ₹{cart.reduce((total, item) => total + item.discountedPrice, 0).toLocaleString()} View Cart
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate('/cart')}
+                  >
+                    ₹{getTotalPrice().toLocaleString()} View Cart
                   </Button>
                   
                   <div className="bg-green-50 p-3 rounded-lg">
