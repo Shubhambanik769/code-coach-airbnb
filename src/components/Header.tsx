@@ -1,8 +1,8 @@
 
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,14 +15,27 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Menu, X, User, LogOut, Settings, BarChart3, FileText, Briefcase } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, FileText, Briefcase, Search, MapPin, Calendar, ShoppingCart } from 'lucide-react';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [location, setLocation] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const { user, userRole, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const cities = [
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 
+    'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur'
+  ];
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/services?search=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(location)}`);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -80,36 +93,45 @@ const Header = () => {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/trainers" 
-              className="text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              Find Trainers
-            </Link>
-            <Link 
-              to="/training-marketplace" 
-              className="text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              Training Marketplace
-            </Link>
-            <Link 
-              to="/about" 
-              className="text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              About
-            </Link>
-            <Link 
-              to="/careers" 
-              className="text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              Careers
-            </Link>
-          </nav>
+          {/* Location and Search Bar */}
+          <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8 space-x-4">
+            {/* Location Selector */}
+            <div className="flex items-center min-w-0">
+              <MapPin className="h-4 w-4 text-gray-500 mr-2" />
+              <Select value={location} onValueChange={setLocation}>
+                <SelectTrigger className="w-48 border-none shadow-none bg-transparent focus:ring-0">
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                  {cities.map((city) => (
+                    <SelectItem key={city} value={city} className="hover:bg-gray-50">
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* User Menu */}
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <div className="relative flex items-center">
+                <Search className="h-4 w-4 text-gray-400 absolute left-3 z-10" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for training services"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side Icons */}
           <div className="hidden md:flex items-center space-x-4">
+            <Calendar className="h-5 w-5 text-gray-600 cursor-pointer hover:text-blue-600" />
+            <ShoppingCart className="h-5 w-5 text-gray-600 cursor-pointer hover:text-blue-600" />
             {user ? (
               <div className="flex items-center space-x-3">
                 <NotificationBell />
