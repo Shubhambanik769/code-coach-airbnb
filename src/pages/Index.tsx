@@ -1,5 +1,6 @@
 import HeroSection from '@/components/HeroSection';
 import CategoryCards from '@/components/CategoryCards';
+import ServiceSlider from '@/components/ServiceSlider';
 import HowItWorks from '@/components/HowItWorks';
 import FeaturedTrainers from '@/components/FeaturedTrainers';
 import TrustSection from '@/components/TrustSection';
@@ -14,6 +15,7 @@ const Index = () => {
   return <div className="min-h-screen bg-background">
       <Header />
       <HeroSection />
+      <ServiceSlider />
       <HowItWorks />
       
       {/* Training Marketplace Section */}
