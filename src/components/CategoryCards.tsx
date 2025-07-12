@@ -1,7 +1,10 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Code, Smartphone, BarChart3, Cloud, Settings, Shield } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+
 interface ServiceCategory {
   id: string;
   name: string;
@@ -10,6 +13,7 @@ interface ServiceCategory {
   description: string;
   base_price: number;
 }
+
 const iconMap = {
   Code,
   Smartphone,
@@ -18,26 +22,51 @@ const iconMap = {
   Settings,
   Shield
 };
+
 const CategoryCards = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
+
   useEffect(() => {
     const fetchCategories = async () => {
-      const {
-        data
-      } = await supabase.from('service_categories').select('*').eq('is_active', true).order('display_order');
+      const { data } = await supabase
+        .from('service_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      
       if (data) setCategories(data);
     };
+
     fetchCategories();
   }, []);
+
   const handleCategoryClick = (slug: string) => {
     navigate(`/services/${slug}`);
   };
-  return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {categories.map(category => {
-      const IconComponent = iconMap[category.icon_name as keyof typeof iconMap] || Code;
-      return;
-    })}
-    </div>;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {categories.map((category) => {
+        const IconComponent = iconMap[category.icon_name as keyof typeof iconMap] || Code;
+        
+        return (
+          <Card 
+            key={category.id}
+            className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
+            onClick={() => handleCategoryClick(category.slug)}
+          >
+            <CardContent className="p-6 text-center">
+              <IconComponent className="w-12 h-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-2">{category.name}</h3>
+              <p className="text-muted-foreground text-sm mb-4">{category.description}</p>
+              <p className="text-primary font-medium">Starting from ${category.base_price}</p>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
 };
+
 export default CategoryCards;
