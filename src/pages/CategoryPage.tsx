@@ -18,52 +18,72 @@ const CategoryPage = () => {
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ') || 'Training';
 
-  // Sample course fields based on the selected category
-  const getCourseFields = (category) => {
-    const fieldMap = {
-      'Web Development': [
-        { name: 'Full Stack Development', icon: '💻' },
-        { name: 'React & Angular', icon: '⚛️' },
-        { name: 'Node.js & Express', icon: '🟢' },
-        { name: 'Database Design', icon: '🗄️' },
-        { name: 'DevOps & Deployment', icon: '🚀' },
-        { name: 'API Development', icon: '🔌' }
-      ],
-      'Data Science': [
-        { name: 'Python for Data Science', icon: '🐍' },
+  // Domain-based course fields mapping
+  const getDomainCourses = (category) => {
+    const domainMap = {
+      'Technology IT Skills': [
+        { name: 'Cloud Computing', icon: '☁️' },
+        { name: 'Data Structures & Algorithms', icon: '🔧' },
+        { name: 'Cybersecurity', icon: '🔒' },
+        { name: 'Web Development', icon: '💻' },
+        { name: 'Mobile App Development', icon: '📱' },
+        { name: 'DevOps & CI/CD', icon: '🚀' },
         { name: 'Machine Learning', icon: '🤖' },
-        { name: 'Data Visualization', icon: '📊' },
-        { name: 'Deep Learning', icon: '🧠' },
-        { name: 'Statistical Analysis', icon: '📈' },
-        { name: 'Big Data Analytics', icon: '💾' }
+        { name: 'Blockchain Development', icon: '⛓️' }
       ],
-      'Cybersecurity': [
-        { name: 'Ethical Hacking', icon: '🔒' },
-        { name: 'Network Security', icon: '🌐' },
-        { name: 'Cloud Security', icon: '☁️' },
-        { name: 'Penetration Testing', icon: '🔍' },
-        { name: 'Security Operations', icon: '🛡️' },
-        { name: 'Incident Response', icon: '🚨' }
+      'Business Entrepreneurship': [
+        { name: 'Financial Planning', icon: '📊' },
+        { name: 'Digital Marketing', icon: '📈' },
+        { name: 'Project Management', icon: '📋' },
+        { name: 'Leadership Skills', icon: '👥' },
+        { name: 'Business Analytics', icon: '📊' },
+        { name: 'Startup Management', icon: '🚀' },
+        { name: 'Investment & Trading', icon: '💰' },
+        { name: 'Operations Management', icon: '⚙️' }
       ],
-      'Cloud Computing': [
-        { name: 'AWS Fundamentals', icon: '☁️' },
-        { name: 'Azure Services', icon: '🔵' },
-        { name: 'Google Cloud Platform', icon: '🟠' },
-        { name: 'Kubernetes & Docker', icon: '🐳' },
-        { name: 'Serverless Computing', icon: '⚡' },
-        { name: 'Cloud Architecture', icon: '🏗️' }
+      'Creative Design': [
+        { name: 'UI/UX Design', icon: '🎨' },
+        { name: 'Graphic Design', icon: '🖼️' },
+        { name: 'Video Editing', icon: '🎬' },
+        { name: 'Photography', icon: '📸' },
+        { name: 'Motion Graphics', icon: '🎞️' },
+        { name: 'Brand Design', icon: '🏷️' },
+        { name: 'Web Design', icon: '🌐' },
+        { name: 'Product Design', icon: '🛍️' }
       ],
-      'Finance': [
-        { name: 'Financial Modeling', icon: '📊' },
-        { name: 'Investment Analysis', icon: '💰' },
-        { name: 'Risk Management', icon: '⚖️' },
-        { name: 'Corporate Finance', icon: '🏢' },
-        { name: 'Financial Planning', icon: '📈' },
-        { name: 'Blockchain Finance', icon: '⛓️' }
+      'Health Wellness': [
+        { name: 'Nutrition & Diet', icon: '🥗' },
+        { name: 'Fitness Training', icon: '💪' },
+        { name: 'Mental Health', icon: '🧠' },
+        { name: 'Yoga & Meditation', icon: '🧘' },
+        { name: 'Sports Training', icon: '⚽' },
+        { name: 'Healthcare Management', icon: '🏥' },
+        { name: 'Alternative Medicine', icon: '🌿' },
+        { name: 'Personal Development', icon: '✨' }
+      ],
+      'Languages Communication': [
+        { name: 'English Speaking', icon: '🗣️' },
+        { name: 'Public Speaking', icon: '🎤' },
+        { name: 'Business Writing', icon: '✍️' },
+        { name: 'Foreign Languages', icon: '🌍' },
+        { name: 'Presentation Skills', icon: '📽️' },
+        { name: 'Communication Skills', icon: '💬' },
+        { name: 'Creative Writing', icon: '📝' },
+        { name: 'Interview Skills', icon: '🤝' }
+      ],
+      'Professional Skills': [
+        { name: 'Excel Mastery', icon: '📊' },
+        { name: 'Data Analysis', icon: '📈' },
+        { name: 'Time Management', icon: '⏰' },
+        { name: 'Career Development', icon: '🎯' },
+        { name: 'Soft Skills', icon: '🤝' },
+        { name: 'Sales Training', icon: '💼' },
+        { name: 'Customer Service', icon: '🛎️' },
+        { name: 'Team Management', icon: '👥' }
       ]
     };
     
-    return fieldMap[category] || [
+    return domainMap[category] || [
       { name: 'Foundation Course', icon: '📚' },
       { name: 'Advanced Topics', icon: '🎓' },
       { name: 'Practical Projects', icon: '🔨' },
@@ -73,7 +93,7 @@ const CategoryPage = () => {
     ];
   };
 
-  const subcategories = getCourseFields(categoryName);
+  const subcategories = getDomainCourses(categoryName);
 
   // Sample training packages
   const packages = [
@@ -138,7 +158,7 @@ const CategoryPage = () => {
           {/* Left Sidebar - Categories */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-4">Select a Course</h3>
+              <h3 className="text-lg font-semibold mb-4">Select Course</h3>
               <div className="space-y-3">
                 {subcategories.map((subcat, index) => (
                   <div 

@@ -13,30 +13,110 @@ const CategoryManagement = () => {
   const [categories, setCategories] = useState([
     {
       id: 1,
-      name: 'Web Development',
-      slug: 'web-development',
-      description: 'Learn modern web technologies',
+      name: 'Technology & IT Skills',
+      slug: 'technology-it-skills',
+      description: 'Learn modern technology and IT skills',
       icon: '💻',
       isActive: true,
       subcategories: [
-        'Full Stack Development',
-        'React & Angular',
-        'Node.js & Express',
-        'Database Design'
+        'Cloud Computing',
+        'Data Structures & Algorithms',
+        'Cybersecurity',
+        'Web Development',
+        'Mobile App Development',
+        'DevOps & CI/CD',
+        'Machine Learning',
+        'Blockchain Development'
       ]
     },
     {
       id: 2,
-      name: 'Data Science',
-      slug: 'data-science',
-      description: 'Master data analysis and machine learning',
-      icon: '📊',
+      name: 'Business & Entrepreneurship',
+      slug: 'business-entrepreneurship',
+      description: 'Master business and entrepreneurial skills',
+      icon: '📈',
       isActive: true,
       subcategories: [
-        'Python for Data Science',
-        'Machine Learning',
-        'Data Visualization',
-        'Statistical Analysis'
+        'Financial Planning',
+        'Digital Marketing',
+        'Project Management',
+        'Leadership Skills',
+        'Business Analytics',
+        'Startup Management',
+        'Investment & Trading',
+        'Operations Management'
+      ]
+    },
+    {
+      id: 3,
+      name: 'Creative & Design',
+      slug: 'creative-design',
+      description: 'Develop creative and design skills',
+      icon: '🎨',
+      isActive: true,
+      subcategories: [
+        'UI/UX Design',
+        'Graphic Design',
+        'Video Editing',
+        'Photography',
+        'Motion Graphics',
+        'Brand Design',
+        'Web Design',
+        'Product Design'
+      ]
+    },
+    {
+      id: 4,
+      name: 'Health & Wellness',
+      slug: 'health-wellness',
+      description: 'Focus on health and wellness training',
+      icon: '🏥',
+      isActive: true,
+      subcategories: [
+        'Nutrition & Diet',
+        'Fitness Training',
+        'Mental Health',
+        'Yoga & Meditation',
+        'Sports Training',
+        'Healthcare Management',
+        'Alternative Medicine',
+        'Personal Development'
+      ]
+    },
+    {
+      id: 5,
+      name: 'Languages & Communication',
+      slug: 'languages-communication',
+      description: 'Improve language and communication skills',
+      icon: '🗣️',
+      isActive: true,
+      subcategories: [
+        'English Speaking',
+        'Public Speaking',
+        'Business Writing',
+        'Foreign Languages',
+        'Presentation Skills',
+        'Communication Skills',
+        'Creative Writing',
+        'Interview Skills'
+      ]
+    },
+    {
+      id: 6,
+      name: 'Professional Skills',
+      slug: 'professional-skills',
+      description: 'Enhance professional and soft skills',
+      icon: '💼',
+      isActive: true,
+      subcategories: [
+        'Excel Mastery',
+        'Data Analysis',
+        'Time Management',
+        'Career Development',
+        'Soft Skills',
+        'Sales Training',
+        'Customer Service',
+        'Team Management'
       ]
     }
   ]);
