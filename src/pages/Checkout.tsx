@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MapPin, Clock, CreditCard, Phone, Edit3, Plus, Check, ArrowLeft } from 'lucide-react';
+import { MapPin, Clock, CreditCard, Phone, Edit3, Plus, Check, ArrowLeft, Mail, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,11 +17,16 @@ const Checkout = () => {
   const { packageData } = location.state || {};
 
   const [bookingDetails, setBookingDetails] = useState({
-    contactNumber: '+91 9954194880',
-    address: 'Home - 306, Block 4, Kendriya Vihar 2, Karo...',
+    contactNumber: '',
+    hrEmail: '',
+    address: '',
+    companyName: '',
     slot: '',
-    paymentMethod: 'invoice'
+    paymentMethod: 'paypal'
   });
+
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
 
   const [selectedAddons, setSelectedAddons] = useState([]);
 
@@ -130,25 +135,93 @@ const Checkout = () => {
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Phone className="w-5 h-5 text-muted-foreground" />
-                  <h3 className="font-semibold">Send booking details to</h3>
+                  <h3 className="font-semibold">Contact Information</h3>
                 </div>
-                <div className="text-lg font-medium">{bookingDetails.contactNumber}</div>
+                
+                <div className="space-y-4">
+                  {/* HR Email - Required */}
+                  <div>
+                    <Label htmlFor="hrEmail" className="text-sm font-medium">
+                      HR Email ID <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="hrEmail"
+                        type="email"
+                        placeholder="hr@company.com"
+                        value={bookingDetails.hrEmail}
+                        onChange={(e) => setBookingDetails(prev => ({ ...prev, hrEmail: e.target.value }))}
+                        required
+                        className="flex-1"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Training details will be sent to this HR contact
+                    </p>
+                  </div>
+
+                  {/* Company Name */}
+                  <div>
+                    <Label htmlFor="companyName" className="text-sm font-medium">
+                      Company Name <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Building className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="companyName"
+                        placeholder="Your Company Name"
+                        value={bookingDetails.companyName}
+                        onChange={(e) => setBookingDetails(prev => ({ ...prev, companyName: e.target.value }))}
+                        required
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Contact Number */}
+                  <div>
+                    <Label htmlFor="contactNumber" className="text-sm font-medium">
+                      Contact Number <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="contactNumber"
+                      type="tel"
+                      placeholder="+91 9876543210"
+                      value={bookingDetails.contactNumber}
+                      onChange={(e) => setBookingDetails(prev => ({ ...prev, contactNumber: e.target.value }))}
+                      required
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             {/* Address */}
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-muted-foreground" />
-                    <h3 className="font-semibold">Address</h3>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
+                <div className="flex items-center gap-3 mb-4">
+                  <MapPin className="w-5 h-5 text-muted-foreground" />
+                  <h3 className="font-semibold">Training Location/Address</h3>
                 </div>
-                <div className="text-muted-foreground">{bookingDetails.address}</div>
+                
+                <div>
+                  <Label htmlFor="address" className="text-sm font-medium">
+                    Corporate Address <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="address"
+                    placeholder="Enter your corporate office address"
+                    value={bookingDetails.address}
+                    onChange={(e) => setBookingDetails(prev => ({ ...prev, address: e.target.value }))}
+                    required
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Training will be conducted at this address or via online session
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -172,22 +245,30 @@ const Checkout = () => {
                   <CreditCard className="w-5 h-5 text-muted-foreground" />
                   <h3 className="font-semibold">Payment Method</h3>
                 </div>
-                <RadioGroup value={bookingDetails.paymentMethod} onValueChange={(value) => 
-                  setBookingDetails(prev => ({ ...prev, paymentMethod: value }))
-                }>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="invoice" id="invoice" />
-                    <Label htmlFor="invoice">Corporate Invoice (GST Available)</Label>
+                
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-6 bg-blue-600 text-white rounded text-xs flex items-center justify-center font-bold">
+                        PayPal
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">PayPal Payment</p>
+                        <p className="text-xs text-muted-foreground">Secure online payment via PayPal</p>
+                      </div>
+                    </div>
+                    <div className="w-4 h-4 border-2 border-blue-600 rounded-full bg-blue-600 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="online" id="online" />
-                    <Label htmlFor="online">Online Payment</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="upi" id="upi" />
-                    <Label htmlFor="upi">UPI Payment</Label>
-                  </div>
-                </RadioGroup>
+                </div>
+                
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-xs text-blue-700">
+                    <Check className="w-3 h-3 inline mr-1" />
+                    GST invoice available for corporate bookings
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
