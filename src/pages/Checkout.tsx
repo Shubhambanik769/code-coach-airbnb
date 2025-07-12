@@ -26,7 +26,7 @@ const Checkout = () => {
   const [selectedAddons, setSelectedAddons] = useState([]);
 
   // Sample training package data (would come from props/state in real app)
-  const trainingPackage = packageData || {
+  const defaultPackage = {
     title: 'Advanced Excel Training (3 Sessions)',
     trainer: 'John Doe - Excel Expert',
     originalPrice: 1150,
@@ -37,6 +37,13 @@ const Checkout = () => {
       'Mini projects + doubt-solving',
       'Post-training test + certification'
     ]
+  };
+
+  const trainingPackage = {
+    ...defaultPackage,
+    ...packageData,
+    // Ensure inclusions is always an array
+    inclusions: packageData?.inclusions || packageData?.includes || defaultPackage.inclusions
   };
 
   // Add-on services
