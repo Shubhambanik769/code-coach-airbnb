@@ -70,7 +70,7 @@ const CategoryPage = () => {
           .from('service_categories')
           .select('*')
           .eq('slug', slug)
-          .is_active(true);
+          .eq('is_active', true);
 
         if (error) {
           console.error('Error fetching category:', error);
