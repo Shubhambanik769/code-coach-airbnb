@@ -18,82 +18,117 @@ const CategoryPage = () => {
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ') || 'Training';
 
-  // Domain-based course fields mapping
-  const getDomainCourses = (category) => {
-    const domainMap = {
-      'Technology IT Skills': [
-        { name: 'Cloud Computing', icon: '☁️' },
-        { name: 'Data Structures & Algorithms', icon: '🔧' },
-        { name: 'Cybersecurity', icon: '🔒' },
-        { name: 'Web Development', icon: '💻' },
-        { name: 'Mobile App Development', icon: '📱' },
-        { name: 'DevOps & CI/CD', icon: '🚀' },
-        { name: 'Machine Learning', icon: '🤖' },
-        { name: 'Blockchain Development', icon: '⛓️' }
-      ],
-      'Business Entrepreneurship': [
-        { name: 'Financial Planning', icon: '📊' },
-        { name: 'Digital Marketing', icon: '📈' },
-        { name: 'Project Management', icon: '📋' },
-        { name: 'Leadership Skills', icon: '👥' },
-        { name: 'Business Analytics', icon: '📊' },
-        { name: 'Startup Management', icon: '🚀' },
-        { name: 'Investment & Trading', icon: '💰' },
-        { name: 'Operations Management', icon: '⚙️' }
-      ],
-      'Creative Design': [
-        { name: 'UI/UX Design', icon: '🎨' },
-        { name: 'Graphic Design', icon: '🖼️' },
-        { name: 'Video Editing', icon: '🎬' },
-        { name: 'Photography', icon: '📸' },
-        { name: 'Motion Graphics', icon: '🎞️' },
-        { name: 'Brand Design', icon: '🏷️' },
-        { name: 'Web Design', icon: '🌐' },
-        { name: 'Product Design', icon: '🛍️' }
-      ],
-      'Health Wellness': [
-        { name: 'Nutrition & Diet', icon: '🥗' },
-        { name: 'Fitness Training', icon: '💪' },
-        { name: 'Mental Health', icon: '🧠' },
-        { name: 'Yoga & Meditation', icon: '🧘' },
-        { name: 'Sports Training', icon: '⚽' },
-        { name: 'Healthcare Management', icon: '🏥' },
-        { name: 'Alternative Medicine', icon: '🌿' },
-        { name: 'Personal Development', icon: '✨' }
-      ],
-      'Languages Communication': [
-        { name: 'English Speaking', icon: '🗣️' },
-        { name: 'Public Speaking', icon: '🎤' },
-        { name: 'Business Writing', icon: '✍️' },
-        { name: 'Foreign Languages', icon: '🌍' },
-        { name: 'Presentation Skills', icon: '📽️' },
-        { name: 'Communication Skills', icon: '💬' },
-        { name: 'Creative Writing', icon: '📝' },
-        { name: 'Interview Skills', icon: '🤝' }
-      ],
-      'Professional Skills': [
-        { name: 'Excel Mastery', icon: '📊' },
-        { name: 'Data Analysis', icon: '📈' },
-        { name: 'Time Management', icon: '⏰' },
-        { name: 'Career Development', icon: '🎯' },
-        { name: 'Soft Skills', icon: '🤝' },
-        { name: 'Sales Training', icon: '💼' },
-        { name: 'Customer Service', icon: '🛎️' },
-        { name: 'Team Management', icon: '👥' }
+  // Mock data that matches admin category management structure
+  const categoriesData = [
+    {
+      id: 1,
+      name: 'Technology & IT Skills',
+      slug: 'technology-it-skills',
+      description: 'Learn modern technology and IT skills',
+      icon: '💻',
+      courses: [
+        'Cloud Computing',
+        'Data Structures & Algorithms',
+        'Cybersecurity',
+        'Web Development',
+        'Mobile App Development',
+        'DevOps & CI/CD',
+        'Machine Learning',
+        'Blockchain Development'
       ]
-    };
-    
-    return domainMap[category] || [
-      { name: 'Foundation Course', icon: '📚' },
-      { name: 'Advanced Topics', icon: '🎓' },
-      { name: 'Practical Projects', icon: '🔨' },
-      { name: 'Industry Certification', icon: '🏆' },
-      { name: 'Career Guidance', icon: '🎯' },
-      { name: 'Mock Interviews', icon: '💼' }
-    ];
-  };
+    },
+    {
+      id: 2,
+      name: 'Business & Entrepreneurship',
+      slug: 'business-entrepreneurship',
+      description: 'Master business and entrepreneurial skills',
+      icon: '📈',
+      courses: [
+        'Financial Planning',
+        'Digital Marketing',
+        'Project Management',
+        'Leadership Skills',
+        'Business Analytics',
+        'Startup Management',
+        'Investment & Trading',
+        'Operations Management'
+      ]
+    },
+    {
+      id: 3,
+      name: 'Creative & Design',
+      slug: 'creative-design',
+      description: 'Develop creative and design skills',
+      icon: '🎨',
+      courses: [
+        'UI/UX Design',
+        'Graphic Design',
+        'Video Editing',
+        'Photography',
+        'Motion Graphics',
+        'Brand Design',
+        'Web Design',
+        'Product Design'
+      ]
+    },
+    {
+      id: 4,
+      name: 'Health & Wellness',
+      slug: 'health-wellness',
+      description: 'Focus on health and wellness training',
+      icon: '🏥',
+      courses: [
+        'Nutrition & Diet',
+        'Fitness Training',
+        'Mental Health',
+        'Yoga & Meditation',
+        'Sports Training',
+        'Healthcare Management',
+        'Alternative Medicine',
+        'Personal Development'
+      ]
+    },
+    {
+      id: 5,
+      name: 'Languages & Communication',
+      slug: 'languages-communication',
+      description: 'Improve language and communication skills',
+      icon: '🗣️',
+      courses: [
+        'English Speaking',
+        'Public Speaking',
+        'Business Writing',
+        'Foreign Languages',
+        'Presentation Skills',
+        'Communication Skills',
+        'Creative Writing',
+        'Interview Skills'
+      ]
+    },
+    {
+      id: 6,
+      name: 'Professional Skills',
+      slug: 'professional-skills',
+      description: 'Enhance professional and soft skills',
+      icon: '💼',
+      courses: [
+        'Excel Mastery',
+        'Data Analysis',
+        'Time Management',
+        'Career Development',
+        'Soft Skills',
+        'Sales Training',
+        'Customer Service',
+        'Team Management'
+      ]
+    }
+  ];
 
-  const subcategories = getDomainCourses(categoryName);
+  // Find current category and get its courses
+  const currentCategory = categoriesData.find(cat => cat.slug === slug);
+  const courses = currentCategory?.courses || [];
+
+  
 
   // Sample training packages
   const packages = [
@@ -160,13 +195,13 @@ const CategoryPage = () => {
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-semibold mb-4">Select Course</h3>
               <div className="space-y-3">
-                {subcategories.map((subcat, index) => (
+                {courses.map((course, index) => (
                   <div 
                     key={index}
                     className="flex items-center p-3 rounded-lg border hover:border-primary cursor-pointer transition-colors"
                   >
-                    <span className="text-2xl mr-3">{subcat.icon}</span>
-                    <span className="text-sm font-medium">{subcat.name}</span>
+                    <span className="text-2xl mr-3">{currentCategory?.icon || '📚'}</span>
+                    <span className="text-sm font-medium">{course}</span>
                   </div>
                 ))}
               </div>

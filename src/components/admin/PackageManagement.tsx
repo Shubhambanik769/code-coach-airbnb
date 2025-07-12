@@ -17,7 +17,8 @@ const PackageManagement = () => {
     {
       id: 1,
       title: 'Complete Web Development Bootcamp',
-      category: 'Web Development',
+      domain: 'Technology & IT Skills',
+      course: 'Web Development',
       basePrice: 15000,
       discountedPrice: 12000,
       duration: '8 weeks',
@@ -68,7 +69,8 @@ const PackageManagement = () => {
     {
       id: 2,
       title: 'Data Science Fundamentals',
-      category: 'Data Science',
+      domain: 'Technology & IT Skills',
+      course: 'Machine Learning',
       basePrice: 12000,
       discountedPrice: 9500,
       duration: '6 weeks',
@@ -110,7 +112,8 @@ const PackageManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPackage, setNewPackage] = useState({
     title: '',
-    category: '',
+    domain: '',
+    course: '',
     basePrice: 0,
     discountedPrice: 0,
     duration: '',
@@ -119,7 +122,96 @@ const PackageManagement = () => {
     isActive: true
   });
 
-  const categories = ['Web Development', 'Data Science', 'Cybersecurity', 'Cloud Computing', 'Finance'];
+  // Domain → Course hierarchy data matching CategoryManagement
+  const domainsData = [
+    {
+      id: 1,
+      name: 'Technology & IT Skills',
+      courses: [
+        'Cloud Computing',
+        'Data Structures & Algorithms', 
+        'Cybersecurity',
+        'Web Development',
+        'Mobile App Development',
+        'DevOps & CI/CD',
+        'Machine Learning',
+        'Blockchain Development'
+      ]
+    },
+    {
+      id: 2,
+      name: 'Business & Entrepreneurship',
+      courses: [
+        'Financial Planning',
+        'Digital Marketing',
+        'Project Management',
+        'Leadership Skills',
+        'Business Analytics',
+        'Startup Management',
+        'Investment & Trading',
+        'Operations Management'
+      ]
+    },
+    {
+      id: 3,
+      name: 'Creative & Design',
+      courses: [
+        'UI/UX Design',
+        'Graphic Design',
+        'Video Editing',
+        'Photography',
+        'Motion Graphics',
+        'Brand Design',
+        'Web Design',
+        'Product Design'
+      ]
+    },
+    {
+      id: 4,
+      name: 'Health & Wellness',
+      courses: [
+        'Nutrition & Diet',
+        'Fitness Training',
+        'Mental Health',
+        'Yoga & Meditation',
+        'Sports Training',
+        'Healthcare Management',
+        'Alternative Medicine',
+        'Personal Development'
+      ]
+    },
+    {
+      id: 5,
+      name: 'Languages & Communication',
+      courses: [
+        'English Speaking',
+        'Public Speaking',
+        'Business Writing',
+        'Foreign Languages',
+        'Presentation Skills',
+        'Communication Skills',
+        'Creative Writing',
+        'Interview Skills'
+      ]
+    },
+    {
+      id: 6,
+      name: 'Professional Skills',
+      courses: [
+        'Excel Mastery',
+        'Data Analysis',
+        'Time Management',
+        'Career Development',
+        'Soft Skills',
+        'Sales Training',
+        'Customer Service',
+        'Team Management'
+      ]
+    }
+  ];
+
+  const [selectedDomain, setSelectedDomain] = useState('');
+  const [availableCourses, setAvailableCourses] = useState([]);
 
   const handleSavePackage = () => {
     if (editingPackage) {
@@ -142,7 +234,8 @@ const PackageManagement = () => {
     setPackages(prev => [...prev, packageData]);
     setNewPackage({
       title: '',
-      category: '',
+      domain: '',
+      course: '',
       basePrice: 0,
       discountedPrice: 0,
       duration: '',
@@ -150,6 +243,8 @@ const PackageManagement = () => {
       customizationOptions: [],
       isActive: true
     });
+    setSelectedDomain('');
+    setAvailableCourses([]);
     setShowCreateModal(false);
     toast({
       title: "Package Created",
@@ -236,14 +331,39 @@ const PackageManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="package-category">Category</Label>
-                <Select value={newPackage.category} onValueChange={(value) => setNewPackage(prev => ({...prev, category: value}))}>
+                <Label htmlFor="package-domain">Domain</Label>
+                <Select 
+                  value={selectedDomain} 
+                  onValueChange={(value) => {
+                    setSelectedDomain(value);
+                    const domain = domainsData.find(d => d.name === value);
+                    setAvailableCourses(domain?.courses || []);
+                    setNewPackage(prev => ({...prev, domain: value, course: ''}));
+                  }}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder="Select domain" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {domainsData.map(domain => (
+                      <SelectItem key={domain.id} value={domain.name}>{domain.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="package-course">Course</Label>
+                <Select 
+                  value={newPackage.course || ''} 
+                  onValueChange={(value) => setNewPackage(prev => ({...prev, course: value}))}
+                  disabled={!selectedDomain}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCourses.map(course => (
+                      <SelectItem key={course} value={course}>{course}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -292,7 +412,7 @@ const PackageManagement = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-lg">{pkg.title}</CardTitle>
-                  <Badge variant="secondary" className="mt-1">{pkg.category}</Badge>
+                  <Badge variant="secondary" className="mt-1">{pkg.domain} - {pkg.course}</Badge>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -367,17 +487,17 @@ const PackageManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-category">Category</Label>
+                  <Label htmlFor="edit-domain">Domain</Label>
                   <Select 
-                    value={editingPackage.category} 
-                    onValueChange={(value) => setEditingPackage(prev => ({...prev, category: value}))}
+                    value={editingPackage.domain} 
+                    onValueChange={(value) => setEditingPackage(prev => ({...prev, domain: value}))}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      {domainsData.map(domain => (
+                        <SelectItem key={domain.id} value={domain.name}>{domain.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
