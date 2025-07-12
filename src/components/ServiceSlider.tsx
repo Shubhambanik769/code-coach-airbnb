@@ -69,9 +69,9 @@ const services = [
 
 const ServiceSlider = () => {
   return (
-    <section className="py-16 bg-background">
+    <section className="py-8 bg-background">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
             Explore Our Training Services
           </h2>
@@ -84,21 +84,24 @@ const ServiceSlider = () => {
           <CarouselContent className="-ml-4">
             {services.map((service) => (
               <CarouselItem key={service.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                <div className={`${service.bgColor} rounded-xl p-8 h-80 flex flex-col justify-between relative overflow-hidden`}>
+                <div className={`${service.bgColor} rounded-2xl p-6 h-72 flex flex-col justify-between relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border border-white/10`}>
+                  {/* Subtle background gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 rounded-2xl" />
+                  
                   {/* Background pattern */}
-                  <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-                    <div className="text-6xl">{service.icon}</div>
+                  <div className="absolute top-2 right-2 w-20 h-20 opacity-20">
+                    <div className="text-4xl">{service.icon}</div>
                   </div>
                   
                   <div className="relative z-10">
-                    <div className="text-4xl mb-4">{service.icon}</div>
-                    <h3 className={`text-xl font-bold mb-2 ${service.textColor}`}>
+                    <div className="text-3xl mb-3 drop-shadow-sm">{service.icon}</div>
+                    <h3 className={`text-lg font-bold mb-2 ${service.textColor} drop-shadow-sm`}>
                       {service.title}
                     </h3>
-                    <p className={`text-lg font-medium mb-3 ${service.textColor} opacity-90`}>
+                    <p className={`text-base font-semibold mb-2 ${service.textColor} opacity-95 drop-shadow-sm`}>
                       {service.subtitle}
                     </p>
-                    <p className={`text-sm mb-6 ${service.textColor} opacity-80`}>
+                    <p className={`text-sm mb-4 ${service.textColor} opacity-85 leading-relaxed`}>
                       {service.description}
                     </p>
                   </div>
@@ -106,7 +109,7 @@ const ServiceSlider = () => {
                   <Button 
                     variant="secondary" 
                     size="sm"
-                    className="self-start bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm"
+                    className="self-start bg-white/20 hover:bg-white/35 text-white border-white/20 backdrop-blur-md font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     Book now
                   </Button>
@@ -114,8 +117,8 @@ const ServiceSlider = () => {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-4" />
-          <CarouselNext className="right-4" />
+          <CarouselPrevious className="left-4 bg-background/80 border-border hover:bg-background shadow-md" />
+          <CarouselNext className="right-4 bg-background/80 border-border hover:bg-background shadow-md" />
         </Carousel>
       </div>
     </section>
