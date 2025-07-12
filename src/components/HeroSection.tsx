@@ -1,22 +1,15 @@
 
 import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
-  const [location, setLocation] = useState('');
-  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = () => {
-    if (location.trim()) {
-      navigate(`/services?location=${encodeURIComponent(location)}`);
+    if (searchQuery.trim()) {
+      // Handle training search logic here
+      console.log('Searching for:', searchQuery);
     }
   };
-
-  const cities = [
-    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 
-    'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur'
-  ];
 
   const trainingCategories = [
     { name: "Technology & IT Skills", icon: "💻" },
@@ -51,8 +44,7 @@ const HeroSection = () => {
                 {trainingCategories.map((category, index) => (
                   <div
                     key={index}
-                    className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
-                    onClick={() => navigate(`/services?category=${encodeURIComponent(category.name)}`)}
+                    className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
                   >
                     <span className="text-2xl mr-3">{category.icon}</span>
                     <span className="text-sm font-medium text-gray-700">
@@ -63,33 +55,26 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Location selector */}
+            {/* Training Search */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-gray-900 font-semibold mb-4">
-                Where do you need training?
+                Search for Training
               </h3>
               
-              <Select value={location} onValueChange={setLocation}>
-                <SelectTrigger className="w-full h-12 text-gray-600 bg-white">
-                  <SelectValue placeholder="Select your city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map((city) => (
-                    <SelectItem key={city} value={city}>
-                      {city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="What training are you looking for?"
+                className="w-full h-12 px-4 text-gray-600 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              />
               
-              {location && (
-                <button
-                  onClick={handleSearch}
-                  className="w-full mt-4 bg-black hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                >
-                  Continue
-                </button>
-              )}
+              <button
+                onClick={handleSearch}
+                className="w-full mt-4 bg-black hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                Search Training
+              </button>
             </div>
           </div>
 
