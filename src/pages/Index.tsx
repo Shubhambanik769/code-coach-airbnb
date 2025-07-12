@@ -17,7 +17,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <HeroSection />
-      <CategoryCards />
+      <HowItWorks />
       
       {/* Training Marketplace Section */}
       <section className="section-padding bg-background">
@@ -112,7 +112,7 @@ const Index = () => {
         </div>
       </section>
 
-      <HowItWorks />
+      <CategoryCards />
       <FeaturedTrainers />
       <TrustSection />
       <Footer />
