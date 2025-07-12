@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,7 @@ const PackageCustomizer = ({
   packageData, 
   onAddToCart 
 }) => {
+  const navigate = useNavigate();
   const [customization, setCustomization] = useState({});
   const [totalPrice, setTotalPrice] = useState(packageData?.discountedPrice || 0);
 
@@ -138,10 +140,14 @@ const PackageCustomizer = ({
       ...packageData,
       customization,
       finalPrice: totalPrice,
+      discountedPrice: totalPrice,
+      originalPrice: packageData?.basePrice || totalPrice,
+      savings: (packageData?.basePrice || totalPrice) - totalPrice,
       id: Date.now() // Generate unique ID for customized package
     };
 
-    onAddToCart(customizedPackage);
+    // Navigate to checkout with package data
+    navigate('/checkout', { state: { packageData: customizedPackage } });
     onClose();
   };
 

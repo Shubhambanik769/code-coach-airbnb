@@ -31,6 +31,7 @@ import CommunityStandards from "./pages/CommunityStandards";
 import TrainerProtection from "./pages/TrainerProtection";
 import SuccessStories from "./pages/SuccessStories";
 import CategoryPage from "./pages/CategoryPage";
+import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -68,6 +69,7 @@ const App = () => (
                   <Route path="/category/:slug" element={<CategoryPage />} />
                   <Route path="/technology/:slug" element={<TechnologyPage />} />
                   <Route path="/trainer/:id" element={<TrainerProfile />} />
+                  <Route path="/checkout" element={<Checkout />} />
                   {/* Updated feedback route to properly handle base64 encoded tokens */}
                   <Route path="/feedback/:token" element={<FeedbackForm />} />
                   <Route path="/feedback-success" element={<FeedbackSuccess />} />
