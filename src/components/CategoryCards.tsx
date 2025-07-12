@@ -33,24 +33,11 @@ const CategoryCards = () => {
   const handleCategoryClick = (slug: string) => {
     navigate(`/services/${slug}`);
   };
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {categories.map((category) => {
-        const IconComponent = iconMap[category.icon_name as keyof typeof iconMap] || Code;
-        return (
-          <div
-            key={category.id}
-            onClick={() => handleCategoryClick(category.slug)}
-            className="p-6 bg-card border border-border rounded-lg hover:shadow-lg transition-shadow cursor-pointer"
-          >
-            <IconComponent className="h-8 w-8 text-primary mb-4" />
-            <h3 className="text-lg font-semibold mb-2">{category.name}</h3>
-            <p className="text-muted-foreground text-sm mb-3">{category.description}</p>
-            <p className="text-primary font-medium">Starting from ₹{category.base_price}/hour</p>
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {categories.map(category => {
+      const IconComponent = iconMap[category.icon_name as keyof typeof iconMap] || Code;
+      return;
+    })}
+    </div>;
 };
 export default CategoryCards;
