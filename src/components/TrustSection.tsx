@@ -1,65 +1,67 @@
-import { useEffect, useState } from 'react';
-import { Star, Users, Award, TrendingUp, Quote } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from '@/integrations/supabase/client';
-interface FeaturedStory {
-  id: string;
-  title: string;
-  content: string;
-  client_name: string;
-  client_position: string;
-  client_company: string;
-  client_avatar_url?: string;
-}
+
+import { Star, Award, Users, CheckCircle } from 'lucide-react';
+
 const TrustSection = () => {
-  const [featuredStory, setFeaturedStory] = useState<FeaturedStory | null>(null);
-  useEffect(() => {
-    fetchFeaturedStory();
-  }, []);
-  const fetchFeaturedStory = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('success_stories').select('*').eq('is_featured', true).order('display_order', {
-        ascending: true
-      }).limit(1).single();
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching featured story:', error);
-        return;
-      }
-      if (data) {
-        setFeaturedStory(data);
-      }
-    } catch (error) {
-      console.error('Error:', error);
+  const stats = [
+    {
+      icon: Users,
+      value: '10,000+',
+      label: 'Happy Students',
+      description: 'Professionals trained successfully'
+    },
+    {
+      icon: Star,
+      value: '4.9/5',
+      label: 'Average Rating',
+      description: 'Based on 2,500+ reviews'
+    },
+    {
+      icon: Award,
+      value: '500+',
+      label: 'Expert Trainers',
+      description: 'Certified industry professionals'
+    },
+    {
+      icon: CheckCircle,
+      value: '95%',
+      label: 'Success Rate',
+      description: 'Career advancement achieved'
     }
-  };
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
-  const stats = [{
-    icon: Users,
-    value: "10,000+",
-    label: "Students Trained",
-    color: "text-blue-600"
-  }, {
-    icon: Star,
-    value: "4.9/5",
-    label: "Average Rating",
-    color: "text-yellow-500"
-  }, {
-    icon: Award,
-    value: "500+",
-    label: "Certified Trainers",
-    color: "text-green-600"
-  }, {
-    icon: TrendingUp,
-    value: "95%",
-    label: "Success Rate",
-    color: "text-purple-600"
-  }];
-  return;
+  ];
+
+  return (
+    <section className="py-16 bg-muted/50">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+            Trusted by Professionals Worldwide
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Join thousands of professionals who have advanced their careers through our expert-led training programs
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {stats.map((stat, index) => (
+            <div key={index} className="text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg mb-4">
+                <stat.icon className="w-6 h-6 text-primary" />
+              </div>
+              <div className="text-3xl font-bold text-foreground mb-2">
+                {stat.value}
+              </div>
+              <div className="text-lg font-semibold text-foreground mb-1">
+                {stat.label}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {stat.description}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 };
+
 export default TrustSection;
