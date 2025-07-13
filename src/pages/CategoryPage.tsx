@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Star, Clock, Users, CheckCircle, ShoppingCart, Badge, Settings } from 'lucide-react';
+import { Star, Clock, Users, CheckCircle, ShoppingCart, Badge, Settings, Code, Smartphone, BarChart3, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Header from '@/components/Header';
@@ -68,22 +68,25 @@ const CategoryPage = () => {
       try {
         const { data: categories, error } = await supabase
           .from('service_categories')
-          .select('*')
+          .select('subcategories')
           .eq('slug', slug)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .single();
 
         if (error) {
           console.error('Error fetching category:', error);
+          setCourses([]);
           return;
         }
 
-        if (categories && categories.length > 0) {
-          // For now, we'll use sample courses
-          // In a real implementation, you'd fetch courses related to this category
-          setCourses(getSampleCoursesForCategory(slug));
+        if (categories && categories.subcategories) {
+          setCourses(categories.subcategories);
+        } else {
+          setCourses([]);
         }
       } catch (error) {
         console.error('Error:', error);
+        setCourses([]);
       } finally {
         setLoading(false);
       }
@@ -92,42 +95,34 @@ const CategoryPage = () => {
     fetchCourses();
   }, [slug]);
 
-  const getSampleCoursesForCategory = (categorySlug) => {
-    const coursesByCategory = {
-      'technology-it-skills': [
-        'Cloud Computing', 'Data Structures & Algorithms', 'Cybersecurity',
-        'Web Development', 'Mobile App Development', 'DevOps & CI/CD',
-        'Machine Learning', 'Blockchain Development'
-      ],
-      'business-entrepreneurship': [
-        'Financial Planning', 'Digital Marketing', 'Project Management',
-        'Leadership Skills', 'Business Analytics', 'Startup Management',
-        'Investment & Trading', 'Operations Management'
-      ],
-      'creative-design': [
-        'UI/UX Design', 'Graphic Design', 'Video Editing',
-        'Photography', 'Motion Graphics', 'Brand Design',
-        'Web Design', 'Product Design'
-      ],
-      'health-wellness': [
-        'Nutrition & Diet', 'Fitness Training', 'Mental Health',
-        'Yoga & Meditation', 'Sports Training', 'Healthcare Management',
-        'Alternative Medicine', 'Personal Development'
-      ],
-      'languages-communication': [
-        'English Speaking', 'Public Speaking', 'Business Writing',
-        'Foreign Languages', 'Presentation Skills', 'Communication Skills',
-        'Creative Writing', 'Interview Skills'
-      ],
-      'professional-skills': [
-        'Excel Mastery', 'Data Analysis', 'Time Management',
-        'Career Development', 'Soft Skills', 'Sales Training',
-        'Customer Service', 'Team Management'
-      ]
+  // Fetch category details for icon and name
+  const [categoryDetails, setCategoryDetails] = useState(null);
+
+  useEffect(() => {
+    const fetchCategoryDetails = async () => {
+      if (!slug) return;
+      
+      try {
+        const { data: category, error } = await supabase
+          .from('service_categories')
+          .select('name, icon_name')
+          .eq('slug', slug)
+          .eq('is_active', true)
+          .single();
+
+        if (error) {
+          console.error('Error fetching category details:', error);
+          return;
+        }
+
+        setCategoryDetails(category);
+      } catch (error) {
+        console.error('Error:', error);
+      }
     };
-    
-    return coursesByCategory[categorySlug] || [];
-  };
+
+    fetchCategoryDetails();
+  }, [slug]);
 
   const handleAddToCart = (pkg) => {
     const cartItem = {
@@ -166,115 +161,6 @@ const CategoryPage = () => {
     addToCart(cartItem);
   };
 
-  // Mock data that matches admin category management structure
-  const categoriesData = [
-    {
-      id: 1,
-      name: 'Technology & IT Skills',
-      slug: 'technology-it-skills',
-      description: 'Learn modern technology and IT skills',
-      icon: '💻',
-      courses: [
-        'Cloud Computing',
-        'Data Structures & Algorithms',
-        'Cybersecurity',
-        'Web Development',
-        'Mobile App Development',
-        'DevOps & CI/CD',
-        'Machine Learning',
-        'Blockchain Development'
-      ]
-    },
-    {
-      id: 2,
-      name: 'Business & Entrepreneurship',
-      slug: 'business-entrepreneurship',
-      description: 'Master business and entrepreneurial skills',
-      icon: '📈',
-      courses: [
-        'Financial Planning',
-        'Digital Marketing',
-        'Project Management',
-        'Leadership Skills',
-        'Business Analytics',
-        'Startup Management',
-        'Investment & Trading',
-        'Operations Management'
-      ]
-    },
-    {
-      id: 3,
-      name: 'Creative & Design',
-      slug: 'creative-design',
-      description: 'Develop creative and design skills',
-      icon: '🎨',
-      courses: [
-        'UI/UX Design',
-        'Graphic Design',
-        'Video Editing',
-        'Photography',
-        'Motion Graphics',
-        'Brand Design',
-        'Web Design',
-        'Product Design'
-      ]
-    },
-    {
-      id: 4,
-      name: 'Health & Wellness',
-      slug: 'health-wellness',
-      description: 'Focus on health and wellness training',
-      icon: '🏥',
-      courses: [
-        'Nutrition & Diet',
-        'Fitness Training',
-        'Mental Health',
-        'Yoga & Meditation',
-        'Sports Training',
-        'Healthcare Management',
-        'Alternative Medicine',
-        'Personal Development'
-      ]
-    },
-    {
-      id: 5,
-      name: 'Languages & Communication',
-      slug: 'languages-communication',
-      description: 'Improve language and communication skills',
-      icon: '🗣️',
-      courses: [
-        'English Speaking',
-        'Public Speaking',
-        'Business Writing',
-        'Foreign Languages',
-        'Presentation Skills',
-        'Communication Skills',
-        'Creative Writing',
-        'Interview Skills'
-      ]
-    },
-    {
-      id: 6,
-      name: 'Professional Skills',
-      slug: 'professional-skills',
-      description: 'Enhance professional and soft skills',
-      icon: '💼',
-      courses: [
-        'Excel Mastery',
-        'Data Analysis',
-        'Time Management',
-        'Career Development',
-        'Soft Skills',
-        'Sales Training',
-        'Customer Service',
-        'Team Management'
-      ]
-    }
-  ];
-
-  // Find current category and get its courses
-  const currentCategory = categoriesData.find(cat => cat.slug === slug);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -291,17 +177,30 @@ const CategoryPage = () => {
                     <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />
                   ))}
                 </div>
-              ) : (
+              ) : courses.length > 0 ? (
                 <div className="space-y-3">
-                  {courses.map((course, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center p-3 rounded-lg border hover:border-primary cursor-pointer transition-colors"
-                    >
-                      <span className="text-2xl mr-3">💻</span>
-                      <span className="text-sm font-medium">{course}</span>
-                    </div>
-                  ))}
+                  {courses.map((course, index) => {
+                    const IconComponent = categoryDetails?.icon_name === 'Code' ? Code :
+                                        categoryDetails?.icon_name === 'Smartphone' ? Smartphone :
+                                        categoryDetails?.icon_name === 'BarChart3' ? BarChart3 :
+                                        categoryDetails?.icon_name === 'Cloud' ? Cloud : Code;
+                    
+                    return (
+                      <div 
+                        key={index}
+                        className="flex items-center p-3 rounded-lg border hover:border-primary cursor-pointer transition-colors group"
+                      >
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors mr-3">
+                          <IconComponent className="h-4 w-4" />
+                        </div>
+                        <span className="text-sm font-medium">{course}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground text-sm">No courses available for this category</p>
                 </div>
               )}
             </div>
@@ -310,7 +209,9 @@ const CategoryPage = () => {
           {/* Central Section - Packages */}
           <div className="lg:col-span-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{categoryName} Packages</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {categoryDetails?.name || categoryName} Packages
+              </h1>
               <p className="text-gray-600">Choose the perfect training program for your goals</p>
             </div>
             
