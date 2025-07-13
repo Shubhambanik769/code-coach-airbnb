@@ -34,13 +34,6 @@ const CategoryCards = () => {
   const handleCategoryClick = (slug: string) => {
     navigate(`/services/${slug}`);
   };
-  return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {categories.map(category => {
-      const IconComponent = iconMap[category.icon_name as keyof typeof iconMap] || Code;
-      return <Card key={category.id} className="cursor-pointer hover:shadow-lg transition-shadow duration-200" onClick={() => handleCategoryClick(category.slug)}>
-            
-          </Card>;
-    })}
-    </div>;
+  return;
 };
 export default CategoryCards;
