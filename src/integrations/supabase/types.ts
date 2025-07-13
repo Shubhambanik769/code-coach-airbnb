@@ -495,6 +495,100 @@ export type Database = {
           },
         ]
       }
+      package_customization_options: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_required: boolean | null
+          name: string
+          options: Json | null
+          package_id: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          name: string
+          options?: Json | null
+          package_id?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          name?: string
+          options?: Json | null
+          package_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_customization_options_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          base_price: number
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          discounted_price: number | null
+          duration: string | null
+          excludes: string[] | null
+          id: string
+          includes: string[] | null
+          is_active: boolean | null
+          subcategory: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_price: number
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          discounted_price?: number | null
+          duration?: string | null
+          excludes?: string[] | null
+          id?: string
+          includes?: string[] | null
+          is_active?: boolean | null
+          subcategory: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          discounted_price?: number | null
+          duration?: string | null
+          excludes?: string[] | null
+          id?: string
+          includes?: string[] | null
+          is_active?: boolean | null
+          subcategory?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packages_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_batches: {
         Row: {
           batch_name: string
