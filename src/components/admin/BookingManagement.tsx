@@ -77,6 +77,17 @@ const BookingManagement = () => {
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'refunded': return 'bg-orange-100 text-orange-800';
+      case 'unpaid': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   // Calculate confirmed revenue (confirmed and beyond statuses)
   const confirmedRevenue = bookings?.filter(booking => 
     ['confirmed', 'assigned', 'delivering', 'delivered', 'completed'].includes(booking.status)
@@ -166,39 +177,54 @@ const BookingManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Booking ID</TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Trainer</TableHead>
                   <TableHead>Topic</TableHead>
                   <TableHead>Date & Time</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Payment Status</TableHead>
+                  <TableHead>Booking Status</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       Loading bookings...
                     </TableCell>
                   </TableRow>
                 ) : bookings?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       No bookings found
                     </TableCell>
                   </TableRow>
                 ) : (
                   bookings?.map((booking) => (
                     <TableRow key={booking.id}>
+                      <TableCell className="font-mono text-xs">
+                        {booking.id.slice(0, 8)}...
+                      </TableCell>
                       <TableCell className="font-medium">
-                        {booking.student_profile?.full_name || 'N/A'}
+                        <div>
+                          <div>{booking.student_profile?.full_name || booking.client_name || 'N/A'}</div>
+                          <div className="text-xs text-gray-500">{booking.student_profile?.email || booking.client_email}</div>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {booking.trainer_profile?.full_name || 'N/A'}
+                        {booking.trainer_profile?.full_name || 'Unassigned'}
                       </TableCell>
-                      <TableCell>{booking.training_topic}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{booking.training_topic}</div>
+                          {booking.organization_name && (
+                            <div className="text-xs text-gray-500">{booking.organization_name}</div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div>
                           <div>{new Date(booking.start_time).toLocaleDateString()}</div>
@@ -208,7 +234,12 @@ const BookingManagement = () => {
                         </div>
                       </TableCell>
                       <TableCell>{booking.duration_hours}h</TableCell>
-                      <TableCell>₹{booking.total_amount}</TableCell>
+                      <TableCell className="font-medium">₹{booking.total_amount}</TableCell>
+                      <TableCell>
+                        <Badge className={getPaymentStatusColor(booking.payment_status)}>
+                          {booking.payment_status || 'pending'}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge className={getStatusBadgeColor(booking.status)}>
                           {booking.status}
