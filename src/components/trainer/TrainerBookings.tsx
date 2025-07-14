@@ -72,11 +72,12 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
         return [];
       }
 
-      // First, fetch bookings
+      // First, fetch bookings - only show assigned bookings
       let query = supabase
         .from('bookings')
         .select('*')
         .eq('trainer_id', trainerId)
+        .neq('trainer_id', '00000000-0000-0000-0000-000000000000') // Exclude unassigned bookings
         .order('start_time', { ascending: false });
 
       if (statusFilter !== 'all') {
@@ -310,6 +311,7 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
   });
 
   const updateBookingStatus = (bookingId: string, status: string) => {
+    // In managed model, trainers can only update status to confirmed, completed, or cancelled
     if (status === 'confirmed') {
       // Check if agreement exists and handle accordingly
       const booking = bookings?.find(b => b.id === bookingId);
@@ -521,25 +523,25 @@ const TrainerBookings = ({ trainerId }: TrainerBookingsProps) => {
 
                           {booking.status === 'pending' && !booking.is_training_request && (
                             <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateBookingStatus(booking.id, 'confirmed')}
-                                disabled={updateBookingStatusMutation.isPending}
-                                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 gap-1"
-                              >
-                                <FileText className="h-4 w-4" />
-                                Review & Accept
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateBookingStatus(booking.id, 'cancelled')}
-                                disabled={updateBookingStatusMutation.isPending}
-                                className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                              >
-                                Decline
-                              </Button>
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                                 disabled={updateBookingStatusMutation.isPending}
+                                 className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 gap-1"
+                               >
+                                 <FileText className="h-4 w-4" />
+                                 Confirm Session
+                               </Button>
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                 disabled={updateBookingStatusMutation.isPending}
+                                 className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                               >
+                                 Cannot Attend
+                               </Button>
                             </>
                           )}
                           

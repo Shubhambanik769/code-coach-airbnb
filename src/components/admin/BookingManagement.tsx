@@ -7,11 +7,81 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Calendar, DollarSign } from 'lucide-react';
+import { Search, Calendar, DollarSign, UserCheck, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const BookingManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [selectedTrainerId, setSelectedTrainerId] = useState('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Add the mutation for assigning trainers
+  const assignTrainerMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedBooking || !selectedTrainerId) return;
+      
+      const { error } = await supabase
+        .from('bookings')
+        .update({ 
+          trainer_id: selectedTrainerId,
+          trainer_assignment_status: 'assigned',
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedBooking.id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Trainer Assigned",
+        description: "Trainer has been successfully assigned to the booking."
+      });
+      setIsAssignDialogOpen(false);
+      setSelectedTrainerId('');
+      setSelectedBooking(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Assignment Failed",
+        description: error.message || "Failed to assign trainer",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Fetch available trainers
+  const { data: trainers } = useQuery({
+    queryKey: ['available-trainers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trainers')
+        .select(`
+          id,
+          name,
+          title,
+          specialization,
+          status,
+          user_id,
+          profiles (
+            full_name,
+            email
+          )
+        `)
+        .eq('status', 'approved');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
 
   // Fetch bookings with related data
   const { data: bookings, isLoading } = useQuery({
@@ -161,6 +231,8 @@ const BookingManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending_assignment">Pending Assignment</SelectItem>
+                <SelectItem value="pending_payment">Pending Payment</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="confirmed">Confirmed</SelectItem>
                 <SelectItem value="assigned">Assigned</SelectItem>
@@ -186,19 +258,20 @@ const BookingManagement = () => {
                   <TableHead>Amount</TableHead>
                   <TableHead>Payment Status</TableHead>
                   <TableHead>Booking Status</TableHead>
+                  <TableHead>Actions</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                  {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8">
+                    <TableCell colSpan={11} className="text-center py-8">
                       Loading bookings...
                     </TableCell>
                   </TableRow>
                 ) : bookings?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8">
+                    <TableCell colSpan={11} className="text-center py-8">
                       No bookings found
                     </TableCell>
                   </TableRow>
@@ -246,6 +319,26 @@ const BookingManagement = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        {(booking.trainer_assignment_status === 'unassigned' || booking.status === 'pending_assignment') && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setIsAssignDialogOpen(true);
+                            }}
+                            className="flex items-center gap-1"
+                          >
+                            <UserCheck className="h-3 w-3" />
+                            Assign Trainer
+                          </Button>
+                        )}
+                        {booking.trainer_assignment_status === 'assigned' && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                            Assigned
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {new Date(booking.created_at).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
@@ -256,6 +349,72 @@ const BookingManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Trainer Assignment Dialog */}
+      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Trainer to Booking</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">Booking Details</h4>
+              <p className="text-sm text-muted-foreground">
+                <strong>Topic:</strong> {selectedBooking?.training_topic}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                <strong>Client:</strong> {selectedBooking?.client_name}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                <strong>Date:</strong> {selectedBooking && new Date(selectedBooking.start_time).toLocaleString()}
+              </p>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Select Trainer</label>
+              <Select value={selectedTrainerId} onValueChange={setSelectedTrainerId}>
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Choose a trainer..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainers?.map((trainer) => (
+                    <SelectItem key={trainer.id} value={trainer.id}>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <div>
+                          <p className="font-medium">{trainer.name}</p>
+                          <p className="text-xs text-muted-foreground">{trainer.specialization}</p>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => assignTrainerMutation.mutate()}
+                disabled={!selectedTrainerId || assignTrainerMutation.isPending}
+                className="flex-1"
+              >
+                {assignTrainerMutation.isPending ? 'Assigning...' : 'Assign Trainer'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsAssignDialogOpen(false);
+                  setSelectedTrainerId('');
+                  setSelectedBooking(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

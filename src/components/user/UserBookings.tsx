@@ -153,7 +153,9 @@ const UserBookings = () => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'pending_assignment': return 'bg-orange-100 text-orange-800';
+      case 'pending_payment': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -161,6 +163,8 @@ const UserBookings = () => {
 
   const getStatusDescription = (status: string) => {
     switch (status) {
+      case 'pending_assignment': return 'Trainer will be assigned by admin';
+      case 'pending_payment': return 'Payment pending - trainer will be assigned after payment';
       case 'pending': return 'Waiting for trainer confirmation';
       case 'confirmed': return 'Session confirmed by trainer';
       case 'completed': return 'Session completed';
@@ -238,13 +242,13 @@ const UserBookings = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Trainer</TableHead>
-                    <TableHead>Training Topic</TableHead>
-                    <TableHead>Date & Time</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                     <TableHead>Assigned Trainer</TableHead>
+                     <TableHead>Training Topic</TableHead>
+                     <TableHead>Date & Time</TableHead>
+                     <TableHead>Duration</TableHead>
+                     <TableHead>Amount</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -253,10 +257,16 @@ const UserBookings = () => {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400" />
-                          <div>
-                            <p className="font-medium">{booking.trainer_profile?.full_name || 'N/A'}</p>
-                            <p className="text-sm text-gray-500">{booking.trainer_profile?.email || 'N/A'}</p>
-                          </div>
+                           <div>
+                             {booking.trainer_id === '00000000-0000-0000-0000-000000000000' ? (
+                               <p className="font-medium text-orange-600">To be assigned</p>
+                             ) : (
+                               <>
+                                 <p className="font-medium">{booking.trainer_profile?.full_name || 'Professional Trainer'}</p>
+                                 <p className="text-sm text-gray-500">{booking.trainer_profile?.email || 'Contact through platform'}</p>
+                               </>
+                             )}
+                           </div>
                         </div>
                       </TableCell>
                       <TableCell>

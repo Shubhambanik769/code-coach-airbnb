@@ -65,7 +65,7 @@ const Checkout = () => {
         .from('bookings')
         .insert({
           student_id: user.id,
-          trainer_id: 'default-trainer', // Will be assigned later
+          trainer_id: '00000000-0000-0000-0000-000000000000', // Placeholder - will be assigned by admin
           training_topic: bookingDetails.trainingTopic || packageData.title,
           organization_name: bookingDetails.companyName,
           client_name: user.email,
@@ -74,10 +74,11 @@ const Checkout = () => {
           end_time: endTime.toISOString(),
           duration_hours: durationHours,
           total_amount: totalAmount,
-          status: payNow ? 'pending' : 'pending_payment',
+          status: payNow ? 'pending_assignment' : 'pending_payment',
           payment_status: payNow ? 'pending' : 'unpaid',
           payment_provider: 'paypal',
-          location_city: bookingDetails.address
+          location_city: bookingDetails.address,
+          trainer_assignment_status: 'unassigned'
         })
         .select()
         .single();
